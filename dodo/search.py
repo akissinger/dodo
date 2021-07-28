@@ -77,9 +77,10 @@ class SearchModel(QAbstractItemModel):
 
 
 class SearchView(QTreeView):
-    def __init__(self, app, q, parent=None):
+    def __init__(self, app, q, keep_open=False, parent=None):
         super().__init__(parent)
         self.app = app
+        self.keep_open = keep_open
         self.setModel(SearchModel(q))
         # TODO fix for custom cols
         self.resizeColumnToContents(0)
@@ -100,7 +101,7 @@ class SearchView(QTreeView):
                 self._prefixes.add(k[0:-i])
 
     def prefix_timeout(self):
-        print("prefix fired: " + self._prefix)
+        # print("prefix fired: " + self._prefix)
         if self._prefix in keymap.search_keymap:
             keymap.search_keymap[self._prefix](self)
         elif self._prefix in keymap.global_keymap:
@@ -110,7 +111,7 @@ class SearchView(QTreeView):
     def keyPressEvent(self, e):
         k = util.key_string(e)
         if not k: return None
-        print("key: " + util.key_string(e))
+        # print("key: " + util.key_string(e))
         cmd = self._prefix + " " + k if self._prefix != "" else k
         self._prefix_timer.stop()
 
@@ -125,12 +126,22 @@ class SearchView(QTreeView):
             keymap.global_keymap[cmd](self.app)
 
     def next_thread(self):
-        ix = self.model().index(self.currentIndex().row() + 1, 0)
+        row = self.currentIndex().row() + 1
+        if row >= 0 and row < self.model().rowCount():
+            self.setCurrentIndex(self.model().index(row, 0))
+
+    def previous_thread(self):
+        row = self.currentIndex().row() - 1
+        if row >= 0 and row < self.model().rowCount():
+            self.setCurrentIndex(self.model().index(row, 0))
+
+    def first_thread(self):
+        ix = self.model().index(0, 0)
         if self.model().checkIndex(ix):
             self.setCurrentIndex(ix)
 
-    def previous_thread(self):
-        ix = self.model().index(self.currentIndex().row() - 1, 0)
+    def last_thread(self):
+        ix = self.model().index(self.model().rowCount()-1, 0)
         if self.model().checkIndex(ix):
             self.setCurrentIndex(ix)
 

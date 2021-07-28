@@ -2,18 +2,18 @@ from PyQt5.QtGui import QPalette, QColor
 # from PyQt5.QtCore import Qt
 
 # nord palettes
-polar =  ["#2e3440", "#3b4252", "#434c5e", "#4c566a"]
-snow =   ["#d8dee9", "#e5e9f0", "#eceff4"]
-frost =  ["#8fbcbb", "#88c0d0", "#81a1c1", "#5e81ac"]
-aurora = ["#bf616a", "#d08770", "#ebcb8b", "#a3be8c", "#b48ead"]
+# polar =  ["#2e3440", "#3b4252", "#434c5e", "#4c566a"]
+# snow =   ["#d8dee9", "#e5e9f0", "#eceff4"]
+# frost =  ["#8fbcbb", "#88c0d0", "#81a1c1", "#5e81ac"]
+# aurora = ["#bf616a", "#d08770", "#ebcb8b", "#a3be8c", "#b48ead"]
 
 theme_nord = {
         'bg': '#2e3440',
         'fg': '#d8dee8',
         'fg_bright': '#b48ead',
-        'bg_alt': '#4c566a',
-        'button_bg': '#81a1c1',
-        'button_fg': '#2e3440',
+        'bg_alt': '#3b4252',
+        'button_bg': '#4c566a',
+        'button_fg': '#eceff4',
         'link': '#81a1c1',
         'highlight_bg': '#a3be8c',
         'highlight_fg': '#2e3440',
@@ -32,7 +32,7 @@ def apply_style(app):
     app.setStyle("Fusion")
     # Now use a palette to switch to dark colors:
     palette = QPalette()
-    palette.setColor(QPalette.Window, QColor(theme['fg']))
+    palette.setColor(QPalette.Window, QColor(theme['bg']))
     palette.setColor(QPalette.WindowText, QColor(theme['fg']))
     palette.setColor(QPalette.Base, QColor(theme['bg']))
     palette.setColor(QPalette.AlternateBase, QColor(theme['bg_alt']))
