@@ -1,7 +1,10 @@
+global_keymap = {
+  'q': lambda a: a.quit(),
+}
 
 search_keymap = {
-  'j':  lambda x: x.next_thread(),
-  'k':  lambda x: x.previous_thread(),
-  'g g': lambda x: print('got gg'),
-  'g g g': lambda x: print('got ggg'),
+  'j':  lambda s: s.next_thread(),
+  'k':  lambda s: s.previous_thread(),
+  'g g': lambda s: print('got gg'),
+  'g g g': lambda s: print('got ggg'),
 }

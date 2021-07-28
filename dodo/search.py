@@ -77,8 +77,9 @@ class SearchModel(QAbstractItemModel):
 
 
 class SearchView(QTreeView):
-    def __init__(self, q, parent=None):
+    def __init__(self, app, q, parent=None):
         super().__init__(parent)
+        self.app = app
         self.setModel(SearchModel(q))
         # TODO fix for custom cols
         self.resizeColumnToContents(0)
@@ -102,6 +103,8 @@ class SearchView(QTreeView):
         print("prefix fired: " + self._prefix)
         if self._prefix in keymap.search_keymap:
             keymap.search_keymap[self._prefix](self)
+        elif self._prefix in keymap.global_keymap:
+            keymap.global_keymap[self._prefix](self.app)
         self._prefix = ""
 
     def keyPressEvent(self, e):
@@ -117,6 +120,9 @@ class SearchView(QTreeView):
         elif cmd in keymap.search_keymap:
             self._prefix = ""
             keymap.search_keymap[cmd](self)
+        elif cmd in keymap.global_keymap:
+            self._prefix = ""
+            keymap.global_keymap[cmd](self.app)
 
     def next_thread(self):
         ix = self.model().index(self.currentIndex().row() + 1, 0)

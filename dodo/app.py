@@ -8,7 +8,7 @@ class Dodo(QApplication):
         super().__init__([])
         self.setApplicationName('Dodo')
         style.apply_style(self)
-        self.inbox = search.SearchView('tag:inbox')
+        self.inbox = search.SearchView(self, 'tag:inbox')
         self.inbox.resize(1024, 768)
         self.inbox.show()
 
