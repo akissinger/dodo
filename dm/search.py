@@ -1,7 +1,14 @@
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt
+from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QTimer
+from PyQt5.QtWidgets import QTreeView
 from PyQt5.QtGui import QFont, QColor
 import subprocess
 import json
+
+from . import style
+from . import keymap
+from . import util
+
+columns = ['date', 'from', 'subject', 'tags']
 
 class SearchModel(QAbstractItemModel):
     def __init__(self, q):
@@ -16,20 +23,21 @@ class SearchModel(QAbstractItemModel):
         self.d = json.loads(self.json_str)
 
     def data(self, index, role):
-        if index.row() < 0 and index.row() >= len(self.d):
-            return ""
+        global columns
+        if index.row() >= len(self.d) or index.column() >= len(columns):
+            return None
 
         thread = self.d[index.row()]
-        col = index.column()
+        col = columns[index.column()]
 
         if role == Qt.DisplayRole:
-            if col == 0:
+            if col == 'date':
                 return thread['date_relative']
-            elif col == 1:
+            elif col == 'from':
                 return thread['authors']
-            elif col == 2:
-                return thread ['subject']
-            else:
+            elif col == 'subject':
+                return thread['subject']
+            elif col == 'tags':
                 return ' '.join(thread['tags'])
         elif role == Qt.FontRole:
             font = QFont("Fira Code", 12)
@@ -37,33 +45,86 @@ class SearchModel(QAbstractItemModel):
                 font.setBold(True)
             return font
         elif role == Qt.ForegroundRole:
-            if 'unread' in thread['tags'] and col == 2:
-                return QColor('#b48ead')
+            color = 'fg_' + col
+            unread_color = 'fg_' + col + '_unread'
+            if 'unread' in thread['tags'] and unread_color in style.theme:
+                return QColor(style.theme[unread_color])
+            elif color in style.theme:
+                return QColor(style.theme[color])
             else:
-                return QColor('#d8dee9')
-
-        else:
-            return None
+                return QColor(style.theme['fg'])
 
     def headerData(self, section, orientation, role):
-        if role == Qt.DisplayRole:
-            if section == 0: return 'date'
-            elif section == 1: return 'from'
-            elif section == 2: return 'subject'
-            else: return 'tags'
+        global columns
+        if role == Qt.DisplayRole and section <= len(columns):
+            return columns[section]
         else:
             return None
 
-    def index(self, row, column, parent):
+    def index(self, row, column, parent=QModelIndex()):
         if not self.hasIndex(row, column, parent): return QModelIndex()
         else: return self.createIndex(row, column, None)
 
     def columnCount(self, index):
         return 4
 
-    def rowCount(self, index):
-        if not index.isValid(): return len(self.d)
+    def rowCount(self, index=QModelIndex()):
+        if not index or not index.isValid(): return len(self.d)
         else: return 0
 
     def parent(self, index):
         return QModelIndex()
+
+
+class SearchView(QTreeView):
+    def __init__(self, q, parent=None):
+        super().__init__(parent)
+        self.setModel(SearchModel(q))
+        # TODO fix for custom cols
+        self.resizeColumnToContents(0)
+        self.setColumnWidth(1, 150)
+        self.setColumnWidth(2, 600)
+        if self.model().rowCount() > 0:
+            self.setCurrentIndex(self.model().index(0,0))
+
+        # set up timer and prefix cache for handling keychords
+        self._prefix = ""
+        self._prefixes = set()
+        self._prefix_timer = QTimer()
+        self._prefix_timer.setSingleShot(True)
+        self._prefix_timer.setInterval(500)
+        self._prefix_timer.timeout.connect(self.prefix_timeout)
+        for k in keymap.search_keymap:
+            for i in range(1,len(k)):
+                self._prefixes.add(k[0:-i])
+
+    def prefix_timeout(self):
+        print("prefix fired: " + self._prefix)
+        if self._prefix in keymap.search_keymap:
+            keymap.search_keymap[self._prefix](self)
+        self._prefix = ""
+
+    def keyPressEvent(self, e):
+        k = util.key_string(e)
+        if not k: return None
+        print("key: " + util.key_string(e))
+        cmd = self._prefix + " " + k if self._prefix != "" else k
+        self._prefix_timer.stop()
+
+        if cmd in self._prefixes:
+            self._prefix = cmd
+            self._prefix_timer.start()
+        elif cmd in keymap.search_keymap:
+            self._prefix = ""
+            keymap.search_keymap[cmd](self)
+
+    def next_thread(self):
+        ix = self.model().index(self.currentIndex().row() + 1, 0)
+        if self.model().checkIndex(ix):
+            self.setCurrentIndex(ix)
+
+    def previous_thread(self):
+        ix = self.model().index(self.currentIndex().row() - 1, 0)
+        if self.model().checkIndex(ix):
+            self.setCurrentIndex(ix)
+
