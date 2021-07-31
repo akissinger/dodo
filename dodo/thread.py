@@ -1,5 +1,4 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QScrollArea, QTextBrowser, QVBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QScrollArea, QVBoxLayout
 import subprocess
 import json
 # from html_sanitizer import Sanitizer
@@ -7,6 +6,9 @@ from html2text import html2text
 import html
 
 from . import style
+from . import util
+from . import keymap
+from .basewidgets import StackingTextView, Panel
 
 # recursively search a message body for content of type `ty` and return in depth-first
 # order
@@ -38,19 +40,6 @@ def flat_thread(d):
     thread.sort(key=lambda m: m['timestamp'])
     return thread
 
-class StackingTextView(QTextBrowser):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum);
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff);
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff);
-
-    def sizeHint(self):
-        return self.document().size().toSize()
-
-    def resizeEvent(self, e):
-        self.updateGeometry()
-        super().resizeEvent(e)
 
 class MessageBlock(QWidget):
     def __init__(self, text, html_message, headers, parent=None):
@@ -105,16 +94,21 @@ class MessageStack(QWidget):
         self.layout.addWidget(b)
 
 
-class ThreadView(QScrollArea):
+class ThreadView(Panel):
     def __init__(self, app, thread_id, parent=None):
-        super().__init__(parent)
-        self.app = app
+        super().__init__(app, parent)
+        self.set_keymap(keymap.thread_keymap)
         self.thread_id = thread_id
         self.message_stack = MessageStack(self)
         self.refresh()
-        self.setWidget(self.message_stack)
-        self.setWidgetResizable(True)
 
+        self.scroll = QScrollArea()
+        self.layout().addWidget(self.scroll)
+        self.scroll.setWidget(self.message_stack)
+        self.scroll.setWidgetResizable(True)
+
+    def title(self):
+        return util.chop_s(self.subject)
 
     def refresh(self):
         r = subprocess.run(['notmuch', 'show', '--format=json', '--include-html', self.thread_id],
@@ -126,6 +120,12 @@ class ThreadView(QScrollArea):
         self.thread = flat_thread(self.d)
         print('thread of size: %d' % len(self.thread))
 
+        self.subject = None
         for m in self.thread:
+            if not self.subject and 'headers' in m and 'Subject' in m['headers']:
+                self.subject = m['headers']['Subject']
             self.message_stack.add_message(m)
+
+        if not self.subject:
+            self.subject = '(no subject)'
 

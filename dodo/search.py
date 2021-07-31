@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QTimer
+from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex
 from PyQt5.QtWidgets import QTreeView
 from PyQt5.QtGui import QFont, QColor
 import subprocess
@@ -6,7 +6,8 @@ import json
 
 from . import style
 from . import keymap
-from . import util
+from . import thread
+from .basewidgets import Panel
 
 columns = ['date', 'from', 'subject', 'tags']
 
@@ -27,27 +28,27 @@ class SearchModel(QAbstractItemModel):
         if index.row() >= len(self.d) or index.column() >= len(columns):
             return None
 
-        thread = self.d[index.row()]
+        thread_d = self.d[index.row()]
         col = columns[index.column()]
 
         if role == Qt.DisplayRole:
             if col == 'date':
-                return thread['date_relative']
+                return thread_d['date_relative']
             elif col == 'from':
-                return thread['authors']
+                return thread_d['authors']
             elif col == 'subject':
-                return thread['subject']
+                return thread_d['subject']
             elif col == 'tags':
-                return ' '.join(thread['tags'])
+                return ' '.join(thread_d['tags'])
         elif role == Qt.FontRole:
             font = QFont("Fira Code", 12)
-            if 'unread' in thread['tags']:
+            if 'unread' in thread_d['tags']:
                 font.setBold(True)
             return font
         elif role == Qt.ForegroundRole:
             color = 'fg_' + col
             unread_color = 'fg_' + col + '_unread'
-            if 'unread' in thread['tags'] and unread_color in style.theme:
+            if 'unread' in thread_d['tags'] and unread_color in style.theme:
                 return QColor(style.theme[unread_color])
             elif color in style.theme:
                 return QColor(style.theme[color])
@@ -66,7 +67,8 @@ class SearchModel(QAbstractItemModel):
         else: return self.createIndex(row, column, None)
 
     def columnCount(self, index):
-        return 4
+        global columns
+        return len(columns)
 
     def rowCount(self, index=QModelIndex()):
         if not index or not index.isValid(): return len(self.d)
@@ -75,73 +77,55 @@ class SearchModel(QAbstractItemModel):
     def parent(self, index):
         return QModelIndex()
 
+    def thread_id_at(self, index):
+        row = index.row()
+        if row >= 0 and row < len(self.d):
+            return self.d[row]['thread']
+        else:
+            return None
 
-class SearchView(QTreeView):
+
+class SearchView(Panel):
     def __init__(self, app, q, keep_open=False, parent=None):
-        super().__init__(parent)
-        self.app = app
-        self.keep_open = keep_open
-        self.setModel(SearchModel(q))
+        super().__init__(app, keep_open, parent)
+        self.set_keymap(keymap.search_keymap)
+        self.q = q
+        self.tree = QTreeView()
+        self.tree.setFocusPolicy(Qt.NoFocus)
+        self.layout().addWidget(self.tree)
+        self.tree.setModel(SearchModel(q))
         # TODO fix for custom cols
-        self.resizeColumnToContents(0)
-        self.setColumnWidth(1, 150)
-        self.setColumnWidth(2, 600)
-        if self.model().rowCount() > 0:
-            self.setCurrentIndex(self.model().index(0,0))
+        self.tree.resizeColumnToContents(0)
+        self.tree.setColumnWidth(1, 150)
+        self.tree.setColumnWidth(2, 600)
+        if self.tree.model().rowCount() > 0:
+            self.tree.setCurrentIndex(self.tree.model().index(0,0))
 
-        # set up timer and prefix cache for handling keychords
-        self._prefix = ""
-        self._prefixes = set()
-        self._prefix_timer = QTimer()
-        self._prefix_timer.setSingleShot(True)
-        self._prefix_timer.setInterval(500)
-        self._prefix_timer.timeout.connect(self.prefix_timeout)
-        for k in keymap.search_keymap:
-            for i in range(1,len(k)):
-                self._prefixes.add(k[0:-i])
-
-    def prefix_timeout(self):
-        # print("prefix fired: " + self._prefix)
-        if self._prefix in keymap.search_keymap:
-            keymap.search_keymap[self._prefix](self)
-        elif self._prefix in keymap.global_keymap:
-            keymap.global_keymap[self._prefix](self.app)
-        self._prefix = ""
-
-    def keyPressEvent(self, e):
-        k = util.key_string(e)
-        if not k: return None
-        # print("key: " + util.key_string(e))
-        cmd = self._prefix + " " + k if self._prefix != "" else k
-        self._prefix_timer.stop()
-
-        if cmd in self._prefixes:
-            self._prefix = cmd
-            self._prefix_timer.start()
-        elif cmd in keymap.search_keymap:
-            self._prefix = ""
-            keymap.search_keymap[cmd](self)
-        elif cmd in keymap.global_keymap:
-            self._prefix = ""
-            keymap.global_keymap[cmd](self.app)
+    def title(self):
+        return self.q
 
     def next_thread(self):
-        row = self.currentIndex().row() + 1
-        if row >= 0 and row < self.model().rowCount():
-            self.setCurrentIndex(self.model().index(row, 0))
+        row = self.tree.currentIndex().row() + 1
+        if row >= 0 and row < self.tree.model().rowCount():
+            self.tree.setCurrentIndex(self.tree.model().index(row, 0))
 
     def previous_thread(self):
-        row = self.currentIndex().row() - 1
-        if row >= 0 and row < self.model().rowCount():
-            self.setCurrentIndex(self.model().index(row, 0))
+        row = self.tree.currentIndex().row() - 1
+        if row >= 0 and row < self.tree.model().rowCount():
+            self.tree.setCurrentIndex(self.tree.model().index(row, 0))
 
     def first_thread(self):
-        ix = self.model().index(0, 0)
-        if self.model().checkIndex(ix):
-            self.setCurrentIndex(ix)
+        ix = self.tree.model().index(0, 0)
+        if self.tree.model().checkIndex(ix):
+            self.tree.setCurrentIndex(ix)
 
     def last_thread(self):
-        ix = self.model().index(self.model().rowCount()-1, 0)
-        if self.model().checkIndex(ix):
-            self.setCurrentIndex(ix)
+        ix = self.tree.model().index(self.tree.model().rowCount()-1, 0)
+        if self.tree.model().checkIndex(ix):
+            self.tree.setCurrentIndex(ix)
+
+    def open_current_thread(self):
+        thread_id = self.tree.model().thread_id_at(self.tree.currentIndex())
+        if thread_id:
+            self.app.add_panel(thread.ThreadView(self.app, thread_id))
 

@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import QApplication, QTabWidget
 
 from . import search
 from . import style
-from . import thread
 
 class Dodo(QApplication):
     def __init__(self):
@@ -12,11 +11,14 @@ class Dodo(QApplication):
         self.tabs = QTabWidget()
         self.tabs.resize(1024, 768)
         inbox = search.SearchView(self, 'tag:inbox', keep_open=True)
-        self.tabs.addTab(inbox, 'inbox')
+        self.add_panel(inbox)
 
-        test = thread.ThreadView(self, '00000000000016a0')
-        self.tabs.addTab(test, 'test')
-
-        inbox.setFocus()
+        # inbox.setFocus()
         self.tabs.show()
+
+    def add_panel(self, panel, focus=True):
+        self.tabs.addTab(panel, panel.title())
+        if focus:
+            self.tabs.setCurrentWidget(panel)
+        panel.setFocus()
 

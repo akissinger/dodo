@@ -1,5 +1,11 @@
 from PyQt5.QtCore import Qt
 
+def chop_s(s):
+    if len(s) > 20:
+        return s[0:20] + '...'
+    else:
+        return s
+
 basic_keytab = {
   Qt.Key_Exclam: '!',
   Qt.Key_QuoteDbl: '"',
