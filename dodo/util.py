@@ -1,10 +1,29 @@
 from PyQt5.QtCore import Qt
+import re
 
 def chop_s(s):
     if len(s) > 20:
         return s[0:20] + '...'
     else:
         return s
+
+
+def hide_quoted(s):
+    """Remove quoted text from message and replace with number of lines cut."""
+    lines = s.splitlines()
+    quote = re.compile('^\\s*($|\\>)')
+    removed = 0
+    while len(lines) > 0:
+        if quote.match(lines[-1]):
+            lines.pop()
+            removed += 1
+        else:
+            break
+
+
+    return ('\n'.join(lines), removed)
+        
+
 
 basic_keytab = {
   Qt.Key_Exclam: '!',

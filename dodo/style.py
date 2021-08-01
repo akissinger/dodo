@@ -12,11 +12,11 @@ theme_nord = {
         'fg': '#d8dee8',
         'fg_bright': '#b48ead',
         'bg_alt': '#3b4252',
-        'button_bg': '#4c566a',
-        'button_fg': '#eceff4',
-        'link': '#81a1c1',
-        'highlight_bg': '#a3be8c',
-        'highlight_fg': '#2e3440',
+        'bg_button': '#4c566a',
+        'fg_button': '#eceff4',
+        'fg_link': '#81a1c1',
+        'bg_highlight': '#a3be8c',
+        'fg_highlight': '#2e3440',
         'fg_subject': '#d8dee8',
         'fg_subject_unread': '#b48ead',
         'fg_from': '#5e81ac',
@@ -39,10 +39,10 @@ def apply_style(app):
     palette.setColor(QPalette.ToolTipBase, QColor(theme['fg']))
     palette.setColor(QPalette.ToolTipText, QColor(theme['fg']))
     palette.setColor(QPalette.Text, QColor(theme['fg']))
-    palette.setColor(QPalette.Button, QColor(theme['button_bg']))
-    palette.setColor(QPalette.ButtonText, QColor(theme['button_fg']))
+    palette.setColor(QPalette.Button, QColor(theme['bg_button']))
+    palette.setColor(QPalette.ButtonText, QColor(theme['fg_button']))
     palette.setColor(QPalette.BrightText, QColor(theme['fg_bright']))
-    palette.setColor(QPalette.Link, QColor(theme['link']))
-    palette.setColor(QPalette.Highlight, QColor(theme['highlight_bg']))
-    palette.setColor(QPalette.HighlightedText, QColor(theme['highlight_fg']))
+    palette.setColor(QPalette.Link, QColor(theme['fg_link']))
+    palette.setColor(QPalette.Highlight, QColor(theme['bg_highlight']))
+    palette.setColor(QPalette.HighlightedText, QColor(theme['fg_highlight']))
     app.setPalette(palette)

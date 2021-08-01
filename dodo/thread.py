@@ -1,7 +1,8 @@
+# from PyQt5.QtGui import QColor, QPalette
 from PyQt5.QtWidgets import QWidget, QScrollArea, QVBoxLayout
 import subprocess
 import json
-# from html_sanitizer import Sanitizer
+from autolink import linkify
 from html2text import html2text
 import html
 
@@ -42,56 +43,47 @@ def flat_thread(d):
 
 
 class MessageBlock(QWidget):
-    def __init__(self, text, html_message, headers, parent=None):
+    def __init__(self, m, parent=None):
         super().__init__(parent)
-        self.text = text
-        self.html_message = html_message
-        self.headers = headers
-        self.header_html = ''
+        self.setStyleSheet('QWidget { background-color: %s }' % style.theme['bg_alt'])
 
-        self.display_header('From')
-        self.display_header('Subject')
-        self.display_header('Date')
+        # save headers
+        self.headers = m['headers']
+
+        # extract plain text and html from message body JSON, if it is there
+        tc = find_content(m['body'], 'text/plain')
+        hc = find_content(m['body'], 'text/html')
+        if len(tc) != 0: text = tc[0]
+        elif len(hc) != 0: text = html2text(hc[0])
+        else: text = ''
+        self.html_message = hc[0] if len(hc) != 0 else ''
+
+
+        # save a linkify'd copy of the full plaintext message and a version with the trailing quoted text clipped
+        self.full_text = linkify(html.escape(text))
+        short_text, removed = util.hide_quoted(text)
+        self.short_text = '<pre style="white-space: pre-wrap">' + linkify(html.escape(short_text)) + '</pre>'
+
+        if removed > 0:
+            self.short_text += '<a href="#">[+%d lines quoted text]</a>' % removed
+
+
+        # write out nicely formatted headers as linkify'd HTML
+        self.header_html = '<table>'
+        for name in ['From', 'To', 'Subject', 'Date']:
+            if name in self.headers:
+                self.header_html += '<tr><td><b style="color: %s">%s:&nbsp;</b></td><td>%s</td></tr>' % (
+                  style.theme['fg_bright'], name, linkify(html.escape(self.headers[name])))
+        self.header_html += '</table>'
 
         self.header_view = StackingTextView()
         self.text_view = StackingTextView()
 
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-        layout.addWidget(self.header_view)
-        layout.addWidget(self.text_view)
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(self.header_view)
+        self.layout().addWidget(self.text_view)
         self.header_view.setHtml(self.header_html)
-        self.text_view.setText(text)
-
-    def display_header(self, name):
-        if name in self.headers:
-            self.header_html += '<b style="color: %s">%s:</b> %s<br/>' % (style.theme['fg_bright'], name, html.escape(self.headers[name]))
-
-class MessageStack(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
-        self.messages = []
-
-    def add_message(self, m):
-        tc = find_content(m['body'], 'text/plain')
-        hc = find_content(m['body'], 'text/html')
-
-        if len(tc) != 0:
-            text = tc[0]
-        elif len(hc) != 0:
-            text = html2text(hc[0])
-        else:
-            text = ''
-
-        html_message = hc[0] if len(hc) != 0 else ''
-
-        headers = m['headers'] if 'headers' in m else {}
-
-        b = MessageBlock(text, html_message, headers)
-        self.messages.append(b)
-        self.layout.addWidget(b)
+        self.text_view.setHtml(self.short_text)
 
 
 class ThreadView(Panel):
@@ -99,7 +91,8 @@ class ThreadView(Panel):
         super().__init__(app, parent)
         self.set_keymap(keymap.thread_keymap)
         self.thread_id = thread_id
-        self.message_stack = MessageStack(self)
+        self.message_stack = QWidget(self)
+        self.message_stack.setLayout(QVBoxLayout())
         self.refresh()
 
         self.scroll = QScrollArea()
@@ -124,7 +117,9 @@ class ThreadView(Panel):
         for m in self.thread:
             if not self.subject and 'headers' in m and 'Subject' in m['headers']:
                 self.subject = m['headers']['Subject']
-            self.message_stack.add_message(m)
+
+            b = MessageBlock(m)
+            self.message_stack.layout().addWidget(b)
 
         if not self.subject:
             self.subject = '(no subject)'

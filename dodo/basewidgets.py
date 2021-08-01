@@ -15,7 +15,9 @@ class StackingTextView(QTextBrowser):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff);
 
     def sizeHint(self):
-        return self.document().size().toSize()
+        sz = self.document().size().toSize()
+        sz.setHeight(sz.height() + 5)
+        return sz
 
     def resizeEvent(self, e):
         self.updateGeometry()
