@@ -62,7 +62,7 @@ class MessageBlock(QWidget):
         # save a linkify'd copy of the full plaintext message and a version with the trailing quoted text clipped
         self.full_text = linkify(html.escape(text))
         short_text, removed = util.hide_quoted(text)
-        self.short_text = '<pre style="white-space: pre-wrap">' + linkify(html.escape(short_text)) + '</pre>'
+        self.short_text = '<pre style="white-space: pre-wrap">' + linkify(util.simple_escape(short_text)) + '</pre>'
 
         if removed > 0:
             self.short_text += '<a href="#">[+%d lines quoted text]</a>' % removed
@@ -73,7 +73,7 @@ class MessageBlock(QWidget):
         for name in ['From', 'To', 'Subject', 'Date']:
             if name in self.headers:
                 self.header_html += '<tr><td><b style="color: %s">%s:&nbsp;</b></td><td>%s</td></tr>' % (
-                  style.theme['fg_bright'], name, linkify(html.escape(self.headers[name])))
+                  style.theme['fg_bright'], name, linkify(util.simple_escape(self.headers[name])))
         self.header_html += '</table>'
 
         self.header_view = StackingTextView()

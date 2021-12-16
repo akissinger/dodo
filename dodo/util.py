@@ -1,6 +1,10 @@
 from PyQt5.QtCore import Qt
 import re
 
+def simple_escape(s):
+    s.replace('<', '&lt;').replace('>', '&gt;')
+    return s
+
 def chop_s(s):
     if len(s) > 20:
         return s[0:20] + '...'

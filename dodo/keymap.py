@@ -1,5 +1,9 @@
 global_keymap = {
   'q': lambda a: a.quit(),
+  'l': lambda a: a.next_panel(),
+  'h': lambda a: a.previous_panel(),
+  'x': lambda a: a.close_panel(),
+  'X': lambda a: [a.close_panel(i) for i in range(a.num_panels())],
 }
 
 search_keymap = {
