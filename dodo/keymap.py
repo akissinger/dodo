@@ -1,5 +1,5 @@
 global_keymap = {
-  'q': lambda a: a.quit(),
+  'Q': lambda a: a.quit(),
   'l': lambda a: a.next_panel(),
   'h': lambda a: a.previous_panel(),
   'x': lambda a: a.close_panel(),
