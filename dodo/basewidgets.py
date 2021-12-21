@@ -39,15 +39,19 @@ class Panel(QWidget):
         self._prefix_timer.setSingleShot(True)
         self._prefix_timer.setInterval(500)
         self._prefix_timer.timeout.connect(self.prefix_timeout)
-        for k in keymap.search_keymap:
-            for i in range(1,len(k)):
-                self._prefixes.add(k[0:-i])
 
     def title(self):
         return 'view'
 
     def set_keymap(self, mp):
         self.keymap = mp
+
+        # update prefix cache for current keymap
+        self._prefixes = set()
+        for m in [keymap.global_keymap, self.keymap]:
+            for k in m:
+                for i in range(1,len(k)):
+                    self._prefixes.add(k[0:-i])
 
     def prefix_timeout(self):
         # print("prefix fired: " + self._prefix)

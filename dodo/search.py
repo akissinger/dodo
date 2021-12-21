@@ -41,7 +41,7 @@ class SearchModel(QAbstractItemModel):
             elif col == 'tags':
                 return ' '.join(thread_d['tags'])
         elif role == Qt.FontRole:
-            font = QFont("Fira Code", 12)
+            font = QFont(style.search_font, style.search_font_size)
             if 'unread' in thread_d['tags']:
                 font.setBold(True)
             return font
@@ -98,6 +98,7 @@ class SearchView(Panel):
         self.tree.resizeColumnToContents(0)
         self.tree.setColumnWidth(1, 150)
         self.tree.setColumnWidth(2, 600)
+        self.tree.doubleClicked.connect(self.open_current_thread)
         if self.tree.model().rowCount() > 0:
             self.tree.setCurrentIndex(self.tree.model().index(0,0))
 

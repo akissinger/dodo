@@ -7,6 +7,12 @@ from PyQt5.QtGui import QPalette, QColor
 # frost =  ["#8fbcbb", "#88c0d0", "#81a1c1", "#5e81ac"]
 # aurora = ["#bf616a", "#d08770", "#ebcb8b", "#a3be8c", "#b48ead"]
 
+message_font = 'Fira Code'
+message_font_size = 14
+
+search_font = 'Fira Code'
+search_font_size = 14
+
 theme_nord = {
         'bg': '#2e3440',
         'fg': '#d8dee8',

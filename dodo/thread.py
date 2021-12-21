@@ -1,13 +1,14 @@
 # from PyQt5.QtGui import QColor, QPalette
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings
 
 import subprocess
 import json
-from autolink import linkify
-from html2text import html2text
 import html
+import bleach
+import html2text
 
 from . import style
 from . import util
@@ -44,56 +45,67 @@ def flat_thread(d):
     thread.sort(key=lambda m: m['timestamp'])
     return thread
 
+class ThreadModel(QAbstractItemModel):
+    def __init__(self, thread_id):
+        self.thread_id = thread_id
+        self.refresh()
+        super().__init__()
 
-# class MessageBlock(QWidget):
-#     def __init__(self, m, parent=None):
-#         super().__init__(parent)
-#         self.setStyleSheet('QWidget { background-color: %s }' % style.theme['bg_alt'])
-#
-#         # save headers
-#         self.headers = m['headers']
-#
-#         # extract plain text and html from message body JSON, if it is there
-#         tc = find_content(m['body'], 'text/plain')
-#         hc = find_content(m['body'], 'text/html')
-#         if len(tc) != 0: text = tc[0]
-#         elif len(hc) != 0: text = html2text(hc[0])
-#         else: text = ''
-#         self.html_message = hc[0] if len(hc) != 0 else ''
-#
-#
-#         # save a linkify'd copy of the full plaintext message and a version with the trailing quoted text clipped
-#         self.full_text = linkify(html.escape(text))
-#         short_text, removed = util.hide_quoted(text)
-#         self.short_text = '<pre style="white-space: pre-wrap">' + linkify(util.simple_escape(short_text)) + '</pre>'
-#
-#         if removed > 0:
-#             self.short_text += '<a href="#">[+%d lines quoted text]</a>' % removed
-#
-#
-#         # write out nicely formatted headers as linkify'd HTML
-#         self.header_html = '<table>'
-#         for name in ['From', 'To', 'Subject', 'Date']:
-#             if name in self.headers:
-#                 self.header_html += '<tr><td><b style="color: %s">%s:&nbsp;</b></td><td>%s</td></tr>' % (
-#                   style.theme['fg_bright'], name, linkify(util.simple_escape(self.headers[name])))
-#         self.header_html += '</table>'
-#
-#         self.header_view = StackingTextView()
-#         self.text_view = StackingTextView()
-#
-#         self.setLayout(QVBoxLayout())
-#         self.layout().addWidget(self.header_view)
-#         self.layout().addWidget(self.text_view)
-#         self.header_view.setHtml(self.header_html)
-#         self.text_view.setHtml(self.short_text)
+    def refresh(self):
+        r = subprocess.run(['notmuch', 'show', '--format=json', '--include-html', self.thread_id],
+                stdout=subprocess.PIPE)
+        self.json_str = r.stdout.decode('utf-8')
+        self.d = json.loads(self.json_str)
 
+        # store a flattened version of the thread
+        self.thread = flat_thread(self.d)
+
+    def data(self, index, role):
+        if index.row() >= len(self.thread):
+            return None
+
+        m = self.thread[index.row()]
+
+        if role == Qt.DisplayRole:
+            if 'headers' in m and 'From' in m["headers"]:
+                return m['headers']['From']
+            else:
+                return '(message)'
+        elif role == Qt.FontRole:
+            font = QFont(style.search_font, style.search_font_size)
+            if 'tags' in m and 'unread' in m['tags']:
+                font.setBold(True)
+            return font
+
+    def index(self, row, column, parent=QModelIndex()):
+        if not self.hasIndex(row, column, parent): return QModelIndex()
+        else: return self.createIndex(row, column, None)
+
+    def columnCount(self, index):
+        return 1
+
+    def rowCount(self, index=QModelIndex()):
+        if not index or not index.isValid(): return self.num_messages()
+        else: return 0
+
+    def parent(self, index):
+        return QModelIndex()
+
+    def message_at(self, row):
+        if row >= 0 and row < len(self.thread):
+            return self.thread[row]
+        else:
+            return None
+
+    def num_messages(self):
+        return len(self.thread)
 
 class ThreadView(Panel):
     def __init__(self, app, thread_id, parent=None):
         super().__init__(app, parent)
         self.set_keymap(keymap.thread_keymap)
-        self.thread_id = thread_id
+        self.model = ThreadModel(thread_id)
+
         self.subject = '(no subject)'
         self.current_message = -1
 
@@ -102,7 +114,11 @@ class ThreadView(Panel):
         info_area.setLayout(QHBoxLayout())
 
         self.thread_list = QListView()
-        self.thread_list.setModel(QStringListModel())
+        self.thread_list.setFocusPolicy(Qt.NoFocus)
+        self.thread_list.setModel(self.model)
+        self.thread_list.setFixedWidth(200)
+        self.thread_list.clicked.connect(lambda ix: self.show_message(ix.row()))
+
         self.message_info = QTextBrowser()
         info_area.layout().addWidget(self.thread_list)
         info_area.layout().addWidget(self.message_info)
@@ -114,39 +130,22 @@ class ThreadView(Panel):
         self.splitter.addWidget(self.message_view)
 
         self.layout().addWidget(self.splitter)
-
-        self.refresh()
+        self.show_message(0)
 
     def title(self):
         return util.chop_s(self.subject)
 
-    def refresh(self):
-        r = subprocess.run(['notmuch', 'show', '--format=json', '--include-html', self.thread_id],
-                stdout=subprocess.PIPE)
-        self.json_str = r.stdout.decode('utf-8')
-        self.d = json.loads(self.json_str)
 
-        # store a flattened version of the thread
-        self.thread = flat_thread(self.d)
-        print('thread of size: %d' % len(self.thread))
+    def show_message(self, i=-1):
+        if i != -1: self.current_message = i
+        print("message: %s" % self.current_message)
 
-        data = []
-        for m in self.thread:
-            if 'headers' in m and 'From' in m['headers']:
-                data.append(m['headers']['From'])
-            else:
-                data.append('message')
-        self.thread_list.model().setStringList(data)
+        if self.current_message >= 0 and self.current_message < self.model.num_messages():
+            ix = self.thread_list.model().index(self.current_message, 0)
+            if self.thread_list.model().checkIndex(ix):
+                self.thread_list.setCurrentIndex(ix)
 
-        if self.current_message == -1:
-            # TODO: should be set to first unread
-            self.current_message = 0
-
-        self.show_message()
-
-    def show_message(self):
-        if self.current_message >= 0 and self.current_message < len(self.thread):
-            m = self.thread[self.current_message]
+            m = self.model.message_at(self.current_message)
             if 'headers' in m and 'Subject' in m['headers']:
                 self.subject = m['headers']['Subject']
             else:
@@ -163,14 +162,46 @@ class ThreadView(Panel):
                 self.message_info.setHtml(header_html)
 
             if 'body' in m:
-                html = '<html><body style="font-family: mononoki nerd font">'
+                tc = find_content(m['body'], 'text/plain')
                 hc = find_content(m['body'], 'text/html')
+                text = None
+                html = None
 
-                if len(hc) != 0:
-                    html += hc[0]
-                else:
-                    tc = find_content(m['body'], 'text/plain')
-                    if len(tc) != 0:
-                        html += f'<pre style="white-space: pre-wrap; font-size: 14pt; font-family: mononoki nerd font">{tc[0]}</pre>'
-                self.message_view.setHtml(html)
+                if len(tc) != 0:
+                    text = tc[0]
+                elif len(hc) != 0:
+                    c = html2text.HTML2Text()
+                    c.ignore_emphasis = True
+                    c.ignore_links = True
+                    c.images_to_alt = True
+                    text = c.handle(hc[0])
+                    html = hc[0]
+
+                if text:
+                    self.message_view.setHtml("""<html>
+                    <head>
+                    <style type="text/css">
+                        body { background-color: %s; color: %s }
+                        a { color: %s }
+                    </style>
+                    </head>
+                    <body>
+                    <pre style="white-space: pre-wrap; font-size: %dpt; font-family: %s">%s</pre>
+                    </body>
+                    </html>
+                    """ % (
+                        style.theme["bg"],
+                        style.theme["fg"],
+                        style.theme["fg_bright"],
+                        style.message_font_size,
+                        style.message_font,
+                        text,
+                    ))
+
+
+    def next_message(self):
+        self.show_message(min(self.current_message + 1, self.model.num_messages() - 1))
+
+    def previous_message(self):
+        self.show_message(max(self.current_message - 1, 0))
 

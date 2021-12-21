@@ -1,9 +1,10 @@
 global_keymap = {
-  'Q': lambda a: a.quit(),
-  'l': lambda a: a.next_panel(),
-  'h': lambda a: a.previous_panel(),
-  'x': lambda a: a.close_panel(),
-  'X': lambda a: [a.close_panel(i) for i in range(a.num_panels())],
+  'Q':   lambda a: a.quit(),
+  'Z Z': lambda a: a.quit(),
+  'l':   lambda a: a.next_panel(),
+  'h':   lambda a: a.previous_panel(),
+  'x':   lambda a: a.close_panel(),
+  'X':   lambda a: [a.close_panel(i) for i in range(a.num_panels())],
 }
 
 search_keymap = {
@@ -16,4 +17,7 @@ search_keymap = {
   '<enter>': lambda s: s.open_current_thread(),
 }
 
-thread_keymap = {}
+thread_keymap = {
+  'J': lambda t: t.next_message(),
+  'K': lambda t: t.previous_message(),
+}
