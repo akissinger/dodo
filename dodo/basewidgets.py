@@ -61,6 +61,9 @@ class Panel(QWidget):
             keymap.global_keymap[self._prefix](self.app)
         self._prefix = ""
 
+    def refresh(self):
+        pass
+
     def keyPressEvent(self, e):
         k = util.key_string(e)
         if not k: return None

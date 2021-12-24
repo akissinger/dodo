@@ -1,9 +1,29 @@
 from PyQt5.QtCore import Qt
 import re
+from lxml.html.clean import Cleaner
+from html2text import HTML2Text
+
+def safe_h2h(s):
+    c = Cleaner()
+    # filter out javascript and embedded elements
+    c.javascript = True
+    c.script = True
+    c.embedded = True
+    c.frames = True
+    return c.clean_html(s)
+    
+def default_h2t(s):
+    c = HTML2Text()
+    c.ignore_emphasis = True
+    c.ignore_links = True
+    c.images_to_alt = True
+    return c.handle(s)
+
+html2html = lambda s : s
+html2text = default_h2t
 
 def simple_escape(s):
-    s.replace('<', '&lt;').replace('>', '&gt;')
-    return s
+    return s.replace('<', '&lt;').replace('>', '&gt;')
 
 def chop_s(s):
     if len(s) > 20:

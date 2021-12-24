@@ -4,7 +4,7 @@ from PyQt5.QtGui import QFont, QColor
 import subprocess
 import json
 
-from . import style
+from . import settings
 from . import keymap
 from . import thread
 from .basewidgets import Panel
@@ -13,15 +13,20 @@ columns = ['date', 'from', 'subject', 'tags']
 
 class SearchModel(QAbstractItemModel):
     def __init__(self, q):
+        super().__init__()
         self.q = q
         self.refresh()
-        super().__init__()
 
     def refresh(self):
+        self.beginResetModel()
         r = subprocess.run(['notmuch', 'search', '--format=json', self.q],
                 stdout=subprocess.PIPE)
         self.json_str = r.stdout.decode('utf-8')
         self.d = json.loads(self.json_str)
+        self.endResetModel()
+
+    def num_threads(self):
+        return len(self.d)
 
     def data(self, index, role):
         global columns
@@ -39,21 +44,21 @@ class SearchModel(QAbstractItemModel):
             elif col == 'subject':
                 return thread_d['subject']
             elif col == 'tags':
-                return ' '.join(thread_d['tags'])
+                return ' '.join([f'[{t}]' for t in thread_d['tags']])
         elif role == Qt.FontRole:
-            font = QFont(style.search_font, style.search_font_size)
+            font = QFont(settings.search_font, settings.search_font_size)
             if 'unread' in thread_d['tags']:
                 font.setBold(True)
             return font
         elif role == Qt.ForegroundRole:
             color = 'fg_' + col
             unread_color = 'fg_' + col + '_unread'
-            if 'unread' in thread_d['tags'] and unread_color in style.theme:
-                return QColor(style.theme[unread_color])
-            elif color in style.theme:
-                return QColor(style.theme[color])
+            if 'unread' in thread_d['tags'] and unread_color in settings.theme:
+                return QColor(settings.theme[unread_color])
+            elif color in settings.theme:
+                return QColor(settings.theme[color])
             else:
-                return QColor(style.theme['fg'])
+                return QColor(settings.theme['fg'])
 
     def headerData(self, section, orientation, role):
         global columns
@@ -77,10 +82,17 @@ class SearchModel(QAbstractItemModel):
     def parent(self, index):
         return QModelIndex()
 
-    def thread_id_at(self, index):
+    def thread_json(self, index):
         row = index.row()
         if row >= 0 and row < len(self.d):
-            return self.d[row]['thread']
+            return self.d[row]
+        else:
+            return None
+
+    def thread_id(self, index):
+        thread = self.thread_json(index)
+        if thread and 'thread' in thread:
+            return thread['thread']
         else:
             return None
 
@@ -92,15 +104,26 @@ class SearchView(Panel):
         self.q = q
         self.tree = QTreeView()
         self.tree.setFocusPolicy(Qt.NoFocus)
+        self.model = SearchModel(q)
+        self.tree.setModel(self.model)
         self.layout().addWidget(self.tree)
-        self.tree.setModel(SearchModel(q))
-        # TODO fix for custom cols
+        # TODO fix for custom columns
         self.tree.resizeColumnToContents(0)
         self.tree.setColumnWidth(1, 150)
-        self.tree.setColumnWidth(2, 600)
+        self.tree.setColumnWidth(2, 800)
         self.tree.doubleClicked.connect(self.open_current_thread)
         if self.tree.model().rowCount() > 0:
             self.tree.setCurrentIndex(self.tree.model().index(0,0))
+
+    def refresh(self):
+        "Refresh the search listing and restore the selection, if possible."
+        current = self.tree.currentIndex()
+        self.model.refresh()
+        
+        if current.row() >= self.model.num_threads():
+            self.last_thread()
+        else:
+            self.tree.setCurrentIndex(current)
 
     def title(self):
         return self.q
@@ -116,17 +139,35 @@ class SearchView(Panel):
             self.tree.setCurrentIndex(self.tree.model().index(row, 0))
 
     def first_thread(self):
-        ix = self.tree.model().index(0, 0)
-        if self.tree.model().checkIndex(ix):
+        ix = self.model.index(0, 0)
+        if self.model.checkIndex(ix):
             self.tree.setCurrentIndex(ix)
 
     def last_thread(self):
-        ix = self.tree.model().index(self.tree.model().rowCount()-1, 0)
-        if self.tree.model().checkIndex(ix):
+        ix = self.model.index(self.tree.model().rowCount()-1, 0)
+        if self.model.checkIndex(ix):
             self.tree.setCurrentIndex(ix)
 
     def open_current_thread(self):
-        thread_id = self.tree.model().thread_id_at(self.tree.currentIndex())
+        thread_id = self.model.thread_id(self.tree.currentIndex())
         if thread_id:
-            self.app.add_panel(thread.ThreadView(self.app, thread_id))
+            self.app.open_thread(thread_id)
+    
+    def toggle_thread_tag(self, tag):
+        thread = self.model.thread_json(self.tree.currentIndex())
+        if thread:
+            if tag in thread['tags']:
+                tag_expr = '-' + tag
+            else:
+                tag_expr = '+' + tag
+            self.tag_thread(tag_expr)
+
+
+    def tag_thread(self, tag_expr):
+        thread_id = self.model.thread_id(self.tree.currentIndex())
+        if thread_id:
+            subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'thread:' + thread_id])
+            self.refresh()
+
+
 
