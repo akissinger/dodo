@@ -7,7 +7,7 @@ import json
 from . import settings
 from . import keymap
 from . import thread
-from .basewidgets import Panel
+from .panel import Panel
 
 columns = ['date', 'from', 'subject', 'tags']
 

@@ -6,23 +6,6 @@ from PyQt5.QtWidgets import QWidget, QTextBrowser, QSizePolicy, QVBoxLayout
 from . import keymap
 from . import util
 
-class StackingTextView(QTextBrowser):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFont(QFont('Fira Code', 12))
-        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum);
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff);
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff);
-
-    def sizeHint(self):
-        sz = self.document().size().toSize()
-        sz.setHeight(sz.height() + 5)
-        return sz
-
-    def resizeEvent(self, e):
-        self.updateGeometry()
-        super().resizeEvent(e)
-
 class Panel(QWidget):
     def __init__(self, app, keep_open=False, parent=None):
         super().__init__(parent)

@@ -12,7 +12,7 @@ import html2text
 from . import settings
 from . import util
 from . import keymap
-from .basewidgets import StackingTextView, Panel
+from .panel import Panel
 
 def find_content(m, ty):
     """Recursively search a message body for content of type `ty` and return in

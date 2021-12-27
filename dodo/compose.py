@@ -10,7 +10,7 @@ from subprocess import PIPE, Popen, TimeoutExpired
 import tempfile
 import os
 
-from .basewidgets import Panel
+from .panel import Panel
 from . import keymap
 from . import settings
 from . import util
