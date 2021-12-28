@@ -1,5 +1,8 @@
 from PyQt5.QtCore import Qt
 import re
+import os
+import tempfile
+import subprocess
 from lxml.html.clean import Cleaner
 from html2text import HTML2Text
 
@@ -19,8 +22,16 @@ def default_h2t(s):
     c.images_to_alt = True
     return c.handle(s)
 
+def w3m_dump(s):
+    (fd, file) = tempfile.mkstemp(suffix='.html') 
+    with os.fdopen(fd, 'w') as f:
+        f.write(s)
+    p = subprocess.run(['w3m', '-dump', file], stdout=subprocess.PIPE, encoding='utf8')
+    return p.stdout
+
+
 html2html = lambda s : s
-html2text = default_h2t
+html2text = w3m_dump
 
 def simple_escape(s):
     return s.replace('<', '&lt;').replace('>', '&gt;')

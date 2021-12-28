@@ -44,7 +44,7 @@ class SearchModel(QAbstractItemModel):
             elif col == 'subject':
                 return thread_d['subject']
             elif col == 'tags':
-                return ' '.join([f'[{t}]' for t in thread_d['tags']])
+                return ' '.join([settings.tag_icons[t] if t in settings.tag_icons else f'[{t}]' for t in thread_d['tags']])
         elif role == Qt.FontRole:
             font = QFont(settings.search_font, settings.search_font_size)
             if 'unread' in thread_d['tags']:
@@ -110,7 +110,7 @@ class SearchView(Panel):
         # TODO fix for custom columns
         self.tree.resizeColumnToContents(0)
         self.tree.setColumnWidth(1, 150)
-        self.tree.setColumnWidth(2, 800)
+        self.tree.setColumnWidth(2, 900)
         self.tree.doubleClicked.connect(self.open_current_thread)
         if self.tree.model().rowCount() > 0:
             self.tree.setCurrentIndex(self.tree.model().index(0,0))

@@ -22,18 +22,20 @@ search_keymap = {
   'a':       lambda p: p.tag_thread('-inbox -unread'),
   'u':       lambda p: p.toggle_thread_tag('unread'),
   'f':       lambda p: p.toggle_thread_tag('flagged'),
-  'r':       lambda p: p.refresh(),
 }
 
 thread_keymap = {
   'J':       lambda p: p.next_message(),
   'K':       lambda p: p.previous_message(),
+  '<space>': lambda p: p.scroll_message(20),
   'j':       lambda p: p.scroll_message(1),
   'k':       lambda p: p.scroll_message(-1),
   'C-d':     lambda p: p.scroll_message(20),
   'C-u':     lambda p: p.scroll_message(-20),
   'u':       lambda p: p.toggle_message_tag('unread'),
   'f':       lambda p: p.toggle_message_tag('flagged'),
+  'H':       lambda p: p.toggle_html(),
+  'r':       lambda p: p.reply(),
 }
 
 compose_keymap = {

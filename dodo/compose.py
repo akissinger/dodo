@@ -9,6 +9,7 @@ import subprocess
 from subprocess import PIPE, Popen, TimeoutExpired
 import tempfile
 import os
+import re
 
 from .panel import Panel
 from . import keymap
@@ -103,7 +104,24 @@ class ComposeView(Panel):
         self.message_view = QWebEngineView()
         self.layout().addWidget(self.message_view)
         self.status = f'<i style="color:{settings.theme["fg"]}">draft</i>'
-        self.message_string = f'From: {settings.email_address}\nTo: \nSubject: \n\n\n'
+
+        to = ''
+        subject = ''
+        if reply_to:
+            if 'Subject' in reply_to['headers']:
+                subject = reply_to['headers']['Subject']
+                if subject[0:3].upper() != 'RE:':
+                    subject = 'RE: ' + subject
+            if 'From' in reply_to['headers']:
+                to = reply_to['headers']['From']
+
+        self.message_string = f'From: {settings.email_address}\nTo: {to}\nSubject: {subject}\n'
+
+        if reply_to and 'id' in reply_to:
+            self.message_string += f'In-Reply-To: <{reply_to["id"]}>\n'
+
+        self.message_string += '\n\n'
+
         self.editor_thread = None
         self.sendmail_thread = None
         self.reply_to = reply_to
@@ -116,7 +134,7 @@ class ComposeView(Panel):
     def refresh(self):
         self.message_view.setHtml(f"""<html>
         <style type="text/css">
-        {settings.message_css}
+        {settings.message_css.format(**settings.theme)}
         </style>
         <body>
         <p>{self.status}</p>

@@ -59,7 +59,7 @@ solarized_dark = {
 }
 
 solarized_light = {
-  'bg': solarized_p['base2'],
+  'bg': solarized_p['base3'],
   'fg': solarized_p['base01'],
   'fg_bright': solarized_p['violet'],
   'fg_good': solarized_p['green'],
@@ -68,10 +68,10 @@ solarized_light = {
   'bg_button': solarized_p['base3'],
   'fg_button': solarized_p['base1'],
   'fg_link': solarized_p['violet'],
-  'bg_highlight': solarized_p['yellow'],
-  'fg_highlight': solarized_p['base03'],
+  'bg_highlight': solarized_p['base02'],
+  'fg_highlight': solarized_p['base1'],
   'fg_subject': solarized_p['base0'],
-  'fg_subject_unread': solarized_p['orange'],
+  'fg_subject_unread': solarized_p['base02'],
   'fg_from': solarized_p['blue'],
   'fg_date': solarized_p['cyan'],
   'fg_tags': solarized_p['violet'],

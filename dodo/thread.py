@@ -59,8 +59,8 @@ class ThreadModel(QAbstractItemModel):
 
     def refresh(self):
         r = subprocess.run(['notmuch', 'show', '--format=json', '--include-html', self.thread_id],
-                stdout=subprocess.PIPE)
-        self.json_str = r.stdout.decode('utf-8')
+                stdout=subprocess.PIPE, encoding='utf8')
+        self.json_str = r.stdout
         self.d = json.loads(self.json_str)
         self.beginResetModel()
         self.thread = flat_thread(self.d)
@@ -121,10 +121,11 @@ class ThreadModel(QAbstractItemModel):
 class ThreadView(Panel):
     def __init__(self, app, thread_id, parent=None):
         super().__init__(app, parent)
-        settings = QSettings("dodo", "dodo")
+        window_settings = QSettings("dodo", "dodo")
         self.set_keymap(keymap.thread_keymap)
         self.model = ThreadModel(thread_id)
         self.thread_id = thread_id
+        self.html_mode = settings.default_to_html
 
         self.subject = '(no subject)'
         self.current_message = -1
@@ -151,9 +152,9 @@ class ThreadView(Panel):
         self.splitter.addWidget(self.message_view)
 
         self.layout().addWidget(self.splitter)
-        state = settings.value("thread_splitter_state")
+        state = window_settings.value("thread_splitter_state")
         self.splitter.splitterMoved.connect(
-                lambda x: settings.setValue("thread_splitter_state", self.splitter.saveState()))
+                lambda x: window_settings.setValue("thread_splitter_state", self.splitter.saveState()))
         if state: self.splitter.restoreState(state)
 
         self.show_message(self.model.default_message())
@@ -213,14 +214,14 @@ class ThreadView(Panel):
                     html = util.html2html(hc[0])
                     if not text: text = util.html2text(hc[0])
 
-                if html:
+                if html and self.html_mode:
                     self.message_view.setHtml(html)
                 elif text:
                     self.message_view.setHtml(f"""
                     <html>
                     <head>
                     <style type="text/css">
-                    {settings.message_css}
+                    {settings.message_css.format(**settings.theme)}
                     </style>
                     </head>
                     <body>
@@ -254,7 +255,11 @@ class ThreadView(Panel):
                     stdout=subprocess.PIPE)
             self.refresh()
 
+    def toggle_html(self):
+        self.html_mode = not self.html_mode
+        self.show_message()
 
-
+    def reply(self):
+        self.app.compose(reply_to=self.model.message_at(self.current_message))
 
 
