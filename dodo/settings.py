@@ -3,9 +3,10 @@ from . import themes
 # functional
 email_address = ''
 sent_dir = ''
-editor_command = ['xterm', 'vim']
+editor_command = ['xterm', '-e', 'vim']
 send_mail_command = ['msmtp', '-t']
 sync_mail_command = ['offlineimap']
+sync_mail_interval = 120 # seconds
 default_to_html = False
 
 # visual
@@ -19,6 +20,7 @@ tag_icons = {
   'sent': '>',
   'replied': '',
   'flagged': '',
+  'marked': '',
 }
 
 # css used in view and compose window. Colour names in curly braces

@@ -214,8 +214,20 @@ class ThreadView(Panel):
     def previous_message(self):
         self.show_message(max(self.current_message - 1, 0))
 
-    def scroll_message(self, lines):
-        self.message_view.page().runJavaScript(f'window.scrollBy(0, {lines * 20})', QWebEngineScript.ApplicationWorld)
+    def scroll_message(self, lines=None, pages=None, pos=None):
+        if pos == 'top':
+            self.message_view.page().runJavaScript(f'window.scrollTo(0, 0)',
+                    QWebEngineScript.ApplicationWorld)
+        elif pos == 'bottom':
+            self.message_view.page().runJavaScript(f'window.scrollTo(0, document.body.scrollHeight)',
+                    QWebEngineScript.ApplicationWorld)
+        elif lines is not None:
+            self.message_view.page().runJavaScript(f'window.scrollBy(0, {lines} * 20)',
+                    QWebEngineScript.ApplicationWorld)
+        elif pages is not None:
+            self.message_view.page().runJavaScript(f'window.scrollBy(0, {pages} * 0.9 * window.innerHeight)',
+                    QWebEngineScript.ApplicationWorld)
+
 
     def toggle_message_tag(self, tag):
         m = self.model.message_at(self.current_message)

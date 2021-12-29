@@ -2,6 +2,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 import sys
+import subprocess
 
 from . import search
 from . import thread
@@ -10,43 +11,20 @@ from . import settings
 from . import themes
 from . import util
 from . import keymap
+from . import commandbar
 
-class CommandBar(QLineEdit):
-    def __init__(self, app):
-        super().__init__()
-        self.app = app
-        self.mode = ''
+class SyncMailThread(QThread):
+    done = pyqtSignal()
 
-    def open(self, mode):
-        self.mode = mode
-        self.app.command_label.setText(mode)
-        self.app.command_area.setVisible(True)
-        self.setFocus()
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
-    def close(self):
-        self.setText('')
-        self.app.command_area.setVisible(False)
-        w = self.app.tabs.currentWidget()
-        if w: w.setFocus()
-
-    def accept(self):
-        if self.mode == 'search':
-            self.app.search(self.text())
-        elif self.mode == 'tag':
-            w = self.app.tabs.currentWidget()
-            if w:
-                if isinstance(w, search.SearchView): w.tag_thread(self.text())
-                elif isinstance(w, thread.ThreadView): w.tag_message(self.text())
-                w.refresh()
-
-        self.close()
-
-    def keyPressEvent(self, e):
-        k = util.key_string(e)
-        if k in keymap.command_bar_keymap:
-            keymap.command_bar_keymap[k](self)
-        else:
-            super().keyPressEvent(e)
+    def run(self):
+        try:
+            subprocess.run(settings.sync_mail_command, stdout=subprocess.PIPE)
+            subprocess.run(['notmuch', 'new'], stdout=subprocess.PIPE)
+        finally:
+            self.done.emit()
 
 class Dodo(QApplication):
     def __init__(self):
@@ -94,7 +72,7 @@ class Dodo(QApplication):
         self.main_window.show()
 
         self.command_label = QLabel("search")
-        self.command_bar = CommandBar(self)
+        self.command_bar = commandbar.CommandBar(self)
         self.command_bar.setFocusPolicy(Qt.NoFocus)
 
         self.command_area = QWidget()
@@ -107,6 +85,12 @@ class Dodo(QApplication):
         self.main_window.layout().addWidget(self.command_area)
 
         self.command_area.setVisible(False)
+
+        # set timer to sync email periodically
+        if settings.sync_mail_interval != -1:
+            timer = QTimer(self)
+            timer.timeout.connect(self.sync_mail)
+            timer.start(settings.sync_mail_interval * 1000)
 
         # open inbox and make un-closeable
         self.search('tag:inbox', keep_open=True)
@@ -157,6 +141,26 @@ class Dodo(QApplication):
     def compose(self, reply_to=None):
         p = compose.ComposeView(self, reply_to=reply_to)
         self.add_panel(p)
+
+    def sync_mail(self, quiet=True):
+        t = SyncMailThread(parent=self)
+
+        def done():
+            self.invalidate_panels()
+            w = self.tabs.currentWidget()
+            if w: w.refresh()
+            if not quiet:
+                title = self.main_window.windowTitle()
+                self.main_window.setWindowTitle(title.replace(' [syncing]', ''))
+            t.deleteLater()
+
+        if not quiet:
+            title = self.main_window.windowTitle()
+            self.main_window.setWindowTitle(title + ' [syncing]')
+
+        t.done.connect(done)
+        t.start()
+
 
     def num_panels(self):
         return self.tabs.count()
