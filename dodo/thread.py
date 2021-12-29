@@ -14,23 +14,6 @@ from . import util
 from . import keymap
 from .panel import Panel
 
-def find_content(m, ty):
-    """Recursively search a message body for content of type `ty` and return in
-    depth-first order."""
-
-    content = []
-
-    def dfs(x):
-        if isinstance(x, list):
-            for y in x: dfs(y)
-        elif isinstance(x, dict) and 'content-type' in x and 'content' in x:
-            if x['content-type'] == ty:
-                content.append(x['content'])
-            elif isinstance(x['content'], list):
-                for y in x['content']: dfs(y)
-
-    dfs(m)
-    return content
 
 def flat_thread(d):
     "Return the thread as a flattened list of messages, sorted by date."
@@ -178,7 +161,7 @@ class ThreadView(Panel):
 
         if 'headers' in m:
             header_html = ''
-            header_html += f'<table style="background-color: {settings.theme["bg"]}; color: {settings.theme["fg"]}; width:100%">'
+            header_html += f'<table style="background-color: {settings.theme["bg"]}; color: {settings.theme["fg"]}; font-family: Fira Code; font-size: 14pt; width:100%">'
             for name in ['From', 'To', 'Subject', 'Date']:
                 if name in m['headers']:
                     header_html += f"""<tr>
@@ -186,12 +169,15 @@ class ThreadView(Panel):
                       <td>{util.simple_escape(m["headers"][name])}</td>
                     </tr>"""
             if 'tags' in m:
+                tags = ' '.join([settings.tag_icons[t] if t in settings.tag_icons else f'[{t}]' for t in m['tags']])
                 header_html += f"""<tr>
                   <td><b style="color: {settings.theme["fg_bright"]}">Tags:&nbsp;</b></td>
-                  <td><span style="color: {settings.theme["fg_tags"]}">{' '.join(['[' + t + ']' for t in m["tags"]])}</span></td>
+                  <td><span style="color: {settings.theme["fg_tags"]}">{tags}</span></td>
                 </tr>"""
             header_html += '</table>'
             self.message_info.setHtml(header_html)
+
+        super().refresh()
 
     def show_message(self, i=-1):
         if i != -1: self.current_message = i
@@ -199,24 +185,16 @@ class ThreadView(Panel):
         if self.current_message >= 0 and self.current_message < self.model.num_messages():
             self.refresh()
             m = self.model.message_at(self.current_message)
+
             if 'unread' in m['tags']:
                 self.tag_message('-unread')
 
-            if 'body' in m:
-                tc = find_content(m['body'], 'text/plain')
-                hc = find_content(m['body'], 'text/html')
-                text = None
-                html = None
-
-                if len(tc) != 0: text = tc[0]
-
-                if len(hc) != 0:
-                    html = util.html2html(hc[0])
-                    if not text: text = util.html2text(hc[0])
-
-                if html and self.html_mode:
-                    self.message_view.setHtml(html)
-                elif text:
+            if self.html_mode:
+                html = util.body_html(m)
+                if html: self.message_view.setHtml(html)
+            else:
+                text = util.body_text(m)
+                if text:
                     self.message_view.setHtml(f"""
                     <html>
                     <head>
@@ -251,8 +229,11 @@ class ThreadView(Panel):
     def tag_message(self, tag_expr):
         m = self.model.message_at(self.current_message)
         if m:
+            if not ('+' in tag_expr or '-' in tag_expr):
+                tag_expr = '+' + tag_expr
             r = subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'id:' + m['id']],
                     stdout=subprocess.PIPE)
+            self.app.invalidate_panels()
             self.refresh()
 
     def toggle_html(self):

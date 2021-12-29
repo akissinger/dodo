@@ -35,6 +35,14 @@ body {{
   font-family: DejaVu Sans;
 }}
 
+::-webkit-scrollbar {{
+  background: {bg};
+}}
+
+::-webkit-scrollbar-thumb {{
+  background: {bg_button};
+}}
+
 a {{
   color: {fg_bright};
 }}

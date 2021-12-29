@@ -87,7 +87,11 @@ class SendmailThread(QThread):
                 m = mailbox.MaildirMessage(str(eml))
                 m.set_flags('S')
                 mailbox.Maildir(settings.sent_dir).add(m)
+
+                if self.panel.reply_to:
+                    subprocess.run(['notmuch', 'tag', '+replied', '--', 'id:' + self.panel.reply_to['id']])
                 subprocess.run(['notmuch', 'new'])
+                self.panel.app.invalidate_panels()
                 self.panel.status = f'<i style="color:{settings.theme["fg_good"]}">sent</i>'
             else:
                 self.panel.status = f'<i style="color:{settings.theme["fg_bad"]}">error</i>'
@@ -102,6 +106,7 @@ class ComposeView(Panel):
         super().__init__(app, parent)
         self.set_keymap(keymap.compose_keymap)
         self.message_view = QWebEngineView()
+        self.message_view.setZoomFactor(1.2)
         self.layout().addWidget(self.message_view)
         self.status = f'<i style="color:{settings.theme["fg"]}">draft</i>'
 
@@ -122,6 +127,9 @@ class ComposeView(Panel):
 
         self.message_string += '\n\n'
 
+        if reply_to:
+            self.message_string += '\n' + util.quote_body_text(reply_to)
+
         self.editor_thread = None
         self.sendmail_thread = None
         self.reply_to = reply_to
@@ -140,6 +148,8 @@ class ComposeView(Panel):
         <p>{self.status}</p>
         <pre style="white-space: pre-wrap">{util.simple_escape(self.message_string)}</pre>
         </body></html>""")
+
+        super().refresh()
 
     def edit_done(self):
         self.editor_thread = None

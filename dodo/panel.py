@@ -14,6 +14,7 @@ class Panel(QWidget):
         self.keymap = None
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
+        self.dirty = True
 
         # set up timer and prefix cache for handling keychords
         self._prefix = ""
@@ -45,7 +46,7 @@ class Panel(QWidget):
         self._prefix = ""
 
     def refresh(self):
-        pass
+        self.dirty = False
 
     def keyPressEvent(self, e):
         k = util.key_string(e)

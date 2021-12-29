@@ -125,6 +125,8 @@ class SearchView(Panel):
         else:
             self.tree.setCurrentIndex(current)
 
+        super().refresh()
+
     def title(self):
         return self.q
 
@@ -151,7 +153,7 @@ class SearchView(Panel):
     def open_current_thread(self):
         thread_id = self.model.thread_id(self.tree.currentIndex())
         if thread_id:
-            self.app.open_thread(thread_id)
+            self.app.thread(thread_id)
     
     def toggle_thread_tag(self, tag):
         thread = self.model.thread_json(self.tree.currentIndex())
@@ -165,8 +167,12 @@ class SearchView(Panel):
 
     def tag_thread(self, tag_expr):
         thread_id = self.model.thread_id(self.tree.currentIndex())
+        if not ('+' in tag_expr or '-' in tag_expr):
+            tag_expr = '+' + tag_expr
+        
         if thread_id:
             subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'thread:' + thread_id])
+            self.app.invalidate_panels()
             self.refresh()
 
 

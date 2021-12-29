@@ -3,35 +3,32 @@ import re
 import os
 import tempfile
 import subprocess
-from lxml.html.clean import Cleaner
-from html2text import HTML2Text
 
-def safe_h2h(s):
+def clean_html2html(s):
+    from lxml.html.clean import Cleaner
     c = Cleaner()
-    # filter out javascript and embedded elements
-    c.javascript = True
-    c.script = True
-    c.embedded = True
-    c.frames = True
     return c.clean_html(s)
     
-def default_h2t(s):
+def python_html2text(s):
+    from html2text import HTML2Text
     c = HTML2Text()
     c.ignore_emphasis = True
     c.ignore_links = True
     c.images_to_alt = True
     return c.handle(s)
 
-def w3m_dump(s):
+def w3m_html2text(s):
     (fd, file) = tempfile.mkstemp(suffix='.html') 
     with os.fdopen(fd, 'w') as f:
         f.write(s)
-    p = subprocess.run(['w3m', '-dump', file], stdout=subprocess.PIPE, encoding='utf8')
+    p = subprocess.run(['w3m', '-dump', file],
+            stdout=subprocess.PIPE, encoding='utf8')
+    os.remove(file)
     return p.stdout
 
 
 html2html = lambda s : s
-html2text = w3m_dump
+html2text = w3m_html2text
 
 def simple_escape(s):
     return s.replace('<', '&lt;').replace('>', '&gt;')
@@ -42,23 +39,58 @@ def chop_s(s):
     else:
         return s
 
+def find_content(m, ty):
+    """Recursively search a message body for content of type `ty` and return in
+    depth-first order."""
 
-def hide_quoted(s):
-    """Remove quoted text from message and replace with number of lines cut."""
-    lines = s.splitlines()
-    quote = re.compile('^\\s*($|\\>)')
-    removed = 0
-    while len(lines) > 0:
-        if quote.match(lines[-1]):
-            lines.pop()
-            removed += 1
-        else:
-            break
+    content = []
 
+    def dfs(x):
+        if isinstance(x, list):
+            for y in x: dfs(y)
+        elif isinstance(x, dict) and 'content-type' in x and 'content' in x:
+            if x['content-type'] == ty:
+                content.append(x['content'])
+            elif isinstance(x['content'], list):
+                for y in x['content']: dfs(y)
 
-    return ('\n'.join(lines), removed)
-        
+    dfs(m)
+    return content
 
+def body_text(m):
+    global html2text
+    tc = find_content(m['body'], 'text/plain')
+    if len(tc) != 0:
+        return tc[0]
+    else:
+        hc = find_content(m['body'], 'text/html')
+        if len(hc) != 0:
+            return html2text(hc[0])
+    return ''
+
+def body_html(m):
+    global html2html
+    hc = find_content(m['body'], 'text/html')
+    if len(hc) != 0: return hc[0]
+    else: return ''
+
+def quote_body_text(m):
+    text = body_text(m)
+    if not text: return ''
+    return ''.join([f'> {ln}\n' for ln in text.splitlines()])
+
+# def hide_quoted(s):
+#     """Remove quoted text from message and replace with number of lines cut."""
+#     lines = s.splitlines()
+#     quote = re.compile('^\\s*($|\\>)')
+#     removed = 0
+#     while len(lines) > 0:
+#         if quote.match(lines[-1]):
+#             lines.pop()
+#             removed += 1
+#         else:
+#             break
+#     return ('\n'.join(lines), removed)
 
 basic_keytab = {
   Qt.Key_Exclam: '!',

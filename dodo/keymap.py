@@ -9,6 +9,8 @@ global_keymap = {
   'I':       lambda a: a.search('tag:inbox'),
   'U':       lambda a: a.search('tag:unread'),
   'F':       lambda a: a.search('tag:flagged'),
+  '/':       lambda a: a.command_bar.open('search'),
+  't':       lambda a: a.command_bar.open('tag'),
 }
 
 search_keymap = {
@@ -41,4 +43,9 @@ thread_keymap = {
 compose_keymap = {
   '<enter>': lambda p: p.edit(),
   'S':       lambda p: p.send(),
+}
+
+command_bar_keymap = {
+  '<enter>':  lambda b: b.accept(),
+  '<escape>': lambda b: b.close(),
 }
