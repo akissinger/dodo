@@ -43,7 +43,8 @@ thread_keymap = {
   'u':       lambda p: p.toggle_message_tag('unread'),
   'f':       lambda p: p.toggle_message_tag('flagged'),
   'H':       lambda p: p.toggle_html(),
-  'r':       lambda p: p.reply(),
+  'r':       lambda p: p.reply(to_all=True),
+  'R':       lambda p: p.reply(to_all=False),
 }
 
 compose_keymap = {

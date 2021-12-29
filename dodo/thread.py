@@ -162,7 +162,7 @@ class ThreadView(Panel):
         if 'headers' in m:
             header_html = ''
             header_html += f'<table style="background-color: {settings.theme["bg"]}; color: {settings.theme["fg"]}; font-family: Fira Code; font-size: 14pt; width:100%">'
-            for name in ['From', 'To', 'Subject', 'Date']:
+            for name in ['From', 'To', 'Cc', 'Subject', 'Date']:
                 if name in m['headers']:
                     header_html += f"""<tr>
                       <td><b style="color: {settings.theme["fg_bright"]}">{name}:&nbsp;</b></td>
@@ -252,7 +252,7 @@ class ThreadView(Panel):
         self.html_mode = not self.html_mode
         self.show_message()
 
-    def reply(self):
-        self.app.compose(reply_to=self.model.message_at(self.current_message))
+    def reply(self, to_all=True):
+        self.app.compose(reply_to=self.model.message_at(self.current_message), reply_to_all=to_all)
 
 

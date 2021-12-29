@@ -6,7 +6,7 @@ sent_dir = ''
 editor_command = ['xterm', '-e', 'vim']
 send_mail_command = ['msmtp', '-t']
 sync_mail_command = ['offlineimap']
-sync_mail_interval = 120 # seconds
+sync_mail_interval = 300 # seconds
 default_to_html = False
 
 # visual

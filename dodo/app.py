@@ -138,8 +138,8 @@ class Dodo(QApplication):
         p = thread.ThreadView(self, thread_id)
         self.add_panel(p)
 
-    def compose(self, reply_to=None):
-        p = compose.ComposeView(self, reply_to=reply_to)
+    def compose(self, reply_to=None, reply_to_all=True):
+        p = compose.ComposeView(self, reply_to=reply_to, reply_to_all=reply_to_all)
         self.add_panel(p)
 
     def sync_mail(self, quiet=True):

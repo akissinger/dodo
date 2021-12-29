@@ -102,7 +102,7 @@ class SendmailThread(QThread):
 
 
 class ComposeView(Panel):
-    def __init__(self, app, reply_to=None, parent=None):
+    def __init__(self, app, reply_to=None, reply_to_all=True, parent=None):
         super().__init__(app, parent)
         self.set_keymap(keymap.compose_keymap)
         self.message_view = QWebEngineView()
@@ -111,16 +111,29 @@ class ComposeView(Panel):
         self.status = f'<i style="color:{settings.theme["fg"]}">draft</i>'
 
         to = ''
+        cc = []
         subject = ''
         if reply_to:
             if 'Subject' in reply_to['headers']:
                 subject = reply_to['headers']['Subject']
                 if subject[0:3].upper() != 'RE:':
                     subject = 'RE: ' + subject
+
             if 'From' in reply_to['headers']:
                 to = reply_to['headers']['From']
 
-        self.message_string = f'From: {settings.email_address}\nTo: {to}\nSubject: {subject}\n'
+            if reply_to_all:
+                email_sep = re.compile('\s*[;,]\s*')
+                if 'To' in reply_to['headers']:
+                    cc += email_sep.split(reply_to['headers']['To'])
+                if 'Cc' in reply_to['headers']:
+                    cc += email_sep.split(reply_to['headers']['Cc'])
+
+            # cc = [e for e in cc if not util.email_is_me(e)]
+
+        self.message_string = f'From: {settings.email_address}\nTo: {to}\n'
+        if len(cc) != 0: self.message_string += f'Cc: {"; ".join(cc)}\n'
+        self.message_string += f'Subject: {subject}\n'
 
         if reply_to and 'id' in reply_to:
             self.message_string += f'In-Reply-To: <{reply_to["id"]}>\n'

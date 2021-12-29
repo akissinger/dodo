@@ -4,6 +4,8 @@ import os
 import tempfile
 import subprocess
 
+from . import settings
+
 def clean_html2html(s):
     from lxml.html.clean import Cleaner
     c = Cleaner()
@@ -78,6 +80,16 @@ def quote_body_text(m):
     text = body_text(m)
     if not text: return ''
     return ''.join([f'> {ln}\n' for ln in text.splitlines()])
+
+def strip_email(e):
+    "String the display name, leaving just the email address."
+    head = re.compile('^.*<')
+    tail = re.compile('>.*$')
+    return tail.sub('', head.sub('', e))
+
+def email_is_me(e):
+    """Check whether the provided email is me."""
+    return strip_email(settings.email_address) == strip_email(e)
 
 # def hide_quoted(s):
 #     """Remove quoted text from message and replace with number of lines cut."""
