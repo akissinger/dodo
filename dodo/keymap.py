@@ -50,6 +50,7 @@ thread_keymap = {
 compose_keymap = {
   '<enter>': lambda p: p.edit(),
   'S':       lambda p: p.send(),
+  'a':       lambda p: p.attach_file(),
 }
 
 command_bar_keymap = {

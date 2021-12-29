@@ -162,7 +162,7 @@ class ThreadView(Panel):
         if 'headers' in m:
             header_html = ''
             header_html += f'<table style="background-color: {settings.theme["bg"]}; color: {settings.theme["fg"]}; font-family: Fira Code; font-size: 14pt; width:100%">'
-            for name in ['From', 'To', 'Cc', 'Subject', 'Date']:
+            for name in ['Subject', 'Date', 'From', 'To', 'Cc']:
                 if name in m['headers']:
                     header_html += f"""<tr>
                       <td><b style="color: {settings.theme["fg_bright"]}">{name}:&nbsp;</b></td>

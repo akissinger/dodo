@@ -173,6 +173,12 @@ class ComposeView(Panel):
             self.editor_thread = EditorThread(self)
             self.editor_thread.start()
 
+    def attach_file(self):
+        f = QFileDialog.getOpenFileName()
+        if f[0]:
+            self.message_string = util.add_header_line(self.message_string, 'A: ' + f[0])
+            self.refresh()
+
     def send(self):
         if self.sendmail_thread is None:
             self.status = f'<i style="color:{settings.theme["fg_bright"]}">sending</i>'

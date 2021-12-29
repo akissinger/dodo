@@ -91,6 +91,18 @@ def email_is_me(e):
     """Check whether the provided email is me."""
     return strip_email(settings.email_address) == strip_email(e)
 
+def add_header_line(s, h):
+    """Add the given string to the headers, i.e. before the first
+    blank line, in the provided string."""
+    out = ''
+    headers = True
+    for line in s.splitlines():
+        if headers and line == '':
+            out += h + '\n'
+            headers = False
+        out += line + '\n'
+    return out
+
 basic_keytab = {
   Qt.Key_Exclam: '!',
   Qt.Key_QuoteDbl: '"',
