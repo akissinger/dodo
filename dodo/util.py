@@ -91,19 +91,6 @@ def email_is_me(e):
     """Check whether the provided email is me."""
     return strip_email(settings.email_address) == strip_email(e)
 
-# def hide_quoted(s):
-#     """Remove quoted text from message and replace with number of lines cut."""
-#     lines = s.splitlines()
-#     quote = re.compile('^\\s*($|\\>)')
-#     removed = 0
-#     while len(lines) > 0:
-#         if quote.match(lines[-1]):
-#             lines.pop()
-#             removed += 1
-#         else:
-#             break
-#     return ('\n'.join(lines), removed)
-
 basic_keytab = {
   Qt.Key_Exclam: '!',
   Qt.Key_QuoteDbl: '"',
@@ -120,6 +107,7 @@ basic_keytab = {
   Qt.Key_Minus: '-',
   Qt.Key_Period: '.',
   Qt.Key_Slash: '/',
+  Qt.Key_QuoteLeft: '`',
   Qt.Key_0: '0',
   Qt.Key_1: '1',
   Qt.Key_2: '2',

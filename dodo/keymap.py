@@ -1,7 +1,7 @@
 global_keymap = {
   'Q':       lambda a: a.quit(),
   'Z Z':     lambda a: a.quit(),
-  '$':       lambda a: a.sync_mail(quiet=False),
+  '`':       lambda a: a.sync_mail(quiet=False),
   'l':       lambda a: a.next_panel(),
   'h':       lambda a: a.previous_panel(),
   'x':       lambda a: a.close_panel(),
