@@ -45,6 +45,7 @@ thread_keymap = {
   'H':       lambda p: p.toggle_html(),
   'r':       lambda p: p.reply(to_all=True),
   'R':       lambda p: p.reply(to_all=False),
+  'A':       lambda p: p.open_attachments(),
 }
 
 compose_keymap = {

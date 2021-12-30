@@ -4,6 +4,7 @@ from . import themes
 email_address = ''
 sent_dir = ''
 editor_command = ['xterm', '-e', 'vim']
+file_browser_command = ['nautilus']
 send_mail_command = ['msmtp', '-t']
 sync_mail_command = ['offlineimap']
 sync_mail_interval = 300 # seconds

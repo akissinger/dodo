@@ -6,6 +6,8 @@ from PyQt5.QtWebEngineWidgets import *
 import subprocess
 import json
 import html
+import email
+import tempfile
 from lxml.html.clean import Cleaner
 import html2text
 
@@ -174,6 +176,16 @@ class ThreadView(Panel):
                   <td><b style="color: {settings.theme["fg_bright"]}">Tags:&nbsp;</b></td>
                   <td><span style="color: {settings.theme["fg_tags"]}">{tags}</span></td>
                 </tr>"""
+
+            attachments = [f'[{part["filename"]}]' for part in util.message_parts(m)
+                    if part.get('content-disposition') == 'attachment' and 'filename' in part]
+
+            if len(attachments) != 0:
+                header_html += f"""<tr>
+                  <td><b style="color: {settings.theme["fg_bright"]}">Attachments:&nbsp;</b></td>
+                  <td><span style="color: {settings.theme["fg_tags"]}">{' '.join(attachments)}</span></td>
+                </tr>"""
+
             header_html += '</table>'
             self.message_info.setHtml(header_html)
 
@@ -228,7 +240,6 @@ class ThreadView(Panel):
             self.message_view.page().runJavaScript(f'window.scrollBy(0, {pages} * 0.9 * window.innerHeight)',
                     QWebEngineScript.ApplicationWorld)
 
-
     def toggle_message_tag(self, tag):
         m = self.model.message_at(self.current_message)
         if m:
@@ -254,5 +265,21 @@ class ThreadView(Panel):
 
     def reply(self, to_all=True):
         self.app.compose(reply_to=self.model.message_at(self.current_message), reply_to_all=to_all)
+
+    def open_attachments(self):
+        "Write attachments out into temp directory and open with `settings.file_browser_command`"
+        m = self.model.message_at(self.current_message)
+        if not (m and 'filename' in m): return
+        temp_dir = tempfile.mkdtemp(prefix='dodo-')
+
+        for filename in m['filename']:
+            with open(filename, 'r') as f:
+                msg = email.message_from_file(f)
+                for part in msg.walk():
+                    if part.get_content_disposition() == 'attachment':
+                        with open(temp_dir + '/' + part.get_filename(), 'wb') as att:
+                            att.write(part.get_payload(decode=True))
+
+        subprocess.Popen(settings.file_browser_command + [temp_dir])
 
 

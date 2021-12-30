@@ -41,38 +41,40 @@ def chop_s(s):
     else:
         return s
 
-def find_content(m, ty):
-    """Recursively search a message body for content of type `ty` and return in
-    depth-first order."""
+def message_parts(m):
+    "Iterate over JSON message parts recusively, in depth-first order."
 
-    content = []
+    if 'body' in m:
+        for part in m['body']:
+            yield from message_parts(part)
+    elif 'content' in m:
+        yield m
+        if isinstance(m['content'], list):
+            for part in m['content']:
+                yield from message_parts(part)
+    else:
+        yield m
 
-    def dfs(x):
-        if isinstance(x, list):
-            for y in x: dfs(y)
-        elif isinstance(x, dict) and 'content-type' in x and 'content' in x:
-            if x['content-type'] == ty:
-                content.append(x['content'])
-            elif isinstance(x['content'], list):
-                for y in x['content']: dfs(y)
-
-    dfs(m)
-    return content
+def find_content(m, content_type):
+    """Return a flat list consisting of the 'content' field of each message
+    part with the given content-type."""
+    return [part['content'] for part in message_parts(m)
+              if 'content' in part and part.get('content-type') == content_type]
 
 def body_text(m):
     global html2text
-    tc = find_content(m['body'], 'text/plain')
+    tc = find_content(m, 'text/plain')
     if len(tc) != 0:
         return tc[0]
     else:
-        hc = find_content(m['body'], 'text/html')
+        hc = find_content(m, 'text/html')
         if len(hc) != 0:
             return html2text(hc[0])
     return ''
 
 def body_html(m):
     global html2html
-    hc = find_content(m['body'], 'text/html')
+    hc = find_content(m, 'text/html')
     if len(hc) != 0: return hc[0]
     else: return ''
 
