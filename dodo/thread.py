@@ -26,8 +26,6 @@ import json
 import html
 import email
 import tempfile
-from lxml.html.clean import Cleaner
-import html2text
 
 from . import settings
 from . import util
