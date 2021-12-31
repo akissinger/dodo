@@ -104,6 +104,7 @@ class SearchView(Panel):
         self.q = q
         self.tree = QTreeView()
         self.tree.setFocusPolicy(Qt.NoFocus)
+        self.setStyleSheet(f'QTreeView::item {{ padding: {settings.search_view_padding}px }}')
         self.model = SearchModel(q)
         self.tree.setModel(self.model)
         self.layout().addWidget(self.tree)

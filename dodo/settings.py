@@ -14,6 +14,7 @@ default_to_html = False
 theme = themes.nord
 search_font = 'Fira Code'
 search_font_size = 14
+search_view_padding = 1
 tag_icons = {
   'inbox': '',
   'unread': '',
