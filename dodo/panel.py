@@ -78,7 +78,13 @@ class Panel(QWidget):
             self._prefix_timer.start()
         elif self.keymap and cmd in self.keymap:
             self._prefix = ""
-            self.keymap[cmd](self)
+            if isinstance(self.keymap[cmd], tuple):
+                self.keymap[cmd][1](self)
+            else: 
+                self.keymap[cmd](self)
         elif cmd in keymap.global_keymap:
             self._prefix = ""
-            keymap.global_keymap[cmd](self.app)
+            if isinstance(keymap.global_keymap[cmd], tuple):
+                keymap.global_keymap[cmd][1](self.app)
+            else:
+                keymap.global_keymap[cmd](self.app)

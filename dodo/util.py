@@ -140,6 +140,7 @@ basic_keytab = {
   Qt.Key_Period: '.',
   Qt.Key_Slash: '/',
   Qt.Key_QuoteLeft: '`',
+  Qt.Key_Question: '?',
   Qt.Key_0: '0',
   Qt.Key_1: '1',
   Qt.Key_2: '2',

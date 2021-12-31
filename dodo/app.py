@@ -30,6 +30,7 @@ from . import themes
 from . import util
 from . import keymap
 from . import commandbar
+from . import help
 
 class SyncMailThread(QThread):
     done = pyqtSignal()
@@ -58,6 +59,9 @@ class Dodo(QApplication):
             config_locs = QStandardPaths.standardLocations(QStandardPaths.ConfigLocation)
             print('No config.py found in:\n' + '\n'.join([f'  {d}/dodo' for d in config_locs]))
             sys.exit(1)
+
+        # construct help window
+        self.help_window = help.HelpWindow()
 
         # apply theme
         themes.apply_theme(self, settings.theme)
@@ -112,6 +116,9 @@ class Dodo(QApplication):
 
         # open inbox and make un-closeable
         self.search('tag:inbox', keep_open=True)
+
+    def show_help(self):
+        self.help_window.show()
 
     def add_panel(self, panel, focus=True):
         self.tabs.addTab(panel, panel.title())
