@@ -23,9 +23,11 @@ All of this is pretty standard stuff, and should be installable via your package
 
 Make sure you have Python 3.7+ and [PyQt5](https://riverbankcomputing.com/software/pyqt/intro). Clone Dodo with:
 
-    git clone https://github.com/akissinger/dodo.git
+    % git clone https://github.com/akissinger/dodo.git
     
-Then, add the `bin/` subdirectory to your `PATH` and run with `dodo`.
+Then, add the `bin/` subdirectory to your `PATH` and run with:
+
+    % dodo
 
 An optional Python dependency is [lxml](https://lxml.de/) for some limited HTML sanitization, which is off by default (see the next section for switching it on).
 
@@ -34,16 +36,18 @@ An optional Python dependency is [lxml](https://lxml.de/) for some limited HTML 
 
 Dodo is configured via a Python file located in `~/.config/dodo/config.py`. Most settings have reasonable defaults (assuming your are using offlineimap/msmtp), which can be found in [settings.py](https://github.com/akissinger/dodo/blob/master/dodo/settings.py). The only two things that must be set for Dodo to work properly are your email address and the location of your sent mail folder. Here is an example `config.py`, with some common settings:
 
-    import dodo
-    
-    # required
-    dodo.settings.email_address = 'First Last <me@domain.com>'
-    dodo.settings.sent_dir = '/home/user/mail/Work/Sent'
-    
-    # optional
-    dodo.settings.theme = dodo.themes.nord
-    dodo.settings.editor_command = ['kitty', 'nvim']
-    dodo.settings.file_browser_command = ['fman', '/home/user/Documents/']
+```python
+import dodo
+
+# required
+dodo.settings.email_address = 'First Last <me@domain.com>'
+dodo.settings.sent_dir = '/home/user/mail/Work/Sent'
+
+# optional
+dodo.settings.theme = dodo.themes.nord
+dodo.settings.editor_command = ['kitty', 'nvim']
+dodo.settings.file_browser_command = ['fman', '/home/user/Documents/']
+```
 
 All of the settings of the form `..._command` are given as a list consisting of the command and its arguments. Additional arguments, such as the relevant folder or file are appended to this list.
 
