@@ -49,13 +49,11 @@ dodo.settings.editor_command = ['kitty', 'nvim']
 dodo.settings.file_browser_command = ['fman', '/home/user/Documents/']
 ```
 
+A theme is just a Python dictionary mapping some fixed color names to HTML color codes. Currently, the themes implemented in [themes.py](https://github.com/akissinger/dodo/blob/master/dodo/themes.py) are `nord`, `solarized_light` and `solarized_dark`. If you want more, feel free to roll your own, or (better) send me a pull request!
+
 All of the settings of the form `..._command` are given as a list consisting of the command and its arguments. Additional arguments, such as the relevant folder or file are appended to this list.
 
-The settings above replace the default text editor (`xterm -e vim`) with [neovim](https://neovim.io/) run inside a new [kitty](https://sw.kovidgoyal.net/kitty/) terminal. I am also using Michael Herrmann's excellent dual-pane file manager [fman](https://fman.io/) instead of the default (`nautilus`). With these settings, showing attachments will open `fman` with a fixed directory in the left pane (`/home/user/Documents`) and a directory containing the attachments on the right. A similar effect can be obtained with the command-line file browser [ranger](https://github.com/ranger/ranger) as follows:
-
-    dodo.settings.file_browser_command = ['kitty', 'ranger', '--cmd', 'set viewmode multipane', '/home/user/Documents']
-
-A theme is just a dictionary mapping color names to HTML color codes. Currently, the themes implemented in [themes.py](https://github.com/akissinger/dodo/blob/master/dodo/themes.py) are `nord`, `solarized_light` and `solarized_dark`. If you want more, feel free to roll your own, or (better) send me a pull request!
+The settings above replace the default text editor (`xterm -e vim`) with [neovim](https://neovim.io/) run inside a new [kitty](https://sw.kovidgoyal.net/kitty/) terminal. I am also using Michael Herrmann's excellent dual-pane file manager [fman](https://fman.io/) instead of the default (`nautilus`). With these settings, showing attachments will open `fman` with a fixed directory in the left pane (`/home/user/Documents`) and a directory containing the attachments on the right. A similar effect can be obtained with [ranger](https://github.com/ranger/ranger) using the `multipane` view mode.
 
 While Javascript is disabled in the HTML email viewer, you may want to set up a custom HTML sanitizer function as follows:
 
@@ -63,6 +61,15 @@ While Javascript is disabled in the HTML email viewer, you may want to set up a 
 
 The above function passes the HTML through the `Cleaner` object of the [lxml](https://lxml.de/) library. Note this still allows some dodgy stuff, such as calling home via embedded `img` tags. Fully safe and private HTML email from untrusted sources should be considered a work-in-progress.
 
+Key mappings can be customised by changing the dictionaries defined in [keymap.py](https://github.com/akissinger/dodo/blob/master/dodo/keymap.py). These map a key to a pair consisting of a description string and a Python function. For the `global_keymap`, this function takes the `Dodo` object defined in [app.py](https://github.com/akissinger/dodo/blob/master/dodo/app.py) as its argument. The other maps take the relevant "local" widget (SearchView, ThreadView, ComposeView, or CommandBox).
+
+# Basic use
+
+Most functionality in Dodo comes from keyboard shortcuts. Press `?` to get a full list of the key mappings at any time.
+
+Dodo has 3 different kinds of view: search views, thread views, and compose views. It opens initially with a search view with the query `tag:inbox`. Pressing enter or double-clicking a thread with open that thread in the thread view. Pressing `c` at any time or `r` while looking at a message in the thread view will open the compose view.
+
+In the compose view, press `<enter>` to edit the message on your chosen editor. Once you save and exit, the message will be updated. Press `a` to add attachments (or use the special `A:` header). Press `S` to send.
 
 
 # Setting up the prerequisites
