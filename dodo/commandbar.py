@@ -24,6 +24,9 @@ from . import search
 from . import thread
 
 class CommandBar(QLineEdit):
+    """A command bar that appears on the bottom of the screen when searching
+    or tagging."""
+
     def __init__(self, app):
         super().__init__()
         self.app = app
@@ -31,12 +34,24 @@ class CommandBar(QLineEdit):
         self.history = { 'search': [0, []], 'tag': [0, []] }
 
     def open(self, mode):
+        """Open the command bar and give it focus
+
+        This method sets the `command_area` QWidget (which contains the command bar and
+        its label) to be visible, and sets the `command_label` to be equal to `mode`.
+
+        :param mode: a string used to set both the label next to the command bar and to dictate
+                     its behaviour. Recognized values are "search" and "tag"."""
+
         self.mode = mode
         self.app.command_label.setText(mode)
         self.app.command_area.setVisible(True)
         self.setFocus()
 
     def close(self):
+        """Clear the command and close
+
+        Call this method by itself to cancel the command."""
+
         if self.mode in self.history:
             h = self.history[self.mode]
             h[0] = len(h[1])
@@ -47,6 +62,12 @@ class CommandBar(QLineEdit):
         if w: w.setFocus()
 
     def accept(self):
+        """Apply the command typed into the command bar and close
+
+        After the command has been applied, this method saves the command to the command
+        history associated with the current mode, then calls :func:`close` to clear
+        the command and close the command bar."""
+
         if self.mode == 'search':
             self.app.search(self.text())
         elif self.mode == 'tag':
@@ -62,6 +83,10 @@ class CommandBar(QLineEdit):
         self.close()
 
     def history_previous(self):
+        """Cycle to the previous command in the command history
+
+        Note a separate history is kept for each mode."""
+
         if self.mode in self.history:
             h = self.history[self.mode]
             if len(h[1]) != 0:
@@ -70,6 +95,10 @@ class CommandBar(QLineEdit):
                 self.setText(h[1][i])
 
     def history_next(self):
+        """Cycle to the next command in the command history
+
+        Note a separate history is kept for each mode."""
+
         if self.mode in self.history:
             h = self.history[self.mode]
             if len(h[1]) != 0:
