@@ -46,6 +46,12 @@ class SyncMailThread(QThread):
             self.done.emit()
 
 class Dodo(QApplication):
+    """The main Dodo application
+
+    There is always one instance of this class, and it contains methods for all of the global (i.e.
+    not view-specific) commands. This includes running global opening/closing panels, opening the help
+    window, and synchronizing mail with the IMAP server.
+    """
     def __init__(self):
         super().__init__([])
         conf = QSettings('dodo', 'dodo')
