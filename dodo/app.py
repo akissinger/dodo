@@ -30,7 +30,7 @@ from . import themes
 from . import util
 from . import keymap
 from . import commandbar
-from . import help
+from . import helpwindow
 
 class SyncMailThread(QThread):
     done = pyqtSignal()
@@ -61,7 +61,7 @@ class Dodo(QApplication):
             sys.exit(1)
 
         # construct help window
-        self.help_window = help.HelpWindow()
+        self.help_window = helpwindow.HelpWindow()
 
         # apply theme
         themes.apply_theme(self, settings.theme)
