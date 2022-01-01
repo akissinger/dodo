@@ -93,8 +93,6 @@ solarized_light = {
   'fg_from': solarized_p['blue'],
   'fg_date': solarized_p['cyan'],
   'fg_tags': solarized_p['violet'],
-  'bg_message_text': '#ffffff',
-  'fg_message_text': '#000000',
 }
 
 nord = {
@@ -114,8 +112,6 @@ nord = {
   'fg_from': nord_p['frost3'],
   'fg_date': nord_p['polar3'],
   'fg_tags': nord_p['aurora2'],
-  'bg_message_text': '#ffffff',
-  'fg_message_text': '#000000',
 }
 
 def apply_theme(app, theme):

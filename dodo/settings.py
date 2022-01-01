@@ -30,7 +30,7 @@ default_to_html = False
 
 # visual
 theme = themes.nord
-search_font = 'Fira Code'
+search_font = 'DejaVu Sans Mono'
 search_font_size = 13
 search_view_padding = 1
 tag_icons = {
@@ -47,7 +47,7 @@ tag_icons = {
 # are substituted using the current theme.
 message_css = """
 pre {{
-  font-family: Fira Code;
+  font-family: DejaVu Sans Mono;
   font-size: 12pt;
 }}
 
