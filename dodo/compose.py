@@ -35,7 +35,12 @@ from . import settings
 from . import util
 
 class EditorThread(QThread):
+    """A QThread used for editing mail with the external editor
+
+    Used by the :func:`~dodo.compose.ComposePanel.edit` method."""
+
     done = pyqtSignal()
+    """Signals the external editor has closed"""
 
     def __init__(self, panel, parent=None):
         super().__init__(parent)
@@ -59,6 +64,10 @@ class EditorThread(QThread):
             self.done.emit()
 
 class SendmailThread(QThread):
+    """A QThread used for editing mail with the external editor
+
+    Used by the :func:`~dodo.compose.ComposePanel.edit` method."""
+
     done = pyqtSignal()
 
     def __init__(self, panel, parent=None):
@@ -120,6 +129,13 @@ class SendmailThread(QThread):
 
 
 class ComposePanel(Panel):
+    """A panel for composing messages
+
+    :param reply_to: If provided, populate the email as a reply to the given message
+    :param reply_to_all: If True, set the "To:" header to contain all of the emails in
+                         "From:", "To:", and "Cc:" for which :func:`~dodo.util.email_is_me`
+                         returns false."""
+
     def __init__(self, app, reply_to=None, reply_to_all=True, parent=None):
         super().__init__(app, parent)
         self.set_keymap(keymap.compose_keymap)
@@ -171,6 +187,10 @@ class ComposePanel(Panel):
         return 'compose'
 
     def refresh(self):
+        """Refresh the message text
+
+        This gets called automatically after the external editor has closed."""
+
         self.message_view.setHtml(f"""<html>
         <style type="text/css">
         {settings.message_css.format(**settings.theme)}
@@ -183,21 +203,36 @@ class ComposePanel(Panel):
         super().refresh()
 
     def edit_done(self):
+        """Method gets called once the external editor has closed"""
+
         self.editor_thread = None
         self.refresh()
 
     def edit(self):
+        """Edit the email message with an external text editor
+
+        The editor is configured via :func:`dodo.settings.editor_command`."""
+
         if self.editor_thread is None:
             self.editor_thread = EditorThread(self)
             self.editor_thread.start()
 
     def attach_file(self):
+        """Attach a file
+
+        Opens a file browser for selecting a file to attach. If a file is selected, add it using the "A:"
+        pseudo-header. This will be translated into a proper attachment when the message is sent."""
         f = QFileDialog.getOpenFileName()
         if f[0]:
             self.message_string = util.add_header_line(self.message_string, 'A: ' + f[0])
             self.refresh()
 
     def send(self):
+        """Send the message
+
+        Sends asynchronously using :class:`~dodo.compose.SendmailThread`. If one or more occurances of
+        the "A:" pseudo-header are detected, these are converted into attachments."""
+
         if self.sendmail_thread is None:
             self.status = f'<i style="color:{settings.theme["fg_bright"]}">sending</i>'
             self.refresh()

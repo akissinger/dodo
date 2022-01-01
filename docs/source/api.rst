@@ -6,7 +6,6 @@ dodo.app
 
 .. automodule:: dodo.app
    :members:
-   :undoc-members:
    :show-inheritance:
 
 dodo.commandbar
@@ -14,7 +13,6 @@ dodo.commandbar
 
 .. automodule:: dodo.commandbar
    :members:
-   :undoc-members:
    :show-inheritance:
 
 dodo.compose
@@ -22,7 +20,6 @@ dodo.compose
 
 .. automodule:: dodo.compose
    :members:
-   :undoc-members:
    :show-inheritance:
 
 dodo.helpwindow
@@ -30,7 +27,6 @@ dodo.helpwindow
 
 .. automodule:: dodo.helpwindow
    :members:
-   :undoc-members:
    :show-inheritance:
 
 dodo.keymap
@@ -38,7 +34,6 @@ dodo.keymap
 
 .. automodule:: dodo.keymap
    :members:
-   :undoc-members:
    :show-inheritance:
 
 dodo.panel
@@ -46,7 +41,6 @@ dodo.panel
 
 .. automodule:: dodo.panel
    :members:
-   :undoc-members:
    :show-inheritance:
 
 dodo.search
@@ -54,7 +48,6 @@ dodo.search
 
 .. automodule:: dodo.search
    :members:
-   :undoc-members:
    :show-inheritance:
 
 dodo.settings
@@ -62,7 +55,6 @@ dodo.settings
 
 .. automodule:: dodo.settings
    :members:
-   :undoc-members:
    :show-inheritance:
 
 dodo.themes
@@ -70,7 +62,6 @@ dodo.themes
 
 .. automodule:: dodo.themes
    :members:
-   :undoc-members:
    :show-inheritance:
 
 dodo.thread
@@ -78,7 +69,6 @@ dodo.thread
 
 .. automodule:: dodo.thread
    :members:
-   :undoc-members:
    :show-inheritance:
 
 dodo.util
@@ -86,7 +76,6 @@ dodo.util
 
 .. automodule:: dodo.util
    :members:
-   :undoc-members:
    :show-inheritance:
 
 Module contents
@@ -94,5 +83,4 @@ Module contents
 
 .. automodule:: dodo
    :members:
-   :undoc-members:
    :show-inheritance:

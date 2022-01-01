@@ -30,12 +30,15 @@ from .panel import Panel
 columns = ['date', 'from', 'subject', 'tags']
 
 class SearchModel(QAbstractItemModel):
+    """A model containing the results of a search"""
+
     def __init__(self, q):
         super().__init__()
         self.q = q
         self.refresh()
 
     def refresh(self):
+        """Refresh the model by (re-) running "notmuch search"."""
         self.beginResetModel()
         r = subprocess.run(['notmuch', 'search', '--format=json', self.q],
                 stdout=subprocess.PIPE)
@@ -44,6 +47,8 @@ class SearchModel(QAbstractItemModel):
         self.endResetModel()
 
     def num_threads(self):
+        """The number of threads returned by the search"""
+
         return len(self.d)
 
     def data(self, index, role):
@@ -101,6 +106,8 @@ class SearchModel(QAbstractItemModel):
         return QModelIndex()
 
     def thread_json(self, index):
+        """Return a JSON object associated with the thread at the given model index"""
+
         row = index.row()
         if row >= 0 and row < len(self.d):
             return self.d[row]
@@ -108,6 +115,8 @@ class SearchModel(QAbstractItemModel):
             return None
 
     def thread_id(self, index):
+        """Return the notmuch thread id associated with the thread at the given model index"""
+
         thread = self.thread_json(index)
         if thread and 'thread' in thread:
             return thread['thread']
@@ -116,6 +125,10 @@ class SearchModel(QAbstractItemModel):
 
 
 class SearchPanel(Panel):
+    """A panel showing the results of a search
+
+    This is used as the main entry point for the GUI, i.e. a search for "tag:inbox"."""
+
     def __init__(self, app, q, keep_open=False, parent=None):
         super().__init__(app, keep_open, parent)
         self.set_keymap(keymap.search_keymap)
@@ -135,7 +148,8 @@ class SearchPanel(Panel):
             self.tree.setCurrentIndex(self.tree.model().index(0,0))
 
     def refresh(self):
-        "Refresh the search listing and restore the selection, if possible."
+        """Refresh the search listing and restore the selection, if possible."""
+
         current = self.tree.currentIndex()
         self.model.refresh()
         
@@ -147,34 +161,48 @@ class SearchPanel(Panel):
         super().refresh()
 
     def title(self):
+        """Give the query as the tab title"""
+
         return self.q
 
     def next_thread(self):
+        """Select the next thread in the search"""
+
         row = self.tree.currentIndex().row() + 1
         if row >= 0 and row < self.tree.model().rowCount():
             self.tree.setCurrentIndex(self.tree.model().index(row, 0))
 
     def previous_thread(self):
+        """Select the previous thread in the search"""
+
         row = self.tree.currentIndex().row() - 1
         if row >= 0 and row < self.tree.model().rowCount():
             self.tree.setCurrentIndex(self.tree.model().index(row, 0))
 
     def first_thread(self):
+        """Select the first thread in the search"""
+
         ix = self.model.index(0, 0)
         if self.model.checkIndex(ix):
             self.tree.setCurrentIndex(ix)
 
     def last_thread(self):
+        """Select the last thread in the search"""
+
         ix = self.model.index(self.tree.model().rowCount()-1, 0)
         if self.model.checkIndex(ix):
             self.tree.setCurrentIndex(ix)
 
     def open_current_thread(self):
+        """Open the selected thread"""
+
         thread_id = self.model.thread_id(self.tree.currentIndex())
         if thread_id:
             self.app.thread(thread_id)
     
     def toggle_thread_tag(self, tag):
+        """Toggle the given thread tag"""
+
         thread = self.model.thread_json(self.tree.currentIndex())
         if thread:
             if tag in thread['tags']:
@@ -185,6 +213,11 @@ class SearchPanel(Panel):
 
 
     def tag_thread(self, tag_expr):
+        """Apply the given tag expression to the selected thread
+
+        A tag expression is a string consisting of one more statements of the form "+TAG"
+        or "-TAG" to add or remove TAG, respectively, separated by whitespace."""
+
         thread_id = self.model.thread_id(self.tree.currentIndex())
         if not ('+' in tag_expr or '-' in tag_expr):
             tag_expr = '+' + tag_expr
