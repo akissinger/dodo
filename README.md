@@ -61,7 +61,7 @@ While Javascript is disabled in the HTML email viewer, you may want to set up a 
 
 The above function passes the HTML through the `Cleaner` object of the [lxml](https://lxml.de/) library. Note this still allows some dodgy stuff, such as calling home via embedded `img` tags. Fully safe and private HTML email from untrusted sources should be considered a work-in-progress.
 
-Key mappings can be customised by changing the dictionaries defined in [keymap.py](https://github.com/akissinger/dodo/blob/master/dodo/keymap.py). These map a key to a pair consisting of a description string and a Python function. For the `global_keymap`, this function takes the `Dodo` object defined in [app.py](https://github.com/akissinger/dodo/blob/master/dodo/app.py) as its argument. The other maps take the relevant "local" widget (SearchView, ThreadView, ComposeView, or CommandBox).
+Key mappings can be customised by changing the dictionaries defined in [keymap.py](https://github.com/akissinger/dodo/blob/master/dodo/keymap.py). These map a key to a pair consisting of a description string and a Python function. For the `global_keymap`, this function takes the `Dodo` object defined in [app.py](https://github.com/akissinger/dodo/blob/master/dodo/app.py) as its argument. The other maps take the relevant "local" widget (SearchView, ThreadView, ComposeView, or CommandBar).
 
 # Basic use
 

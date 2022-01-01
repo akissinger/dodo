@@ -38,11 +38,13 @@ class SyncMailThread(QThread):
     Called by the :func:`~dodo.app.Dodo.sync_mail` method."""
 
     done = pyqtSignal()
+    """A Qt signal that the sync is done"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
     def run(self):
+        """Run :func:`~dodo.settings.sync_mail_command` then `notmuch new`"""
         try:
             subprocess.run(settings.sync_mail_command, stdout=subprocess.PIPE)
             subprocess.run(['notmuch', 'new'], stdout=subprocess.PIPE)

@@ -25,10 +25,26 @@ from . import keymap
 from . import util
 
 class Panel(QWidget):
+    """A container widget that can handle key events and be shown on a tab
+
+    This is the base class for :class:`~dodo.search.SearchPanel`,
+    :class:`~dodo.thread.ThreadPanel`, and
+    :class:`~dodo.compose.ComposePanel`, which are the main top-level
+    containers used by Dodo.
+
+
+    :param keep_open: If this is True, keep the panel open even when instructed to close.
+                      This is used to make sure the "Inbox" :class:`~dodo.search.SearchPanel`
+                      always stays open.
+    """
+
     def __init__(self, app, keep_open=False, parent=None):
+        """Initialise a panel"""
+
         super().__init__(parent)
         self.app = app
         self.keep_open = keep_open
+
         self.keymap = None
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
@@ -40,12 +56,27 @@ class Panel(QWidget):
         self._prefix_timer = QTimer()
         self._prefix_timer.setSingleShot(True)
         self._prefix_timer.setInterval(500)
-        self._prefix_timer.timeout.connect(self.prefix_timeout)
+
+        def prefix_timeout():
+            if self.keymap and self._prefix in self.keymap:
+                self.keymap[self._prefix](self)
+            elif self._prefix in keymap.global_keymap:
+                keymap.global_keymap[self._prefix](self.app)
+            self._prefix = ""
+
+        self._prefix_timer.timeout.connect(prefix_timeout)
 
     def title(self):
+        """The title shown on this panel's tab"""
+
         return 'view'
 
     def set_keymap(self, mp):
+        """Set the local keymap to be the given dictionary.
+
+        This needs to be called in the :func:`__init__` method of each child class
+        to ensure it handles keychords correctly."""
+
         self.keymap = mp
 
         # update prefix cache for current keymap
@@ -55,18 +86,24 @@ class Panel(QWidget):
                 for i in range(1,len(k)):
                     self._prefixes.add(k[0:-i])
 
-    def prefix_timeout(self):
-        # print("prefix fired: " + self._prefix)
-        if self.keymap and self._prefix in self.keymap:
-            self.keymap[self._prefix](self)
-        elif self._prefix in keymap.global_keymap:
-            keymap.global_keymap[self._prefix](self.app)
-        self._prefix = ""
 
     def refresh(self):
         self.dirty = False
 
     def keyPressEvent(self, e):
+        """Passes key events to the appropriate keymap
+
+        First a key press (possibly with modifiers) is translated into a string
+        representation using :func:`~dodo.util.key_string`. Then, if that string
+        is part of a keychord, start a timer to try to gather more input.
+
+        Once we have the full keychord (or a timeout has occurred), check if the
+        string of the keychord is in the keymap set via :func:`set_keymap`. If so,
+        fire the associated function. Otherwise, check :func:`~dodo.keymap.global_keymap`
+        and fire the associated function. If it is not in either, swallow the input and
+        do nothing.
+        """
+
         k = util.key_string(e)
         if not k: return None
         # print("key: " + util.key_string(e))

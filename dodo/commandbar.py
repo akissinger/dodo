@@ -79,6 +79,15 @@ class CommandBar(QLineEdit):
 
 
     def keyPressEvent(self, e):
+        """Process keyboard input while the command bar is in focus
+
+        Translate the key event into a string with :func:`~dodo.util.key_string`
+        and check if it is in :func:`~dodo.keymap.command_bar_keymap`. If it is,
+        fire the associated function. Otherwise, pass the event on to the text
+        box.
+        
+        Note: Key chords are NOT supported in the command bar.
+        """
         k = util.key_string(e)
         if k in keymap.command_bar_keymap:
             keymap.command_bar_keymap[k](self)
