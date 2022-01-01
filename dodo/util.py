@@ -29,13 +29,15 @@ def clean_html2html(s):
     c = Cleaner()
     return c.clean_html(s)
     
-def python_html2text(s):
-    from html2text import HTML2Text
-    c = HTML2Text()
-    c.ignore_emphasis = True
-    c.ignore_links = True
-    c.images_to_alt = True
-    return c.handle(s)
+# Pure python html2text, but results don't look nearly as good as w3m -dump
+#
+# def python_html2text(s):
+#     from html2text import HTML2Text
+#     c = HTML2Text()
+#     c.ignore_emphasis = True
+#     c.ignore_links = True
+#     c.images_to_alt = True
+#     return c.handle(s)
 
 def w3m_html2text(s):
     (fd, file) = tempfile.mkstemp(suffix='.html') 

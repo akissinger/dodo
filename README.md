@@ -16,20 +16,19 @@ If you have already used `notmuch` for email, there's not much to do here :). If
 * [w3m](http://w3m.sourceforge.net/) for translating HTML messages into plaintext
 * [notmuch](https://notmuchmail.org/) for email searching and tagging
 
-All of this is pretty standard stuff, and should be installable via your package manager on Linux/Mac/etc. It should also be possible in principle to get this stuff working in Windows (e.g. with WSL or Cygwin), but I haven't tried it.
-
-If you don't know how to set these things up already, see the respective websites or the "Setting up the prerequisites" section below for a quick reference.
+All of this is pretty standard stuff, and should be installable via your package manager on Linux/Mac/etc. If you don't know how to set these things up already, see the respective websites or the "Setting up the prerequisites" section below for a quick reference.
 
 
-# Install
+# Install and run
 
-Installing Dodo is just a matter of cloning the repo and installing the python dependencies. The only hard dependency is [PyQt5](https://riverbankcomputing.com/software/pyqt/intro). Optional dependencies are [html2text](https://pypi.org/project/html2text/) and [lxml](https://lxml.de/) for native-python HTML-to-text conversion and HTML sanitization, respectively. These are both off by default.
-
-Then, simply clone Dodo with:
+Make sure you have Python 3.7+ and [PyQt5](https://riverbankcomputing.com/software/pyqt/intro). Clone Dodo with:
 
     git clone https://github.com/akissinger/dodo.git
     
-Dodo can be run by calling `python3 -m dodo`, or (if you add the `bin/` subdirectory to your `PATH`), simply `dodo`.
+Then, add the `bin/` subdirectory to your `PATH` and run with `dodo`.
+
+An optional Python dependency is [lxml](https://lxml.de/) for native-python HTML-to-text conversion and HTML sanitization, respectively. This is off by default.
+
 
 # Configuration
 
@@ -48,11 +47,19 @@ Dodo is configured via a Python file located in `~/.config/dodo/config.py`. Most
 
 All of the settings of the form `..._command` are given as a list consisting of the command and its arguments. Additional arguments, such as the relevant folder or file are appended to this list.
 
-The settings above replace the default text editor (`xterm -e vim`) with [neovim](https://neovim.io/) run inside a new [kitty](https://sw.kovidgoyal.net/kitty/) terminal. I am also using Michael Herrmann's excellent dual-pane file manager [fman](https://fman.io/) instead of the default (`nautilus`). With these settings, showing attachments will open `fman` with a fixed directory in the left pane (`/home/user/Documents`) and a directory containing the attachments on the right. A similar effect can be obtained with [ranger](https://github.com/ranger/ranger) using:
+The settings above replace the default text editor (`xterm -e vim`) with [neovim](https://neovim.io/) run inside a new [kitty](https://sw.kovidgoyal.net/kitty/) terminal. I am also using Michael Herrmann's excellent dual-pane file manager [fman](https://fman.io/) instead of the default (`nautilus`). With these settings, showing attachments will open `fman` with a fixed directory in the left pane (`/home/user/Documents`) and a directory containing the attachments on the right. A similar effect can be obtained with the command-line file browser [ranger](https://github.com/ranger/ranger) as follows:
 
     dodo.settings.file_browser_command = ['kitty', 'ranger', '--cmd', 'set viewmode multipane', '/home/user/Documents']
 
-A theme is simply a dictionary mapping color names to HTML color codes. Currently, the themes implemented in [themes.py](https://github.com/akissinger/dodo/blob/master/dodo/themes.py) are `nord`, `solarized_light` and `solarized_dark`. If you want more, feel free to roll your own, or (better) send me a pull request!
+A theme is just a dictionary mapping color names to HTML color codes. Currently, the themes implemented in [themes.py](https://github.com/akissinger/dodo/blob/master/dodo/themes.py) are `nord`, `solarized_light` and `solarized_dark`. If you want more, feel free to roll your own, or (better) send me a pull request!
+
+While Javascript is disabled in the HTML email viewer, you may want to set up a custom HTML sanitizer function as follows:
+
+    dodo.util.html2html = dodo.util.clean_html2html
+
+The above function passes the HTML through the `Cleaner` object of the [lxml](https://lxml.de/) library. Note this still allows some dodgy stuff, such as calling home via embedded `img` tags. Fully safe and private HTML email from untrusted sources should be considered a work-in-progress.
+
+
 
 # Setting up the prerequisites
 
