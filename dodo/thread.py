@@ -119,7 +119,7 @@ class ThreadModel(QAbstractItemModel):
     def num_messages(self):
         return len(self.thread)
 
-class ThreadView(Panel):
+class ThreadPanel(Panel):
     def __init__(self, app, thread_id, parent=None):
         super().__init__(app, parent)
         window_settings = QSettings("dodo", "dodo")

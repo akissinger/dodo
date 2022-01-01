@@ -179,11 +179,11 @@ class Dodo(QApplication):
 
         for i in range(self.num_panels()):
             w = self.tabs.widget(i)
-            if isinstance(w, search.SearchView) and w.q == query:
+            if isinstance(w, search.SearchPanel) and w.q == query:
                 self.tabs.setCurrentIndex(i)
                 return
 
-        p = search.SearchView(self, query, keep_open=keep_open)
+        p = search.SearchPanel(self, query, keep_open=keep_open)
         self.add_panel(p)
 
     def thread(self, thread_id):
@@ -194,11 +194,11 @@ class Dodo(QApplication):
 
         for i in range(self.num_panels()):
             w = self.tabs.widget(i)
-            if isinstance(w, thread.ThreadView) and w.thread_id == thread_id:
+            if isinstance(w, thread.ThreadPanel) and w.thread_id == thread_id:
                 self.tabs.setCurrentIndex(i)
                 return
 
-        p = thread.ThreadView(self, thread_id)
+        p = thread.ThreadPanel(self, thread_id)
         self.add_panel(p)
 
     def compose(self, reply_to=None, reply_to_all=True):
@@ -212,7 +212,7 @@ class Dodo(QApplication):
                              'Cc' to populate the 'To' field, unless :func:`~dodo.util.email_is_me`
                              returns True."""
 
-        p = compose.ComposeView(self, reply_to=reply_to, reply_to_all=reply_to_all)
+        p = compose.ComposePanel(self, reply_to=reply_to, reply_to_all=reply_to_all)
         self.add_panel(p)
 
     def sync_mail(self, quiet=True):

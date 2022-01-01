@@ -115,7 +115,7 @@ class SearchModel(QAbstractItemModel):
             return None
 
 
-class SearchView(Panel):
+class SearchPanel(Panel):
     def __init__(self, app, q, keep_open=False, parent=None):
         super().__init__(app, keep_open, parent)
         self.set_keymap(keymap.search_keymap)

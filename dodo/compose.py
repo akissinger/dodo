@@ -119,7 +119,7 @@ class SendmailThread(QThread):
             self.done.emit()
 
 
-class ComposeView(Panel):
+class ComposePanel(Panel):
     def __init__(self, app, reply_to=None, reply_to_all=True, parent=None):
         super().__init__(app, parent)
         self.set_keymap(keymap.compose_keymap)
