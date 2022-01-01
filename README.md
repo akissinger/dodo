@@ -14,7 +14,7 @@ If you have already used `notmuch` for email, there's not much to do here :). If
 * something to check mail and sync with a local Maildir ([offlineimap](http://www.offlineimap.org/) is the default, but others like [mbsync](https://isync.sourceforge.io/) should work fine)
 * a sendmail-compatible SMTP client to send mail ([msmtp](https://marlam.de/msmtp/) is the default)
 * [w3m](http://w3m.sourceforge.net/) for translating HTML messages into plaintext
-* [notmuch](https://notmuchmail.org/)
+* [notmuch](https://notmuchmail.org/) for email searching and tagging
 
 All of this is pretty standard stuff, and should be installable via your package manager on Linux/Mac/etc. It should also be possible in principle to get this stuff working in Windows (e.g. with WSL or Cygwin), but I haven't tried it.
 
