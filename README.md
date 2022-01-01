@@ -27,7 +27,7 @@ Make sure you have Python 3.7+ and [PyQt5](https://riverbankcomputing.com/softwa
     
 Then, add the `bin/` subdirectory to your `PATH` and run with `dodo`.
 
-An optional Python dependency is [lxml](https://lxml.de/) for native-python HTML-to-text conversion and HTML sanitization, respectively. This is off by default.
+An optional Python dependency is [lxml](https://lxml.de/) for some limited HTML sanitization, which is off by default (see the next section for switching it on).
 
 
 # Configuration
