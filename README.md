@@ -9,7 +9,7 @@ Dodo is a graphical email client written in Python/PyQt5, based on the command l
 
 This README has instructions on installation, usage, and basic configuration. For API documentation (which is also useful for configuration), check out the [Read the Docs](https://dodomail.readthedocs.io/en/latest/) page.
 
-As an email client, Dodo is pretty much feature-complete, but **not yet extensively tested**. Since it's based on notmuch, all of its features are non-destructive, so you shouldn't ever lose any email due to bugs, but you may see some strange behavior.
+As an email client, Dodo is pretty much feature-complete, but **not yet extensively tested**. Since it's based on notmuch, all of its features are non-destructive, so you shouldn't ever lose any email due to bugs. That being said, you might see some strange behaviour, so use at your own risk.
 
 Much of Dodo's design is inspired by two existing notmuch-based clients: [alot](https://github.com/pazz/alot) and [astroid](https://github.com/astroidmail/astroid).
 
