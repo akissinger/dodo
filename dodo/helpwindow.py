@@ -24,6 +24,8 @@ from . import util
 from . import settings
 
 class HelpWindow(QWidget):
+    """A window showing all keybindings"""
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setLayout(QVBoxLayout())
@@ -57,6 +59,10 @@ class HelpWindow(QWidget):
         self.help_text.setHtml(s)
 
     def keyPressEvent(self, e):
+        """Handle key press
+
+        If <escape> is pressed, exit, otherwise pass the keypress on."""
+
         if e.key() == Qt.Key_Escape:
             self.close()
         else:
