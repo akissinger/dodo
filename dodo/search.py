@@ -134,7 +134,7 @@ class SearchModel(QAbstractItemModel):
         else: return 0
 
     def parent(self, index):
-        """This is a stub, since there are no nested indices"""
+        """Always return an invalid index, since there are no nested indices"""
 
         return QModelIndex()
 

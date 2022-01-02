@@ -48,17 +48,35 @@ def flat_thread(d):
     return thread
 
 def short_string(m):
-    "Return a short string describing the current message."
+    """Return a short string describing the provided message
+
+    Currently, this just returns the contents of the "From" header, but something like a first name and
+    short/relative date might be more useful.
+
+    :param m: A JSON message object"""
+
     if 'headers' in m and 'From' in m['headers']:
         return m['headers']['From']
 
 class ThreadModel(QAbstractItemModel):
+    """A model containing a thread, its messages, and some metadata
+
+    This extends `QAbstractItemModel` to enable a tree view to give a summary of the messages, but also contains
+    more data that the tree view doesn't care about (e.g. message bodies). Since this comes from calling
+    "notmuch show --format=json", it contains information about attachments (e.g. filename), but not attachments
+    themselves.
+
+    :param thread_id: the unique thread identifier used by notmuch
+    """
+
     def __init__(self, thread_id):
         super().__init__()
         self.thread_id = thread_id
         self.refresh()
 
     def refresh(self):
+        """Refresh the model by calling "notmuch show"."""
+
         r = subprocess.run(['notmuch', 'show', '--format=json', '--include-html', self.thread_id],
                 stdout=subprocess.PIPE, encoding='utf8')
         self.json_str = r.stdout
@@ -67,7 +85,33 @@ class ThreadModel(QAbstractItemModel):
         self.thread = flat_thread(self.d)
         self.endResetModel()
 
+    def message_at(self, i):
+        """A JSON object describing the i-th message in the (flattened) thread"""
+
+        return self.thread[i]
+
+    def default_message(self):
+        """Return the index of either the oldest unread message or the last message
+        in the thread."""
+
+        for i, m in enumerate(self.thread):
+            if 'tags' in m and 'unread' in m['tags']:
+                return i
+
+        return self.num_messages() - 1
+
+    def num_messages(self):
+        """The number of messages in the thread"""
+
+        return len(self.thread)
+
     def data(self, index, role):
+        """Overrides `QAbstractItemModel.data` to populate a list view with short descriptions of
+        messages in the thread.
+
+        Currently, this just returns the message sender and makes it bold if the message is unread. Adding an
+        emoji to show attachments would be good."""
+
         if index.row() >= len(self.thread):
             return None
 
@@ -90,34 +134,30 @@ class ThreadModel(QAbstractItemModel):
                 return QColor(settings.theme['fg'])
 
     def index(self, row, column, parent=QModelIndex()):
+        """Construct a `QModelIndex` for the given row and (irrelevant) column"""
+
         if not self.hasIndex(row, column, parent): return QModelIndex()
         else: return self.createIndex(row, column, None)
 
     def columnCount(self, index):
+        """Constant = 1"""
+
         return 1
 
     def rowCount(self, index=QModelIndex()):
+        """The number of rows
+
+        This is essentially an alias for :func:`num_messages`, but it also returns 0 if an index is
+        given to tell Qt not to add any child items."""
+        
         if not index or not index.isValid(): return self.num_messages()
         else: return 0
 
     def parent(self, index):
+        """Always return an invalid index, since there are no nested indices"""
+
         return QModelIndex()
 
-    def message_at(self, i):
-        return self.thread[i]
-
-    def default_message(self):
-        """Return the index of either the oldest unread message or the last message
-        in the thread."""
-
-        for i, m in enumerate(self.thread):
-            if 'tags' in m and 'unread' in m['tags']:
-                return i
-
-        return self.num_messages() - 1
-
-    def num_messages(self):
-        return len(self.thread)
 
 class ThreadPanel(Panel):
     def __init__(self, app, thread_id, parent=None):
