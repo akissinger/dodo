@@ -30,6 +30,8 @@ def clean_html2html(s):
     This cleans the input string using :class:`~lxml.html.clean.Cleaner` with the default
     settings. Set the global util.html2html to this function to enable.
 
+    :param s: an HTML input string
+
     """
     from lxml.html.clean import Cleaner
     c = Cleaner()
@@ -46,6 +48,12 @@ def clean_html2html(s):
 #     return c.handle(s)
 
 def w3m_html2text(s):
+    """Convert HTML to plain text using "w3m -dump"
+
+    :param s: an HTML input string
+    :returns: plain text representation of the HTML
+    """
+
     (fd, file) = tempfile.mkstemp(suffix='.html') 
     with os.fdopen(fd, 'w') as f:
         f.write(s)
@@ -56,10 +64,25 @@ def w3m_html2text(s):
 
 
 html2html = lambda s : s
+"""Function used to process HTML messages
+
+This is the identity by default, but can be set to another function to
+do HTML sanitization, (de)formatting, etc.
+"""
+
 html2text = w3m_html2text
+"""Function used to convert HTML to plain text
+
+This is set to :func:`~dodo.util.w3m_html2text` by default, but can be changed
+by the user in "config.py".
+"""
 
 def simple_escape(s):
-    return s.replace('<', '&lt;').replace('>', '&gt;')
+    """Provide (limited) HTML escaping
+
+    This function only escapes &, <, and >."""
+
+    return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
 def chop_s(s):
     if len(s) > 20:
@@ -109,19 +132,22 @@ def quote_body_text(m):
     if not text: return ''
     return ''.join([f'> {ln}\n' for ln in text.splitlines()])
 
-def strip_email(e):
+def strip_email_address(e):
     "String the display name, leaving just the email address."
+
     head = re.compile('^.*<')
     tail = re.compile('>.*$')
     return tail.sub('', head.sub('', e))
 
 def email_is_me(e):
     """Check whether the provided email is me."""
-    return strip_email(settings.email_address) == strip_email(e)
+
+    return strip_email_address(settings.email_address) == strip_email_address(e)
 
 def add_header_line(s, h):
     """Add the given string to the headers, i.e. before the first
     blank line, in the provided string."""
+
     out = ''
     headers = True
     for line in s.splitlines():
@@ -132,23 +158,6 @@ def add_header_line(s, h):
     return out
 
 basic_keytab = {
-  Qt.Key_Exclam: '!',
-  Qt.Key_QuoteDbl: '"',
-  Qt.Key_NumberSign: '#',
-  Qt.Key_Dollar: '$',
-  Qt.Key_Percent: '%',
-  Qt.Key_Ampersand: '&',
-  Qt.Key_Apostrophe: '\'',
-  Qt.Key_ParenLeft: '(',
-  Qt.Key_ParenRight: ')',
-  Qt.Key_Asterisk: '*',
-  Qt.Key_Plus: '+',
-  Qt.Key_Comma: ',',
-  Qt.Key_Minus: '-',
-  Qt.Key_Period: '.',
-  Qt.Key_Slash: '/',
-  Qt.Key_QuoteLeft: '`',
-  Qt.Key_Question: '?',
   Qt.Key_0: '0',
   Qt.Key_1: '1',
   Qt.Key_2: '2',
@@ -159,13 +168,35 @@ basic_keytab = {
   Qt.Key_7: '7',
   Qt.Key_8: '8',
   Qt.Key_9: '9',
-  Qt.Key_Colon: ':',
-  Qt.Key_Semicolon: ';',
-  Qt.Key_Less: '<',
-  Qt.Key_Equal: '=',
-  Qt.Key_Greater: '>',
-  Qt.Key_Question: '?',
+  Qt.Key_Ampersand: '&',
+  Qt.Key_Apostrophe: '\'',
+  Qt.Key_Asterisk: '*',
   Qt.Key_At: '@',
+  Qt.Key_Backslash: '\\',
+  Qt.Key_Bar: '|',
+  Qt.Key_BraceLeft: '{',
+  Qt.Key_BraceRight: '}',
+  Qt.Key_BracketLeft: '[',
+  Qt.Key_BracketRight: ']',
+  Qt.Key_Colon: ':',
+  Qt.Key_Comma: ',',
+  Qt.Key_Dollar: '$',
+  Qt.Key_Equal: '=',
+  Qt.Key_Exclam: '!',
+  Qt.Key_Greater: '>',
+  Qt.Key_Less: '<',
+  Qt.Key_Minus: '-',
+  Qt.Key_NumberSign: '#',
+  Qt.Key_ParenLeft: '(',
+  Qt.Key_ParenRight: ')',
+  Qt.Key_Percent: '%',
+  Qt.Key_Period: '.',
+  Qt.Key_Plus: '+',
+  Qt.Key_Question: '?',
+  Qt.Key_QuoteDbl: '"',
+  Qt.Key_QuoteLeft: '`',
+  Qt.Key_Semicolon: ';',
+  Qt.Key_Slash: '/',
   Qt.Key_A: 'a',
   Qt.Key_B: 'b',
   Qt.Key_C: 'c',
@@ -258,6 +289,12 @@ keytab = {
 }
 
 def key_string(e):
+    """Convert a Qt keycode plus modifiers into a human readable/writable string
+
+    :param e: a QKeyEvent
+    :returns: a string representing e.key() and its modifiers
+    """
+
     global basic_keytab, keytab
     if e.key() in basic_keytab:
         cmd = basic_keytab[e.key()]
