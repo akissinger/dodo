@@ -3,8 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Dodo's documentation!
-================================
+Dodo
+====
+
+A graphical, hackable email client based on notmuch.
 
 .. toctree::
    :maxdepth: 2
