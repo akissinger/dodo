@@ -78,9 +78,3 @@ dodo.util
    :members:
    :show-inheritance:
 
-Module contents
----------------
-
-.. automodule:: dodo
-   :members:
-   :show-inheritance:

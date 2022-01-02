@@ -8,6 +8,10 @@ Dodo
 
 A graphical, hackable email client based on notmuch.
 
+For installation, usage, and basic configuration, see the README_ on GitHub.
+
+.. _README: https://github.com/akissinger/dodo#readme
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:

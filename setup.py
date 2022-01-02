@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.1",
     author="Aleks Kissinger",
     author_email="aleks0@gmail.com",
-    description="A graphical, hackable email client based on notmuch ",
+    description="A graphical, hackable email client based on notmuch",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/akissinger/dodo",
