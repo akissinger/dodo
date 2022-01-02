@@ -7,9 +7,12 @@ Dodo is a graphical email client written in Python/PyQt5, based on the command l
 * offload as much work as possible on existing, excellent command-line tools (UNIX philosphy-style)
 * be simple enough to customise and hack on yourself
 
-Much of its design and general look-and-feel is inspired by two existing notmuch-based clients: [alot](https://github.com/pazz/alot) and [astroid](https://github.com/astroidmail/astroid).
+This README has instructions on installation, usage, and basic configuration. For API documentation (which is also useful for configuration), check out the [Read the Docs](https://dodomail.readthedocs.io/en/latest/) page.
 
-This README has instructions on installation, usage, and basic configuration. For API decumentation (which is also useful for configuration), check out the [Read the Docs](https://dodomail.readthedocs.io/en/latest/) page.
+As an email client, Dodo is pretty much feature-complete, but **not yet extensively tested**. Since it's based on notmuch, all of its features are non-destructive, so you shouldn't ever lose any email due to bugs, but you may see some strange behavior.
+
+Much of Dodo's design is inspired by two existing notmuch-based clients: [alot](https://github.com/pazz/alot) and [astroid](https://github.com/astroidmail/astroid).
+
 
 ## Prerequisites
 
@@ -17,8 +20,8 @@ If you have already used `notmuch` for email, there's not much to do here :). If
 
 * something to check mail and sync with a local Maildir ([offlineimap](http://www.offlineimap.org/) is the default, but others like [mbsync](https://isync.sourceforge.io/) should work fine)
 * a sendmail-compatible SMTP client to send mail ([msmtp](https://marlam.de/msmtp/) is the default)
-* [w3m](http://w3m.sourceforge.net/) for translating HTML messages into plaintext
 * [notmuch](https://notmuchmail.org/) for email searching and tagging
+* [w3m](http://w3m.sourceforge.net/) for translating HTML messages into plaintext
 
 All of this is pretty standard stuff, and should be installable via your package manager on Linux/Mac/etc. If you don't know how to set these things up already, see the respective websites or the "Setting up the prerequisites" section below for a quick reference.
 
