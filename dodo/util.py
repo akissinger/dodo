@@ -91,7 +91,20 @@ def chop_s(s):
         return s
 
 def message_parts(m):
-    "Iterate over JSON message parts recusively, in depth-first order."
+    """
+    Iterate over JSON message parts recursively, in depth-first order
+
+    This is method roughly emulates the behavior of :func:`~email.message.Message.walk`, but
+    for JSON representations of an email message rather than :class:`~email.message.Message`
+    objects.
+
+    Note that if parts are nested, their data will be returned multiple times, first
+    as a sub-object of their parent, then as the part itself.
+
+    :param m: a JSON message
+    :returns: an iterator which returns each JSON-subobject corresponding
+              to a message part.
+    """
 
     if 'body' in m:
         for part in m['body']:
@@ -107,10 +120,19 @@ def message_parts(m):
 def find_content(m, content_type):
     """Return a flat list consisting of the 'content' field of each message
     part with the given content-type."""
+
     return [part['content'] for part in message_parts(m)
               if 'content' in part and part.get('content-type') == content_type]
 
 def body_text(m):
+    """Get the body text of a message
+
+    Search a message recursively for the first part with content-type equal to
+    "text/plain" and return it.
+
+    :param m: a JSON message
+    """
+
     global html2text
     tc = find_content(m, 'text/plain')
     if len(tc) != 0:
@@ -122,6 +144,14 @@ def body_text(m):
     return ''
 
 def body_html(m):
+    """Get the body HTML of a message
+
+    Search a message recursively for the first part with content-type equal to
+    "text/html" and return it.
+
+    :param m: a JSON message
+    """
+
     global html2html
     hc = find_content(m, 'text/html')
     if len(hc) != 0: return hc[0]
@@ -133,14 +163,23 @@ def quote_body_text(m):
     return ''.join([f'> {ln}\n' for ln in text.splitlines()])
 
 def strip_email_address(e):
-    "String the display name, leaving just the email address."
+    """Strip the display name, leaving just the email address
+
+    E.g. "First Last <me@domain.com>" -> "me@domain.com"
+    """
 
     head = re.compile('^.*<')
     tail = re.compile('>.*$')
     return tail.sub('', head.sub('', e))
 
 def email_is_me(e):
-    """Check whether the provided email is me."""
+    """Check whether the provided email is me
+
+    This compares settings.email_address with the provided email, after calling
+    :func:`strip_email_address` on both. This method is used e.g. by
+    :class:`dodo.compose.Compose` to filter out the user's own email when forming
+    a "reply-to-all" message.
+    """
 
     return strip_email_address(settings.email_address) == strip_email_address(e)
 
