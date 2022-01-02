@@ -51,7 +51,27 @@ class SearchModel(QAbstractItemModel):
 
         return len(self.d)
 
+    def thread_json(self, index):
+        """Return a JSON object associated with the thread at the given model index"""
+
+        row = index.row()
+        if row >= 0 and row < len(self.d):
+            return self.d[row]
+        else:
+            return None
+
+    def thread_id(self, index):
+        """Return the notmuch thread id associated with the thread at the given model index"""
+
+        thread = self.thread_json(index)
+        if thread and 'thread' in thread:
+            return thread['thread']
+        else:
+            return None
+
     def data(self, index, role):
+        """Overrides `QAbstractItemModel.data` to populate a view with search results"""
+
         global columns
         if index.row() >= len(self.d) or index.column() >= len(columns):
             return None
@@ -84,6 +104,8 @@ class SearchModel(QAbstractItemModel):
                 return QColor(settings.theme['fg'])
 
     def headerData(self, section, orientation, role):
+        """Overrides `QAbstractItemModel.headerData` to populate a view with column names"""
+
         global columns
         if role == Qt.DisplayRole and section <= len(columns):
             return columns[section]
@@ -91,37 +113,30 @@ class SearchModel(QAbstractItemModel):
             return None
 
     def index(self, row, column, parent=QModelIndex()):
+        """Construct a `QModelIndex` for the given row and column"""
+
         if not self.hasIndex(row, column, parent): return QModelIndex()
         else: return self.createIndex(row, column, None)
 
     def columnCount(self, index):
+        """The number of columns"""
+
         global columns
         return len(columns)
 
     def rowCount(self, index=QModelIndex()):
-        if not index or not index.isValid(): return len(self.d)
+        """The number of rows
+
+        This is essentially an alias for :func:`num_threads`, but it also returns 0 if an index is
+        given to tell Qt not to add any child items."""
+
+        if not index or not index.isValid(): return self.num_threads()
         else: return 0
 
     def parent(self, index):
+        """This is a stub, since there are no nested indices"""
+
         return QModelIndex()
-
-    def thread_json(self, index):
-        """Return a JSON object associated with the thread at the given model index"""
-
-        row = index.row()
-        if row >= 0 and row < len(self.d):
-            return self.d[row]
-        else:
-            return None
-
-    def thread_id(self, index):
-        """Return the notmuch thread id associated with the thread at the given model index"""
-
-        thread = self.thread_json(index)
-        if thread and 'thread' in thread:
-            return thread['thread']
-        else:
-            return None
 
 
 class SearchPanel(Panel):
