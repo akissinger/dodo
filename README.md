@@ -1,3 +1,5 @@
+# Dodo
+
 Dodo is a graphical email client written in Python/PyQt5, based on the command line email swiss-army-knife [notmuch](https://notmuchmail.org/). It's main goals are to:
 
 * offer efficient, keyboard-oriented mail reading, sorting, and composing
@@ -7,7 +9,9 @@ Dodo is a graphical email client written in Python/PyQt5, based on the command l
 
 Much of its design and general look-and-feel is inspired by two existing notmuch-based clients: [alot](https://github.com/pazz/alot) and [astroid](https://github.com/astroidmail/astroid).
 
-# Prerequisites
+This README has instructions on installation, usage, and basic configuration. For API decumentation (which is also useful for configuration), check out the [Read the Docs](https://dodomail.readthedocs.io/en/latest/) page.
+
+## Prerequisites
 
 If you have already used `notmuch` for email, there's not much to do here :). If not, you'll need to set up some other programs first:
 
@@ -19,7 +23,7 @@ If you have already used `notmuch` for email, there's not much to do here :). If
 All of this is pretty standard stuff, and should be installable via your package manager on Linux/Mac/etc. If you don't know how to set these things up already, see the respective websites or the "Setting up the prerequisites" section below for a quick reference.
 
 
-# Install and run
+## Install and run
 
 Make sure you have Python 3.7+ and [PyQt5](https://riverbankcomputing.com/software/pyqt/intro). Clone Dodo with:
 
@@ -32,9 +36,13 @@ Then, add the `bin/` subdirectory to your `PATH` and run with:
 An optional Python dependency is [lxml](https://lxml.de/) for some limited HTML sanitization, which is off by default (see the next section for switching it on).
 
 
-# Configuration
+## Configuration
 
-Dodo is configured via a Python file located in `~/.config/dodo/config.py`. Most settings have reasonable defaults (assuming your are using offlineimap/msmtp), which can be found in [settings.py](https://github.com/akissinger/dodo/blob/master/dodo/settings.py). The only two things that must be set for Dodo to work properly are your email address and the location of your sent mail folder. Here is an example `config.py`, with some common settings:
+Dodo is configured via `~/.config/dodo/config.py`. This is just a Python file that gets `eval`-ed right before the main window is shown.
+
+Most settings have reasonable defaults (assuming your are using offlineimap/msmtp), which can be found in [settings.py](https://github.com/akissinger/dodo/blob/master/dodo/settings.py). The only two things that must be set for Dodo to work properly are your email address and the location of your sent mail folder. Some things you probably also want to set up are the text editor (for composing messages) and the file browser (for viewing attachments).
+
+Here is an example `config.py`, with some settings similar to the ones I use:
 
 ```python
 import dodo
@@ -63,7 +71,7 @@ The above function passes the HTML through the `Cleaner` object of the [lxml](ht
 
 Key mappings can be customised by changing the dictionaries defined in [keymap.py](https://github.com/akissinger/dodo/blob/master/dodo/keymap.py). These map a key to a pair consisting of a description string and a Python function. For the `global_keymap`, this function takes the `Dodo` object defined in [app.py](https://github.com/akissinger/dodo/blob/master/dodo/app.py) as its argument. The other maps take the relevant "local" widget (SearchView, ThreadView, ComposeView, or CommandBar).
 
-# Basic use
+## Basic use
 
 Most functionality in Dodo comes from keyboard shortcuts. Press `?` to get a full list of the key mappings at any time.
 
@@ -72,13 +80,13 @@ Dodo has 3 different kinds of view: search views, thread views, and compose view
 In the compose view, press `<enter>` to edit the message on your chosen editor. Once you save and exit, the message will be updated. Press `a` to add attachments (or use the special `A:` header). Press `S` to send.
 
 
-# Setting up the prerequisites
+## Setting up the prerequisites
 
 Since there's a lot of little bits to configure, I've also included some minimal configurations for offlineimap, msmtp, and notmuch, just to have it all in one place.
 
 Note the offlineimap and msmtp configurations below simply read the password from a plaintext file. More secure options are available, which are explained in the respective docs.
 
-## Incoming mail
+### Incoming mail
 
 Assuming your system configuration directory is `~/.config/`, the configuration file for offlineimap is located in `~/.config/offlineimap/config`. Here is a template for syncing one IMAP account named "Work":
 
@@ -102,7 +110,7 @@ Assuming your system configuration directory is `~/.config/`, the configuration 
 
 If you want to set up multiple IMAP accounts, just put them all in the `~/mail` folder and set `~/mail` as your database path for notmuch.
 
-## Outgoing mail
+### Outgoing mail
 
 Here is a sample `~/.config/msmtp/config`, setting up a single SMTP server (also named "Work") with TLS:
 
@@ -121,7 +129,7 @@ Here is a sample `~/.config/msmtp/config`, setting up a single SMTP server (also
 
 You may need to change the 4th line if your system stores CA certificates in a different location.
 
-## Mail indexing
+### Mail indexing
 
 Once offlineimap is set up, just run `notmuch` from the command line to do some initial setup, which gets saved in `~/.notmuch-config` by default. You can set `~/mail` as your database path. notmuch has lots of options, the ability to set up various hooks and filters, and to sync certain IMAP markers with notmuch tags.
 
