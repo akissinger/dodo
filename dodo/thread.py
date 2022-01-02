@@ -160,6 +160,14 @@ class ThreadModel(QAbstractItemModel):
 
 
 class ThreadPanel(Panel):
+    """A panel showing an email thread
+
+    This is the panel used for email viewing.
+
+    :param app: the unique instance of the :class:`~dodo.app.Dodo` app class
+    :param thread_id: the unique ID notmuch uses to identify this thread
+    """
+
     def __init__(self, app, thread_id, parent=None):
         super().__init__(app, parent)
         window_settings = QSettings("dodo", "dodo")
@@ -202,9 +210,19 @@ class ThreadPanel(Panel):
 
 
     def title(self):
+        """The tab title
+
+        The title is given as the (shortened) subject of the currently visible message.
+        """
         return util.chop_s(self.subject)
 
     def refresh(self):
+        """Refresh the panel using the output of "notmuch show"
+
+        Note the view of the message body is not refreshed, as this would pop the user back to
+        the top of the message every time it happens. To refresh the current message body, use
+        :func:`show_message` wihtout any arguments."""
+
         self.model.refresh()
         ix = self.thread_list.model().index(self.current_message, 0)
         if self.thread_list.model().checkIndex(ix):
@@ -248,6 +266,11 @@ class ThreadPanel(Panel):
         super().refresh()
 
     def show_message(self, i=-1):
+        """Show a message
+
+        If an index is provided, switch the current message to that index, otherwise refresh
+        the view of the current message.
+        """
         if i != -1: self.current_message = i
 
         if self.current_message >= 0 and self.current_message < self.model.num_messages():
@@ -277,12 +300,25 @@ class ThreadPanel(Panel):
 
 
     def next_message(self):
+        """Show the next message in the thread"""
+
         self.show_message(min(self.current_message + 1, self.model.num_messages() - 1))
 
     def previous_message(self):
+        """Show the previous message in the thread"""
+
         self.show_message(max(self.current_message - 1, 0))
 
     def scroll_message(self, lines=None, pages=None, pos=None):
+        """Scroll the message body
+        
+        This operates in 3 different modes, depending on which arguments are given. Precisely one of the
+        three arguments `lines`, `pages`, and `pos` should be provided.
+
+        :param lines: scroll up/down the given number of 20-pixel increments. Negative numbers scroll up.
+        :param pages: scroll up/down the given number of pages. Negative numbers scroll up.
+        :param pos: scroll to the given position (possible values are 'top' and 'bottom')
+        """
         if pos == 'top':
             self.message_view.page().runJavaScript(f'window.scrollTo(0, 0)',
                     QWebEngineScript.ApplicationWorld)
@@ -297,6 +333,8 @@ class ThreadPanel(Panel):
                     QWebEngineScript.ApplicationWorld)
 
     def toggle_message_tag(self, tag):
+        """Toggle the given tag on the current message"""
+
         m = self.model.message_at(self.current_message)
         if m:
             if tag in m['tags']:
@@ -306,6 +344,11 @@ class ThreadPanel(Panel):
             self.tag_message(tag_expr)
 
     def tag_message(self, tag_expr):
+        """Apply the given tag expression to the current message
+
+        A tag expression is a string consisting of one more statements of the form "+TAG"
+        or "-TAG" to add or remove TAG, respectively, separated by whitespace."""
+
         m = self.model.message_at(self.current_message)
         if m:
             if not ('+' in tag_expr or '-' in tag_expr):
@@ -316,14 +359,27 @@ class ThreadPanel(Panel):
             self.refresh()
 
     def toggle_html(self):
+        """Toggle between HTML and plain text message view"""
+
         self.html_mode = not self.html_mode
         self.show_message()
 
     def reply(self, to_all=True):
+        """Open a :class:`~dodo.compose.ComposePanel` populated with a reply
+
+        This uses the current message as the message to reply to. This should probably do something
+        smarter if the current message is from the user (e.g. reply to the previous one instead).
+
+        :param to_all: if True, do a reply to all instead (see `~dodo.compose.ComposePanel`)"""
+
         self.app.compose(reply_to=self.model.message_at(self.current_message), reply_to_all=to_all)
 
     def open_attachments(self):
-        "Write attachments out into temp directory and open with `settings.file_browser_command`"
+        """Write attachments out into temp directory and open with `settings.file_browser_command`
+
+        Currently, this exports a new copy of the attachments every time it is called. Maybe it should
+        do something smarter?"""
+
         m = self.model.message_at(self.current_message)
         if not (m and 'filename' in m): return
         temp_dir = tempfile.mkdtemp(prefix='dodo-')

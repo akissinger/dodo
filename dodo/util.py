@@ -25,6 +25,12 @@ import subprocess
 from . import settings
 
 def clean_html2html(s):
+    """Sanitize the given HTML string
+
+    This cleans the input string using :class:`~lxml.html.clean.Cleaner` with the default
+    settings. Set the global util.html2html to this function to enable.
+
+    """
     from lxml.html.clean import Cleaner
     c = Cleaner()
     return c.clean_html(s)
