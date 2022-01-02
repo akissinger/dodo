@@ -28,9 +28,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4"
-     inkscape:cx="99.484476"
-     inkscape:cy="182.10617"
+     inkscape:zoom="0.49497475"
+     inkscape:cx="230.29135"
+     inkscape:cy="29.128576"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -106,18 +106,32 @@
        cx="37.30196"
        cy="230.08746"
        r="14.147161" />
+    <circle
+       style="fill:#000000;fill-opacity:1;stroke-width:2.60006022;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path884-7"
+       cx="22.98518"
+       cy="226.47414"
+       r="4.07586" />
+    <ellipse
+       style="fill:#800080;fill-opacity:1;stroke-width:2.60006022;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path901"
+       cx="198.07281"
+       cy="114.48421"
+       rx="2.0788691"
+       ry="4.0632439"
+       transform="rotate(53.093032)" />
     <ellipse
        style="fill:#ff6600;stroke-width:3.87681389;stroke-miterlimit:4;stroke-dasharray:none"
        id="path819"
-       cx="23.190081"
-       cy="235.50198"
+       cx="25.328238"
+       cy="236.83833"
        rx="6.5754409"
        ry="10.560557" />
     <circle
-       style="fill:#ffffff;fill-opacity:1;stroke-width:1.916309;stroke-miterlimit:4;stroke-dasharray:none"
-       id="path880"
-       cx="38.17466"
-       cy="226.64474"
-       r="1.7411116" />
+       style="fill:#000000;fill-opacity:1;stroke-width:2.60006022;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path884"
+       cx="33.570007"
+       cy="226.47414"
+       r="4.07586" />
   </g>
 </svg>
