@@ -119,6 +119,9 @@ class CommandBar(QLineEdit):
         """
         k = util.key_string(e)
         if k in keymap.command_bar_keymap:
-            keymap.command_bar_keymap[k](self)
+            if isinstance(keymap.command_bar_keymap[cmd], tuple):
+                keymap.command_bar_keymap[k][1](self)
+            else:
+                keymap.command_bar_keymap[k](self)
         else:
             super().keyPressEvent(e)
