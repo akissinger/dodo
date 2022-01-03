@@ -73,8 +73,8 @@ class CommandBar(QLineEdit):
         elif self.mode == 'tag':
             w = self.app.tabs.currentWidget()
             if w:
-                if isinstance(w, search.SearchView): w.tag_thread(self.text())
-                elif isinstance(w, thread.ThreadView): w.tag_message(self.text())
+                if isinstance(w, search.SearchPanel): w.tag_thread(self.text())
+                elif isinstance(w, thread.ThreadPanel): w.tag_message(self.text())
                 w.refresh()
 
         if self.mode in self.history:
