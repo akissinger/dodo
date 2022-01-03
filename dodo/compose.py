@@ -216,7 +216,7 @@ class ComposePanel(Panel):
         The editor is configured via :func:`dodo.settings.editor_command`."""
 
         if self.editor_thread is None:
-            self.editor_thread = EditorThread(self)
+            self.editor_thread = EditorThread(self, parent=self)
             self.editor_thread.start()
 
     def attach_file(self):
@@ -238,6 +238,6 @@ class ComposePanel(Panel):
         if self.sendmail_thread is None:
             self.status = f'<i style="color:{settings.theme["fg_bright"]}">sending</i>'
             self.refresh()
-            self.sendmail_thread = SendmailThread(self)
+            self.sendmail_thread = SendmailThread(self, parent=self)
             self.sendmail_thread.start()
 
