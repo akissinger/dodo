@@ -76,6 +76,9 @@ class SendmailThread(QThread):
                 else:
                     eml[h] = m[h]
 
+            eml['Message-ID'] = email.utils.make_msgid()
+            eml['User-Agent'] = 'Dodo'
+
             eml.set_content(m.get_payload())
 
             if not "Date" in eml:
