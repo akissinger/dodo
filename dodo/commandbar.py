@@ -119,7 +119,7 @@ class CommandBar(QLineEdit):
         """
         k = util.key_string(e)
         if k in keymap.command_bar_keymap:
-            if isinstance(keymap.command_bar_keymap[cmd], tuple):
+            if isinstance(keymap.command_bar_keymap[k], tuple):
                 keymap.command_bar_keymap[k][1](self)
             else:
                 keymap.command_bar_keymap[k](self)
