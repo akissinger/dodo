@@ -156,7 +156,7 @@ class ComposePanel(Panel):
                 if 'Cc' in reply_to['headers']:
                     cc += email_sep.split(reply_to['headers']['Cc'])
 
-            # cc = [e for e in cc if not util.email_is_me(e)]
+            cc = [e for e in cc if not util.email_is_me(e)]
 
         self.message_string = f'From: {settings.email_address}\nTo: {to}\n'
         if len(cc) != 0: self.message_string += f'Cc: {"; ".join(cc)}\n'
