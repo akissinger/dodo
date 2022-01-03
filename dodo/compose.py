@@ -113,11 +113,13 @@ class SendmailThread(QThread):
                 # save to sent folder
                 m = mailbox.MaildirMessage(str(eml))
                 m.set_flags('S')
-                mailbox.Maildir(settings.sent_dir).add(m)
+                key = mailbox.Maildir(settings.sent_dir).add(m)
+                # print(f'add: {key}')
+
+                subprocess.run(['notmuch', 'new'])
 
                 if self.panel.reply_to:
                     subprocess.run(['notmuch', 'tag', '+replied', '--', 'id:' + self.panel.reply_to['id']])
-                subprocess.run(['notmuch', 'new'])
                 self.panel.app.invalidate_panels()
                 self.panel.status = f'<i style="color:{settings.theme["fg_good"]}">sent</i>'
             else:

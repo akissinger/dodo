@@ -19,7 +19,6 @@
 global_keymap = {
   '?':       ('show help', lambda a: a.show_help()),
   'Q':       ('quit', lambda a: a.quit()),
-  'Z Z':     ('quit', lambda a: a.quit()),
   '`':       ('sync mail', lambda a: a.sync_mail(quiet=False)),
   'l':       ('next panel', lambda a: a.next_panel()),
   'h':       ('previous panel', lambda a: a.previous_panel()),
