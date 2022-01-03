@@ -1,5 +1,7 @@
 # Dodo
 
+[![Documentation Status](https://readthedocs.org/projects/dodomail/badge/?version=latest)](https://dodomail.readthedocs.io/en/latest/?badge=latest)
+
 Dodo is a graphical email client written in Python/PyQt5, based on the command line email swiss-army-knife [notmuch](https://notmuchmail.org/). It's main goals are to:
 
 * offer efficient, keyboard-oriented mail reading, sorting, and composing
