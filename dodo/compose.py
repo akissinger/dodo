@@ -39,41 +39,31 @@ class EditorThread(QThread):
 
     Used by the :func:`~dodo.compose.ComposePanel.edit` method."""
 
-    done = pyqtSignal()
-    """Signals the external editor has closed"""
-
     def __init__(self, panel, parent=None):
         super().__init__(parent)
         self.panel = panel
-        self.done.connect(panel.edit_done)
 
     def run(self):
-        try:
-            fd, file = tempfile.mkstemp('.eml')
-            f = os.fdopen(fd, 'w')
-            f.write(self.panel.message_string)
-            f.close()
+        fd, file = tempfile.mkstemp('.eml')
+        f = os.fdopen(fd, 'w')
+        f.write(self.panel.message_string)
+        f.close()
 
-            cmd = settings.editor_command + [file]
-            subprocess.run(cmd)
+        cmd = settings.editor_command + [file]
+        subprocess.run(cmd)
 
-            with open(file, 'r') as f:
-                self.panel.message_string = f.read()
-            os.remove(file)
-        finally:
-            self.done.emit()
+        with open(file, 'r') as f:
+            self.panel.message_string = f.read()
+        os.remove(file)
 
 class SendmailThread(QThread):
     """A QThread used for editing mail with the external editor
 
     Used by the :func:`~dodo.compose.ComposePanel.edit` method."""
 
-    done = pyqtSignal()
-
     def __init__(self, panel, parent=None):
         super().__init__(parent)
         self.panel = panel
-        self.done.connect(panel.refresh)
 
     def run(self):
         try:
@@ -126,8 +116,6 @@ class SendmailThread(QThread):
                 self.panel.status = f'<i style="color:{settings.theme["fg_bad"]}">error</i>'
         except TimeoutExpired:
             self.panel.status = f'<i style="color:{settings.theme["fg_bad"]}">timed out</i>'
-        finally:
-            self.done.emit()
 
 
 class ComposePanel(Panel):
@@ -204,19 +192,21 @@ class ComposePanel(Panel):
 
         super().refresh()
 
-    def edit_done(self):
-        """Method gets called once the external editor has closed"""
-
-        self.editor_thread = None
-        self.refresh()
-
     def edit(self):
         """Edit the email message with an external text editor
 
         The editor is configured via :func:`dodo.settings.editor_command`."""
 
+        # only open one editor at a time
         if self.editor_thread is None:
             self.editor_thread = EditorThread(self, parent=self)
+            
+            def done():
+                self.editor_thread.deleteLater()
+                self.editor_thread = None
+                self.refresh()
+
+            self.editor_thread.finished.connect(done)
             self.editor_thread.start()
 
     def attach_file(self):
@@ -235,9 +225,17 @@ class ComposePanel(Panel):
         Sends asynchronously using :class:`~dodo.compose.SendmailThread`. If one or more occurances of
         the "A:" pseudo-header are detected, these are converted into attachments."""
 
+        # only try to send mail once at a time
         if self.sendmail_thread is None:
             self.status = f'<i style="color:{settings.theme["fg_bright"]}">sending</i>'
             self.refresh()
             self.sendmail_thread = SendmailThread(self, parent=self)
+
+            def done():
+                self.sendmail_thread.deleteLater()
+                self.sendmail_thread = None
+                self.refresh()
+
+            self.sendmail_thread.finished.connect(done)
             self.sendmail_thread.start()
 
