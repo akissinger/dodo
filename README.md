@@ -5,7 +5,7 @@
 Dodo is a graphical email client written in Python/PyQt5, based on the command line email swiss-army-knife [notmuch](https://notmuchmail.org/). It's main goals are to:
 
 * offer efficient, keyboard-oriented mail reading, sorting, and composing
-* give a mostly text-based email experience by default, but with HTML support a few keystrokes a way
+* give a mostly text-based email experience by default, but with HTML support a few keystrokes away
 * offload as much work as possible on existing, excellent command-line tools (UNIX philosphy-style)
 * be simple enough to customise and hack on yourself
 
