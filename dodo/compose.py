@@ -111,8 +111,8 @@ class SendmailThread(QThread):
 
                 subprocess.run(['notmuch', 'new'])
 
-                if self.panel.reply_to:
-                    subprocess.run(['notmuch', 'tag', '+replied', '--', 'id:' + self.panel.reply_to['id']])
+                if self.panel.mode == 'reply' or self.panel.mode == 'replyall' and 'id' in self.panel.msg:
+                    subprocess.run(['notmuch', 'tag', '+replied', '--', 'id:' + self.panel.msg['id']])
                 self.panel.app.invalidate_panels()
                 self.panel.status = f'<i style="color:{settings.theme["fg_good"]}">sent</i>'
             else:
@@ -124,55 +124,56 @@ class SendmailThread(QThread):
 class ComposePanel(Panel):
     """A panel for composing messages
 
-    :param reply_to: If provided, populate the email as a reply to the given message
-    :param reply_to_all: If True, set the "To:" header to contain all of the emails in
-                         "From:", "To:", and "Cc:" for which :func:`~dodo.util.email_is_me`
-                         returns false."""
+    :param msg: A JSON message referenced in a reply or forward
+    :param mode: Composition mode. Possible values are '', 'reply', 'replyall',
+                 and 'forward'
+    """
 
-    def __init__(self, app, reply_to=None, reply_to_all=True, parent=None):
+    def __init__(self, app, mode='', msg=None, parent=None):
         super().__init__(app, parent)
         self.set_keymap(keymap.compose_keymap)
+        self.mode = mode
+        self.msg = msg
         self.message_view = QWebEngineView()
         self.message_view.setZoomFactor(1.2)
         self.layout().addWidget(self.message_view)
         self.status = f'<i style="color:{settings.theme["fg"]}">draft</i>'
 
-        to = ''
-        cc = []
-        subject = ''
-        if reply_to:
-            if 'Subject' in reply_to['headers']:
-                subject = reply_to['headers']['Subject']
+        self.message_string = f'From: {settings.email_address}\n'
+
+        if mode == 'reply' or mode == 'replyall':
+            if 'From' in msg['headers']:
+                self.message_string += f'To: {msg["headers"]["From"]}\n'
+
+            if 'Subject' in msg['headers']:
+                subject = msg['headers']['Subject']
                 if subject[0:3].upper() != 'RE:':
                     subject = 'RE: ' + subject
+                self.message_string += f'Subject: {subject}\n'
 
-            if 'From' in reply_to['headers']:
-                to = reply_to['headers']['From']
-
-            if reply_to_all:
+            if mode == 'replyall':
+                cc = []
                 email_sep = re.compile('\s*[;,]\s*')
-                if 'To' in reply_to['headers']:
-                    cc += email_sep.split(reply_to['headers']['To'])
-                if 'Cc' in reply_to['headers']:
-                    cc += email_sep.split(reply_to['headers']['Cc'])
+                if 'To' in msg['headers']:
+                    cc += email_sep.split(msg['headers']['To'])
+                if 'Cc' in msg['headers']:
+                    cc += email_sep.split(msg['headers']['Cc'])
+                cc = [e for e in cc if not util.email_is_me(e)]
+                if len(cc) != 0: self.message_string += f'Cc: {"; ".join(cc)}\n'
 
-            cc = [e for e in cc if not util.email_is_me(e)]
+            if 'id' in msg:
+                self.message_string += f'In-Reply-To: <{msg["id"]}>\n'
 
-        self.message_string = f'From: {settings.email_address}\nTo: {to}\n'
-        if len(cc) != 0: self.message_string += f'Cc: {"; ".join(cc)}\n'
-        self.message_string += f'Subject: {subject}\n'
+            self.message_string += '\n\n'
 
-        if reply_to and 'id' in reply_to:
-            self.message_string += f'In-Reply-To: <{reply_to["id"]}>\n'
+            if msg:
+                self.message_string += '\n' + util.quote_body_text(msg)
 
-        self.message_string += '\n\n'
-
-        if reply_to:
-            self.message_string += '\n' + util.quote_body_text(reply_to)
+        else:
+            self.message_string += 'To: \nSubject: \n\n'
 
         self.editor_thread = None
         self.sendmail_thread = None
-        self.reply_to = reply_to
 
         self.refresh()
 

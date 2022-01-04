@@ -201,18 +201,18 @@ class Dodo(QApplication):
         p = thread.ThreadPanel(self, thread_id)
         self.add_panel(p)
 
-    def compose(self, reply_to=None, reply_to_all=True):
+    def compose(self, mode='', msg=None):
         """Open a compose panel
 
         If reply_to is provided, set populate the 'To' and 'In-Reply-To' headers
         appropriately, and quote the text in this message.
 
-        :param reply_to: A JSON object containing an email message returned by notmuch
-        :param reply_to_all: If True, use all of the email addresses in 'From', 'To' and
-                             'Cc' to populate the 'To' field, unless :func:`~dodo.util.email_is_me`
-                             returns True."""
+        :param msg: A JSON message referenced in a reply or forward
+        :param mode: Composition mode. Possible values are '', 'reply', 'replyall',
+                     and 'forward'
+        """
 
-        p = compose.ComposePanel(self, reply_to=reply_to, reply_to_all=reply_to_all)
+        p = compose.ComposePanel(self, mode, msg)
         self.add_panel(p)
 
     def sync_mail(self, quiet=True):

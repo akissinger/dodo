@@ -372,7 +372,8 @@ class ThreadPanel(Panel):
 
         :param to_all: if True, do a reply to all instead (see `~dodo.compose.ComposePanel`)"""
 
-        self.app.compose(reply_to=self.model.message_at(self.current_message), reply_to_all=to_all)
+        self.app.compose(mode='replyall' if to_all else 'reply',
+                         msg=self.model.message_at(self.current_message))
 
     def open_attachments(self):
         """Write attachments out into temp directory and open with `settings.file_browser_command`
