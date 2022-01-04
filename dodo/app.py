@@ -129,6 +129,10 @@ class Dodo(QApplication):
 
         self.help_window.show()
 
+    def raise_panel(self, panel):
+        self.tabs.setCurrentWidget(panel)
+        self.main_window.setWindowState(self.main_window.windowState() ^ Qt.WindowActive)
+
     def add_panel(self, panel, focus=True):
         """Add a panel to the tab view
 

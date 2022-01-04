@@ -208,6 +208,7 @@ class ComposePanel(Panel):
                 self.editor_thread.deleteLater()
                 self.editor_thread = None
                 self.refresh()
+                self.app.raise_panel(self)
 
             self.editor_thread.finished.connect(done)
             self.editor_thread.start()
