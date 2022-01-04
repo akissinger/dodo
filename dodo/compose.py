@@ -169,6 +169,9 @@ class ComposePanel(Panel):
             if msg:
                 self.message_string += '\n' + util.quote_body_text(msg)
 
+        elif mode == 'forward':
+            pass # TODO
+
         else:
             self.message_string += 'To: \nSubject: \n\n'
 
