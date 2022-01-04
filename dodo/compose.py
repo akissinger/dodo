@@ -186,7 +186,7 @@ class ComposePanel(Panel):
 
         self.message_view.setHtml(f"""<html>
         <style type="text/css">
-        {settings.message_css.format(**settings.theme)}
+        {util.make_message_css()}
         </style>
         <body>
         <p>{self.status}</p>

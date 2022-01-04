@@ -196,6 +196,15 @@ def add_header_line(s, h):
         out += line + '\n'
     return out
 
+def make_message_css():
+    """Fill placeholders in settings.message_css using the current theme
+    and font settings."""
+
+    d = settings.theme.copy()
+    d["message_font"] = settings.message_font
+    d["message_font_size"] = settings.message_font_size
+    return settings.message_css.format(**d)
+
 basic_keytab = {
   Qt.Key_0: '0',
   Qt.Key_1: '1',

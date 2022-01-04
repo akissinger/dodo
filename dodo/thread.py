@@ -290,7 +290,7 @@ class ThreadPanel(Panel):
                     <html>
                     <head>
                     <style type="text/css">
-                    {settings.message_css.format(**settings.theme)}
+                    {util.make_message_css()}
                     </style>
                     </head>
                     <body>

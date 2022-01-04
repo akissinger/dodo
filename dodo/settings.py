@@ -32,6 +32,9 @@ default_to_html = False
 theme = themes.nord
 search_font = 'DejaVu Sans Mono'
 search_font_size = 13
+message_font = 'DejaVu Sans Mono'
+message_font_size = 12
+
 search_view_padding = 1
 tag_icons = {
   'inbox': '',
@@ -43,18 +46,18 @@ tag_icons = {
   'marked': '',
 }
 
-# css used in view and compose window. Colour names in curly braces
-# are substituted using the current theme.
+# css used in view and compose window. Placeholders may be included in
+# curly brackets for any color named in the current theme, as well as
+# {message_font} and {message_font_size}.
 message_css = """
 pre {{
-  font-family: DejaVu Sans Mono;
-  font-size: 12pt;
+  font-family: {message_font};
+  font-size: {message_font_size}pt;
 }}
 
 body {{
   background-color: {bg};
   color: {fg};
-  font-family: DejaVu Sans;
 }}
 
 ::-webkit-scrollbar {{
