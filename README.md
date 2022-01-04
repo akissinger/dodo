@@ -74,7 +74,37 @@ While Javascript is disabled in the HTML email viewer, you may want to set up a 
 
 The above function passes the HTML through the `Cleaner` object of the [lxml](https://lxml.de/) library. Note this still allows some dodgy stuff, such as calling home via embedded `img` tags. Fully safe and private HTML email from untrusted sources should be considered a work-in-progress.
 
+### Key mapping
+
 Key mappings can be customised by changing the dictionaries defined in [keymap.py](https://github.com/akissinger/dodo/blob/master/dodo/keymap.py). These map a key to a pair consisting of a description string and a Python function. For the `global_keymap`, this function takes the `Dodo` object defined in [app.py](https://github.com/akissinger/dodo/blob/master/dodo/app.py) as its argument. The other maps take the relevant "local" widget (SearchView, ThreadView, ComposeView, or CommandBar).
+
+To bind a single key, you can write something like this in `config.py`:
+
+```python
+dodo.keymap.search_keymap['t'] = (
+  'toggle todo',
+  lambda p: p.toggle_thread_tag('todo'))
+```
+or you can replace the keymap completely from `config.py`, e.g.:
+```python
+dodo.keymap.search_keymap = {
+  'C-n': ('next thread', lambda p: p.next_thread()),
+  'C-p': ('previous thread', lambda p: p.previous_thread()),
+  # ...
+}
+```
+
+The keymaps used by Dodo are `global_keymap`, `search_keymap`, `thread_keymap`, and `command_bar_keymap`. All the keymaps except `command_bar_keymap` also support keychords, which are represented as space-separated sequences of keypresses, e.g.
+```python
+dodo.keymap.global_keymap['C-x C-c'] = (
+  'exit emacs ... erm, I mean Dodo',
+  lambda a: a.quit())
+```
+
+You can unmap a single key by deleting it from the dictionary:
+```python
+del dodo.keymap.global_keymap["Q"]
+```
 
 ## Basic use
 
