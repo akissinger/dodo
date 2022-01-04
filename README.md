@@ -58,7 +58,7 @@ dodo.settings.sent_dir = '/home/user/mail/Work/Sent'
 
 # optional
 dodo.settings.theme = dodo.themes.nord
-dodo.settings.editor_command = ['kitty', 'nvim']
+dodo.settings.editor_command = ['kitty', 'nvim', '-c', 'set tw=0']
 dodo.settings.file_browser_command = ['fman', '/home/user/Documents/']
 ```
 
