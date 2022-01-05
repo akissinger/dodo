@@ -370,10 +370,17 @@ class ThreadPanel(Panel):
         This uses the current message as the message to reply to. This should probably do something
         smarter if the current message is from the user (e.g. reply to the previous one instead).
 
-        :param to_all: if True, do a reply to all instead (see `~dodo.compose.ComposePanel`)"""
+        :param to_all: if True, do a reply to all instead (see `~dodo.compose.ComposePanel`)
+        """
 
         self.app.compose(mode='replyall' if to_all else 'reply',
                          msg=self.model.message_at(self.current_message))
+
+    def forward(self):
+        """Open a :class:`~dodo.compose.ComposePanel` populated with a forwarded message
+        """
+
+        self.app.compose(mode='forward', msg=self.model.message_at(self.current_message))
 
     def open_attachments(self):
         """Write attachments out into temp directory and open with `settings.file_browser_command`

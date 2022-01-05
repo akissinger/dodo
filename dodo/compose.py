@@ -193,6 +193,15 @@ class ComposePanel(Panel):
                     subject = 'FW: ' + subject
                 self.message_string += f'Subject: {subject}\n'
 
+            # TODO attachments from fwded message here
+
+            self.message_string += '\n\n\n---------- Forwarded message ---------\n'
+            for h in ['From', 'Date', 'Subject', 'To']:
+                if h in msg['headers']:
+                    self.message_string += f'{h}: {msg["headers"][h]}\n'
+
+            self.message_string += '\n' + util.body_text(msg) + '\n'
+
         else:
             self.message_string += 'To: \nSubject: \n\n'
 

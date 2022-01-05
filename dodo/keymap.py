@@ -63,6 +63,7 @@ thread_keymap = {
   'H':       ('toggle HTML', lambda p: p.toggle_html()),
   'r':       ('reply to all', lambda p: p.reply(to_all=True)),
   'R':       ('reply', lambda p: p.reply(to_all=False)),
+  'f':       ('forward', lambda p: p.forward()),
   'A':       ('show attachments in file browser', lambda p: p.open_attachments()),
 }
 
