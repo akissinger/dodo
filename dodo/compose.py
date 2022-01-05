@@ -81,8 +81,28 @@ class SendmailThread(QThread):
 
             eml.set_content(m.get_payload())
 
+            # add a date if it's missing
             if not "Date" in eml:
                 eml["Date"] = email.utils.formatdate(localtime=True)
+
+            # add "In-Reply-To" and "References" headers if there's an old message
+            if self.panel.msg and 'id' in self.panel.msg:
+                msg_id = f'<{self.panel.msg["id"]}>'
+                eml["In-Reply-To"] = msg_id
+
+                refs = [msg_id]
+                if 'filename' in self.panel.msg and len(self.panel.msg['filename']) != 0:
+                    try:
+                        with open(self.panel.msg['filename'][0]) as f:
+                            old_msg = email.parser.Parser().parse(f, headersonly=True)
+
+                            if "References" in old_msg:
+                                refs = old_msg["References"].split() + refs
+                    except IOError:
+                        print("Couldn't open message to get References")
+
+                eml["References"] = ' '.join(refs)
+
 
             for att in attachments:
                 mime, _ = mimetypes.guess_type(att)
@@ -124,9 +144,10 @@ class SendmailThread(QThread):
 class ComposePanel(Panel):
     """A panel for composing messages
 
-    :param msg: A JSON message referenced in a reply or forward
     :param mode: Composition mode. Possible values are '', 'reply', 'replyall',
                  and 'forward'
+    :param msg: A JSON message referenced in a reply or forward. If mode != '',
+                this cannot be None.
     """
 
     def __init__(self, app, mode='', msg=None, parent=None):
@@ -161,19 +182,19 @@ class ComposePanel(Panel):
                 cc = [e for e in cc if not util.email_is_me(e)]
                 if len(cc) != 0: self.message_string += f'Cc: {"; ".join(cc)}\n'
 
-            if 'id' in msg:
-                self.message_string += f'In-Reply-To: <{msg["id"]}>\n'
-
-            self.message_string += '\n\n'
-
-            if msg:
-                self.message_string += '\n' + util.quote_body_text(msg)
+            self.message_string += '\n\n\n' + util.quote_body_text(msg)
 
         elif mode == 'forward':
-            pass # TODO
+            self.message_string += f'To: \n'
 
         else:
             self.message_string += 'To: \nSubject: \n\n'
+
+            if 'Subject' in msg['headers']:
+                subject = msg['headers']['Subject']
+                if subject[0:3].upper() != 'FW:':
+                    subject = 'FW: ' + subject
+                self.message_string += f'Subject: {subject}\n'
 
         self.editor_thread = None
         self.sendmail_thread = None
