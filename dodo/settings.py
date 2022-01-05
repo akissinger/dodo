@@ -56,6 +56,10 @@ pre {{
   font-size: {message_font_size}pt;
 }}
 
+pre .quoted {{
+  color: {fg_dim};
+}}
+
 body {{
   background-color: {bg};
   color: {fg};

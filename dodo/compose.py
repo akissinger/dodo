@@ -221,13 +221,15 @@ class ComposePanel(Panel):
 
         This gets called automatically after the external editor has closed."""
 
+        text = util.colorize_text(util.simple_escape(self.message_string))
+
         self.message_view.setHtml(f"""<html>
         <style type="text/css">
         {util.make_message_css()}
         </style>
         <body>
         <p>{self.status}</p>
-        <pre style="white-space: pre-wrap">{util.simple_escape(self.message_string)}</pre>
+        <pre style="white-space: pre-wrap">{text}</pre>
         </body></html>""")
 
         super().refresh()

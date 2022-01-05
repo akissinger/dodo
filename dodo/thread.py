@@ -284,7 +284,8 @@ class ThreadPanel(Panel):
                 html = util.body_html(m)
                 if html: self.message_view.setHtml(html)
             else:
-                text = util.body_text(m)
+                text = util.colorize_text(util.simple_escape(util.body_text(m)))
+
                 if text:
                     self.message_view.setHtml(f"""
                     <html>

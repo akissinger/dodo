@@ -85,6 +85,22 @@ def simple_escape(s):
 
     return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
+def colorize_text(s):
+    """Add some colors to HTML-escaped plaintext, for use inside <pre> tag
+    """
+
+    s1 = ""
+    quoted = re.compile('^\s*&gt;')
+    for ln in s.splitlines():
+        if quoted.match(ln):
+            s1 += f'<span class="quoted">{ln}</span>\n'
+        else:
+            s1 += ln + '\n'
+
+    return s1
+
+
+
 def chop_s(s):
     if len(s) > 20:
         return s[0:20] + '...'
