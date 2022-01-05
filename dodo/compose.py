@@ -187,14 +187,14 @@ class ComposePanel(Panel):
         elif mode == 'forward':
             self.message_string += f'To: \n'
 
-        else:
-            self.message_string += 'To: \nSubject: \n\n'
-
             if 'Subject' in msg['headers']:
                 subject = msg['headers']['Subject']
                 if subject[0:3].upper() != 'FW:':
                     subject = 'FW: ' + subject
                 self.message_string += f'Subject: {subject}\n'
+
+        else:
+            self.message_string += 'To: \nSubject: \n\n'
 
         self.editor_thread = None
         self.sendmail_thread = None
