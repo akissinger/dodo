@@ -27,6 +27,7 @@ send_mail_command = ['msmtp', '-t']
 sync_mail_command = ['offlineimap']
 sync_mail_interval = 300 # seconds
 default_to_html = False
+remove_temp_dirs = 'ask' # should be 'always', 'never', or 'ask'
 
 # visual
 theme = themes.nord

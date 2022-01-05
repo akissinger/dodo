@@ -169,7 +169,8 @@ class Dodo(QApplication):
             index = self.tabs.currentIndex()
         w = self.tabs.widget(index)
         if w and not w.keep_open:
-            self.tabs.removeTab(index)
+            if w.before_close():
+                self.tabs.removeTab(index)
 
     def search(self, query, keep_open=False):
         """Open a search panel with the given query
@@ -257,5 +258,11 @@ class Dodo(QApplication):
         for i in range(self.num_panels()):
             w = self.tabs.widget(i)
             w.dirty = True
+
+    def quit(self):
+        for i in range(self.num_panels()):
+            w = self.tabs.widget(i)
+            if not w.before_close(): return
+        super().quit()
 
 

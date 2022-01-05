@@ -193,7 +193,10 @@ class ComposePanel(Panel):
                     subject = 'FW: ' + subject
                 self.message_string += f'Subject: {subject}\n'
 
-            # TODO attachments from fwded message here
+            # if the message has attachments, dump them to temp dir and attach them
+            temp_dir, att = util.write_attachments(msg)
+            if temp_dir: self.temp_dirs.append(temp_dir)
+            for f in att: self.message_string += f'A: {f}\n'
 
             self.message_string += '\n\n\n---------- Forwarded message ---------\n'
             for h in ['From', 'Date', 'Subject', 'To']:

@@ -19,10 +19,12 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QWidget, QTextBrowser, QSizePolicy, QVBoxLayout
+from PyQt5.QtWidgets import *
+import shutil
 
 from . import keymap
 from . import util
+from . import settings
 
 class Panel(QWidget):
     """A container widget that can handle key events and be shown on a tab
@@ -49,6 +51,7 @@ class Panel(QWidget):
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.dirty = True
+        self.temp_dirs = []
 
         # set up timer and prefix cache for handling keychords
         self._prefix = ""
@@ -89,6 +92,29 @@ class Panel(QWidget):
 
     def refresh(self):
         self.dirty = False
+
+    def before_close(self):
+        """Called before closing a panel
+
+        Cleans up temp dirs and returns True. Overriding methods should call this method
+        *after* checking they are ready to close.
+
+        :returns: True if the panel is ready to close, or False to cancel
+        """
+
+        if settings.remove_temp_dirs == 'always':
+            for d in self.temp_dirs: shutil.rmtree(d)
+        elif settings.remove_temp_dirs == 'ask':
+            if len(self.temp_dirs) != 0:
+                q = "The following temp dirs were created:\n"
+                for d in self.temp_dirs:
+                    q += f'  - {d}\n'
+                q += '\nClean them up now?'
+
+                if QMessageBox.question(self, 'Remove temp dirs', q) == QMessageBox.Yes:
+                    for d in self.temp_dirs: shutil.rmtree(d)
+
+        return True
 
     def keyPressEvent(self, e):
         """Passes key events to the appropriate keymap

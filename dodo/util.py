@@ -21,6 +21,7 @@ import re
 import os
 import tempfile
 import subprocess
+import email
 
 from . import settings
 
@@ -161,6 +162,37 @@ def quote_body_text(m):
     text = body_text(m)
     if not text: return ''
     return ''.join([f'> {ln}\n' for ln in text.splitlines()])
+
+def write_attachments(m):
+    """Write attachments out into temp directory and open with `settings.file_browser_command`
+
+    Currently, this exports a new copy of the attachments every time it is called. Maybe it should
+    do something smarter?
+
+    :param m: message JSON
+    :returns: Return a tuple consisting of the temp dir and a list of files. If no attachments,
+              returns an empty string and empty list.
+    """
+
+    if not (m and 'filename' in m): return None
+    temp_dir = tempfile.mkdtemp(prefix='dodo-')
+    file_paths = []
+
+    for filename in m['filename']:
+        with open(filename, 'r') as f:
+            msg = email.message_from_file(f)
+            for part in msg.walk():
+                if part.get_content_disposition() == 'attachment':
+                    p = temp_dir + '/' + part.get_filename()
+                    with open(p, 'wb') as att:
+                        att.write(part.get_payload(decode=True))
+                    file_paths.append(p)
+
+    if len(file_paths) == 0:
+        os.rmdir(temp_dir)
+        return ('', [])
+    else:
+        return (temp_dir, file_paths)
 
 def strip_email_address(e):
     """Strip the display name, leaving just the email address

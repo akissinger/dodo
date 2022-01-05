@@ -386,20 +386,14 @@ class ThreadPanel(Panel):
         """Write attachments out into temp directory and open with `settings.file_browser_command`
 
         Currently, this exports a new copy of the attachments every time it is called. Maybe it should
-        do something smarter?"""
+        do something smarter?
+        """
 
         m = self.model.message_at(self.current_message)
-        if not (m and 'filename' in m): return
-        temp_dir = tempfile.mkdtemp(prefix='dodo-')
-
-        for filename in m['filename']:
-            with open(filename, 'r') as f:
-                msg = email.message_from_file(f)
-                for part in msg.walk():
-                    if part.get_content_disposition() == 'attachment':
-                        with open(temp_dir + '/' + part.get_filename(), 'wb') as att:
-                            att.write(part.get_payload(decode=True))
-
-        subprocess.Popen(settings.file_browser_command + [temp_dir])
+        temp_dir, _ = util.write_attachments(m)
+        
+        if temp_dir:
+            self.temp_dirs.append(temp_dir)
+            subprocess.Popen(settings.file_browser_command + [temp_dir])
 
 
