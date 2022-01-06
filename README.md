@@ -2,7 +2,11 @@
 
 [![Documentation Status](https://readthedocs.org/projects/dodomail/badge/?version=latest)](https://dodomail.readthedocs.io/en/latest/?badge=latest)
 
-Dodo is a graphical email client written in Python/PyQt5, based on the command line email swiss-army-knife [notmuch](https://notmuchmail.org/). It's main goals are to:
+Dodo is a graphical email client written in Python/PyQt5, based on the command line email swiss-army-knife [notmuch](https://notmuchmail.org/).
+
+![Dodo](/images/dodo-screen-inbox.png?raw=true)
+
+It's main goals are to:
 
 * offer efficient, keyboard-oriented mail reading, sorting, and composing
 * give a mostly text-based email experience by default, but with HTML support a few keystrokes away
@@ -187,11 +191,7 @@ Here's a `~/.notmuch-config` which is roughly like the one I use:
     [maildir]
     synchronize_flags=true
 
-## Screenshots
-
-Viewing the inbox:
-
-![Inbox](/images/dodo-screen-inbox.png?raw=true)
+## More Screenshots
 
 Searching:
 
