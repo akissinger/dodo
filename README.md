@@ -186,3 +186,28 @@ Here's a `~/.notmuch-config` which is roughly like the one I use:
 
     [maildir]
     synchronize_flags=true
+
+## Screenshots
+
+Viewing the inbox:
+
+![Inbox](/images/dodo-screen-inbox.png?raw=true)
+
+Searching:
+
+![Search](/images/dodo-screen-search.png?raw=true)
+
+Thread view:
+
+![Thread](/images/dodo-screen-thread.png?raw=true)
+
+Composition:
+
+![Compose](/images/dodo-screen-compose.png?raw=true)
+
+Various themes:
+
+![Nord](/images/dodo-screen-nord.png?raw=true)
+![Solarized Dark](/images/dodo-screen-solarized-dark.png?raw=true)
+![Solarized Light](/images/dodo-screen-solarized-light.png?raw=true)
+
