@@ -91,11 +91,25 @@ def colorize_text(s):
 
     s1 = ""
     quoted = re.compile('^\s*&gt;')
+    empty = re.compile('^\s*$')
+
+    headers = True
     for ln in s.splitlines():
-        if quoted.match(ln):
-            s1 += f'<span class="quoted">{ln}</span>\n'
+        if headers:
+            if empty.match(ln):
+                headers = False
+                s1 += '\n'
+            elif ':' in ln:
+                parts = ln.split(':', 1)
+                s1 += f'<span class="headername">{parts[0]}:</span>'
+                s1 += f'<span class="headertext">{parts[1]}</span>\n'
+            else:
+                s1 += ln + '\n'
         else:
-            s1 += ln + '\n'
+            if quoted.match(ln):
+                s1 += f'<span class="quoted">{ln}</span>\n'
+            else:
+                s1 += ln + '\n'
 
     return s1
 
@@ -175,6 +189,8 @@ def body_html(m):
     else: return ''
 
 def quote_body_text(m):
+    """Return the body text of the message, with '>' prepended to each line"""
+
     text = body_text(m)
     if not text: return ''
     return ''.join([f'> {ln}\n' for ln in text.splitlines()])

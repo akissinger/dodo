@@ -60,6 +60,15 @@ pre .quoted {{
   color: {fg_dim};
 }}
 
+pre .headername {{
+  color: {fg_bright};
+  font-weight: bold;
+}}
+
+pre .headertext {{
+  color: {fg_bright};
+}}
+
 body {{
   background-color: {bg};
   color: {fg};
