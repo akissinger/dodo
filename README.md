@@ -58,13 +58,13 @@ dodo.settings.sent_dir = '/home/user/mail/Work/Sent'
 
 # optional
 dodo.settings.theme = dodo.themes.nord
-dodo.settings.editor_command = ['kitty', 'nvim', '-c', 'set tw=0']
-dodo.settings.file_browser_command = ['fman', '/home/user/Documents/']
+dodo.settings.editor_command = "kitty nvim '{file}'"
+dodo.settings.file_browser_command = "fman '{dir}' /home/user/Documents"
 ```
 
 A theme is just a Python dictionary mapping some fixed color names to HTML color codes. Currently, the themes implemented in [themes.py](https://github.com/akissinger/dodo/blob/master/dodo/themes.py) are `nord`, `solarized_light` and `solarized_dark`. If you want more, feel free to roll your own, or (better) send me a pull request!
 
-All of the settings of the form `..._command` are given as a list consisting of the command and its arguments. Additional arguments, such as the relevant folder or file are appended to this list.
+All of the settings of the form `..._command` are given as shell command. The `editor_command` setting takes a placeholder `{file}` for the file to edit and `file_browser_command` takes the placeholder `{dir}` for the directory to browse.
 
 The settings above replace the default text editor (`xterm -e vim`) with [neovim](https://neovim.io/) run inside a new [kitty](https://sw.kovidgoyal.net/kitty/) terminal. I am also using Michael Herrmann's excellent dual-pane file manager [fman](https://fman.io/) instead of the default (`nautilus`). With these settings, showing attachments will open `fman` with a fixed directory in the left pane (`/home/user/Documents`) and a directory containing the attachments on the right. A similar effect can be obtained with [ranger](https://github.com/ranger/ranger) using the `multipane` view mode.
 

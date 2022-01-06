@@ -42,7 +42,7 @@ class SyncMailThread(QThread):
 
     def run(self):
         """Run :func:`~dodo.settings.sync_mail_command` then `notmuch new`"""
-        subprocess.run(settings.sync_mail_command, stdout=subprocess.PIPE)
+        subprocess.run(settings.sync_mail_command, stdout=subprocess.PIPE, shell=True)
         subprocess.run(['notmuch', 'new'], stdout=subprocess.PIPE)
 
 class Dodo(QApplication):

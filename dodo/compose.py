@@ -49,8 +49,8 @@ class EditorThread(QThread):
         f.write(self.panel.message_string)
         f.close()
 
-        cmd = settings.editor_command + [file]
-        subprocess.run(cmd)
+        cmd = settings.editor_command.format(file=file)
+        subprocess.run(cmd, shell=True)
 
         with open(file, 'r') as f:
             self.panel.message_string = f.read()
@@ -118,7 +118,7 @@ class SendmailThread(QThread):
                 except IOError:
                     print("Can't read attachment: " + a)
 
-            sendmail = Popen(settings.send_mail_command, stdin=PIPE, encoding='utf8')
+            sendmail = Popen(settings.send_mail_command, stdin=PIPE, encoding='utf8', shell=True)
             sendmail.stdin.write(str(eml))
             sendmail.stdin.close()
             sendmail.wait(30)

@@ -21,10 +21,10 @@ from . import themes
 # functional
 email_address = ''
 sent_dir = ''
-editor_command = ['xterm', '-e', 'vim']
-file_browser_command = ['nautilus']
-send_mail_command = ['msmtp', '-t']
-sync_mail_command = ['offlineimap']
+editor_command = "xterm -e vim '{file}'"
+file_browser_command = "nautilus '{dir}'"
+send_mail_command = 'msmtp -t'
+sync_mail_command = 'offlineimap'
 sync_mail_interval = 300 # seconds
 default_to_html = False
 remove_temp_dirs = 'ask' # should be 'always', 'never', or 'ask'

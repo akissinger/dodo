@@ -395,6 +395,7 @@ class ThreadPanel(Panel):
         
         if temp_dir:
             self.temp_dirs.append(temp_dir)
-            subprocess.Popen(settings.file_browser_command + [temp_dir])
+            cmd = settings.file_browser_command.format(dir=temp_dir)
+            subprocess.Popen(cmd, shell=True)
 
 
