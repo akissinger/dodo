@@ -85,7 +85,7 @@ def simple_escape(s):
 
     return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
-def colorize_text(s):
+def colorize_text(s, has_headers=False):
     """Add some colors to HTML-escaped plaintext, for use inside <pre> tag
     """
 
@@ -93,7 +93,7 @@ def colorize_text(s):
     quoted = re.compile('^\s*&gt;')
     empty = re.compile('^\s*$')
 
-    headers = True
+    headers = has_headers
     for ln in s.splitlines():
         if headers:
             if empty.match(ln):
