@@ -75,7 +75,7 @@ class Dodo(QApplication):
 
         # set up GUI
         self.main_window = QWidget()
-        self.main_window.setWindowIcon(QIcon('icons/dodo.svg'))
+        self.main_window.setWindowIcon(QIcon('images/dodo.svg'))
         self.main_window.setWindowTitle("Dodo")
         self.main_window.setLayout(QVBoxLayout())
         self.main_window.layout().setContentsMargins(0,0,0,0)
