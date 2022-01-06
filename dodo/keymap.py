@@ -44,7 +44,8 @@ search_keymap = {
   '<enter>': ('open thread', lambda p: p.open_current_thread()),
   'a':       ('tag -inbox -unread', lambda p: p.tag_thread('-inbox -unread')),
   'u':       ('toggle unread', lambda p: p.toggle_thread_tag('unread')),
-  't':       ('toggle flagged', lambda p: p.toggle_thread_tag('flagged')),
+  'f':       ('toggle flagged', lambda p: p.toggle_thread_tag('flagged')),
+  '<space>': ('toggle marked', lambda p: [p.toggle_thread_tag('marked'), p.next_thread()]),
 }
 
 thread_keymap = {
@@ -59,11 +60,11 @@ thread_keymap = {
   '<space>': ('page down', lambda p: p.scroll_message(pages=1)),
   '-':       ('page up', lambda p: p.scroll_message(pages=-1)),
   'u':       ('toggle unread', lambda p: p.toggle_message_tag('unread')),
-  't':       ('toggle flagged', lambda p: p.toggle_message_tag('flagged')),
+  'f':       ('toggle flagged', lambda p: p.toggle_message_tag('flagged')),
   'H':       ('toggle HTML', lambda p: p.toggle_html()),
   'r':       ('reply to all', lambda p: p.reply(to_all=True)),
   'R':       ('reply', lambda p: p.reply(to_all=False)),
-  'f':       ('forward', lambda p: p.forward()),
+  'C-f':     ('forward', lambda p: p.forward()),
   'A':       ('show attachments in file browser', lambda p: p.open_attachments()),
 }
 

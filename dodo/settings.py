@@ -45,6 +45,7 @@ tag_icons = {
   'replied': '',
   'flagged': '',
   'marked': '',
+  'signed': '',
 }
 
 # css used in view and compose window. Placeholders may be included in
