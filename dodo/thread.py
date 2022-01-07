@@ -60,12 +60,12 @@ def short_string(m):
         return m['headers']['From']
 
 class MessageRequestInterceptor(QWebEngineUrlRequestInterceptor):
-    def interceptRequest(self, req):
-        # TODO: should be made message specific so it can be toggled for a single message
-        
+    def interceptRequest(self, info):
+        # print("intercept") 
+        # print(info.requestUrl()) 
         if settings.html_block_remote_requests:
-            if req.resourceType() != QWebEngineUrlRequestInfo.ResourceTypeMainFrame:
-                req.block(True)
+            if info.resourceType() != QWebEngineUrlRequestInfo.ResourceTypeMainFrame:
+                info.block(True)
 
 class ThreadModel(QAbstractItemModel):
     """A model containing a thread, its messages, and some metadata
@@ -203,25 +203,21 @@ class ThreadPanel(Panel):
         info_area.layout().addWidget(self.message_info)
         self.splitter.addWidget(info_area)
 
-        self.message_view = QWebEngineView(self)
-        self.message_request_interceptor = MessageRequestInterceptor()
-        QWebEngineProfile.defaultProfile().setRequestInterceptor(self.message_request_interceptor)
-        self.message_view.settings().setAttribute(
+        # TODO: this leaks memory, but stops Qt from cleaning up the profile too soon
+        profile = QWebEngineProfile(self.app)
+        self.message_request_interceptor = MessageRequestInterceptor(profile)
+        profile.setRequestInterceptor(self.message_request_interceptor)
+        profile.settings().setAttribute(
                 QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
 
-        # self.message_profile = QWebEngineProfile()
-        # self.message_profile.settings().setAttribute(
-        #         QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
+        self.message_view = QWebEngineView(self)
 
-
+        # QWebEngineProfile.defaultProfile().setRequestInterceptor(self.message_request_interceptor)
         # self.message_view.settings().setAttribute(
         #         QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
-        
-        # page = QWebEnginePage(self.message_profile, self)
-        # if page.profile() != self.message_profile:
-        #     print("wrong profile!")
-        #
-        # self.message_view.setPage(page)
+
+        page = QWebEnginePage(profile, self.message_view)
+        self.message_view.setPage(page)
 
         self.message_view.setZoomFactor(1.2)
         self.splitter.addWidget(self.message_view)
