@@ -22,7 +22,7 @@ setuptools.setup(
     ],
     package_dir={"": "src"},
     packages=["dodo"],
-    install_requires=["PyQt5>=5.14", "PyQtWebEngine>=5.14"],
+    install_requires=["PyQt5>=5.15", "PyQtWebEngine>=5.15", "PyQt5-sip>=5.15"],
     include_package_data=True,
     python_requires=">=3.7",
 )
