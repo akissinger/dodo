@@ -19,6 +19,7 @@
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
+from PyQt5.QtWebEngineCore import *
 from PyQt5.QtWebEngineWidgets import *
 
 import subprocess
@@ -57,6 +58,14 @@ def short_string(m):
 
     if 'headers' in m and 'From' in m['headers']:
         return m['headers']['From']
+
+class MessageRequestInterceptor(QWebEngineUrlRequestInterceptor):
+    def interceptRequest(self, req):
+        # TODO: should be made message specific so it can be toggled for a single message
+        
+        if settings.html_block_remote_requests:
+            if req.resourceType() != QWebEngineUrlRequestInfo.ResourceTypeMainFrame:
+                req.block(True)
 
 class ThreadModel(QAbstractItemModel):
     """A model containing a thread, its messages, and some metadata
@@ -194,10 +203,27 @@ class ThreadPanel(Panel):
         info_area.layout().addWidget(self.message_info)
         self.splitter.addWidget(info_area)
 
-        self.message_view = QWebEngineView()
-        self.message_view.setZoomFactor(1.2)
+        self.message_view = QWebEngineView(self)
+        self.message_request_interceptor = MessageRequestInterceptor()
+        QWebEngineProfile.defaultProfile().setRequestInterceptor(self.message_request_interceptor)
         self.message_view.settings().setAttribute(
                 QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
+
+        # self.message_profile = QWebEngineProfile()
+        # self.message_profile.settings().setAttribute(
+        #         QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
+
+
+        # self.message_view.settings().setAttribute(
+        #         QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
+        
+        # page = QWebEnginePage(self.message_profile, self)
+        # if page.profile() != self.message_profile:
+        #     print("wrong profile!")
+        #
+        # self.message_view.setPage(page)
+
+        self.message_view.setZoomFactor(1.2)
         self.splitter.addWidget(self.message_view)
 
         self.layout().addWidget(self.splitter)
@@ -282,12 +308,12 @@ class ThreadPanel(Panel):
 
             if self.html_mode:
                 html = util.body_html(m)
-                if html: self.message_view.setHtml(html)
+                if html: self.message_view.page().setHtml(html)
             else:
                 text = util.colorize_text(util.simple_escape(util.body_text(m)))
 
                 if text:
-                    self.message_view.setHtml(f"""
+                    self.message_view.page().setHtml(f"""
                     <html>
                     <head>
                     <style type="text/css">

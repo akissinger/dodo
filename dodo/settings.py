@@ -28,6 +28,7 @@ sync_mail_command = 'offlineimap'
 sync_mail_interval = 300 # seconds
 default_to_html = False
 remove_temp_dirs = 'ask' # should be 'always', 'never', or 'ask'
+html_block_remote_requests = True
 
 # visual
 theme = themes.nord
