@@ -180,7 +180,7 @@ class ComposePanel(Panel):
                 if 'Cc' in msg['headers']:
                     cc += email_sep.split(msg['headers']['Cc'])
                 cc = [e for e in cc if not util.email_is_me(e)]
-                if len(cc) != 0: self.message_string += f'Cc: {"; ".join(cc)}\n'
+                if len(cc) != 0: self.message_string += f'Cc: {", ".join(cc)}\n'
 
             self.message_string += '\n\n\n' + util.quote_body_text(msg)
 
