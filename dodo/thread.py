@@ -206,7 +206,7 @@ class ThreadPanel(Panel):
         # TODO: this leaks memory, but stops Qt from cleaning up the profile too soon
         profile = QWebEngineProfile(self.app)
         self.message_request_interceptor = MessageRequestInterceptor(profile)
-        profile.setRequestInterceptor(self.message_request_interceptor)
+        profile.setUrlRequestInterceptor(self.message_request_interceptor)
         profile.settings().setAttribute(
                 QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
 
@@ -259,7 +259,7 @@ class ThreadPanel(Panel):
 
         if 'headers' in m:
             header_html = ''
-            header_html += f'<table style="background-color: {settings.theme["bg"]}; color: {settings.theme["fg"]}; font-family: Fira Code; font-size: 14pt; width:100%">'
+            header_html += f'<table style="background-color: {settings.theme["bg"]}; color: {settings.theme["fg"]}; font-family: {settings.search_font}; font-size: {settings.search_font_size}pt; width:100%">'
             for name in ['Subject', 'Date', 'From', 'To', 'Cc']:
                 if name in m['headers']:
                     header_html += f"""<tr>
