@@ -206,7 +206,7 @@ class ThreadPanel(Panel):
         # TODO: this leaks memory, but stops Qt from cleaning up the profile too soon
         profile = QWebEngineProfile(self.app)
         self.message_request_interceptor = MessageRequestInterceptor(profile)
-        profile.setRequestInterceptor(self.message_request_interceptor)
+        profile.setUrlRequestInterceptor(self.message_request_interceptor)
         profile.settings().setAttribute(
                 QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
 
