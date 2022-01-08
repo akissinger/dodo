@@ -60,12 +60,46 @@ def short_string(m):
         return m['headers']['From']
 
 class MessageRequestInterceptor(QWebEngineUrlRequestInterceptor):
-    def interceptRequest(self, info):
-        # print("intercept") 
-        # print(info.requestUrl()) 
+    def interceptRequest(self, info: QWebEngineUrlRequestInfo):
+        # print("intercepted")
         if settings.html_block_remote_requests:
-            if info.resourceType() != QWebEngineUrlRequestInfo.ResourceTypeMainFrame:
+            if not (info.resourceType() == QWebEngineUrlRequestInfo.ResourceTypeMainFrame or
+                    info.requestUrl().toString()[0:4] == 'cid:'):
                 info.block(True)
+
+
+class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.message = None
+
+    def set_message(self, filename):
+        with open(filename) as f:
+            self.message = email.message_from_file(f)
+
+    def requestStarted(self, request: QWebEngineUrlRequestJob):
+        cid = request.requestUrl().toString()[4:]
+        # print(f"got a request for content-id: {cid}")
+
+        content_type = None
+        if self.message:
+            for part in self.message.walk():
+                if "Content-id" in part and part["Content-id"] == f'<{cid}>':
+                    print("found cid")
+                    content_type = part.get_content_type()
+                    buf = QBuffer(parent=self)
+                    buf.open(QIODevice.WriteOnly)
+                    buf.write(part.get_payload(decode=True))
+                    buf.close()
+                    request.reply(content_type.encode('latin1'), buf)
+                    break
+
+            # with open('/home/aleks/git/dodo/images/dodo-screen-inbox.png', 'rb') as f:
+            #     buf.write(f.read())
+            # buf.close()
+
+        if not content_type:
+            request.fail(QWebEngineUrlRequestJob.UrlNotFound)
 
 class ThreadModel(QAbstractItemModel):
     """A model containing a thread, its messages, and some metadata
@@ -204,10 +238,13 @@ class ThreadPanel(Panel):
         self.splitter.addWidget(info_area)
 
         # TODO: this leaks memory, but stops Qt from cleaning up the profile too soon
-        profile = QWebEngineProfile(self.app)
-        self.message_request_interceptor = MessageRequestInterceptor(profile)
-        profile.setUrlRequestInterceptor(self.message_request_interceptor)
-        profile.settings().setAttribute(
+        self.message_profile = QWebEngineProfile(self.app)
+
+        self.image_handler = EmbeddedImageHandler(self)
+        self.message_profile.installUrlSchemeHandler(b'cid', self.image_handler)
+        self.message_request_interceptor = MessageRequestInterceptor(self.message_profile)
+        self.message_profile.setUrlRequestInterceptor(self.message_request_interceptor)
+        self.message_profile.settings().setAttribute(
                 QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
 
         self.message_view = QWebEngineView(self)
@@ -216,7 +253,7 @@ class ThreadPanel(Panel):
         # self.message_view.settings().setAttribute(
         #         QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
 
-        page = QWebEnginePage(profile, self.message_view)
+        page = QWebEnginePage(self.message_profile, self.message_view)
         self.message_view.setPage(page)
 
         self.message_view.setZoomFactor(1.2)
@@ -303,6 +340,9 @@ class ThreadPanel(Panel):
                 self.tag_message('-unread')
 
             if self.html_mode:
+                if 'filename' in m and len(m['filename']) != 0:
+                    self.image_handler.set_message(m['filename'][0])
+
                 html = util.body_html(m)
                 if html: self.message_view.page().setHtml(html)
             else:

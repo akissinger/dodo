@@ -26,7 +26,7 @@ global_keymap = {
   'X':       ('close all', lambda a: [a.close_panel(i) for i in reversed(range(a.num_panels()))]),
   'c':       ('compose', lambda a: a.compose()),
   'I':       ('show inbox', lambda a: a.search('tag:inbox')),
-  'U':       ('show unread', lambda a: a.search('tag:unread')),
+  'U':       ('show unread', lambda a: a.search('tag:inbox and tag:unread')),
   'F':       ('show flagged', lambda a: a.search('tag:flagged')),
   '/':       ('search', lambda a: a.command_bar.open('search')),
   't':       ('tag', lambda a: a.command_bar.open('tag')),

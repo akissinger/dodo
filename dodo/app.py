@@ -19,6 +19,7 @@
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from PyQt5.QtWebEngineCore import QWebEngineUrlScheme
 import sys
 import subprocess
 
@@ -72,6 +73,11 @@ class Dodo(QApplication):
 
         # apply theme
         themes.apply_theme(self, settings.theme)
+
+        # register URL scheme used by embedded images in HTML
+        scheme = QWebEngineUrlScheme(b'cid')
+        scheme.setSyntax(QWebEngineUrlScheme.Syntax.Path)
+        QWebEngineUrlScheme.registerScheme(scheme)
 
         # set up GUI
         self.main_window = QWidget()
