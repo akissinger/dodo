@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="dodomail",
+    name="dodo-mail",
     version="0.1",
     author="Aleks Kissinger",
     author_email="aleks0@gmail.com",

@@ -21,6 +21,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineCore import QWebEngineUrlScheme
 import sys
+import os
 import subprocess
 
 from . import search
@@ -81,7 +82,10 @@ class Dodo(QApplication):
 
         # set up GUI
         self.main_window = QWidget()
-        self.main_window.setWindowIcon(QIcon('images/dodo.svg'))
+
+        icon = os.path.dirname(__file__) + '/dodo.svg'
+        if os.path.exists(icon):
+            self.main_window.setWindowIcon(QIcon(icon))
         self.main_window.setWindowTitle("Dodo")
         self.main_window.setLayout(QVBoxLayout())
         self.main_window.layout().setContentsMargins(0,0,0,0)
