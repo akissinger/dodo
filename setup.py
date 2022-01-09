@@ -20,9 +20,9 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    package_dir={"": "."},
     packages=["dodo"],
+    package_data={'': ['*.svg']},
     install_requires=["PyQt5>=5.15", "PyQtWebEngine>=5.15", "PyQt5-sip>=5.15"],
-    include_package_data=True,
     python_requires=">=3.7",
+    entry_points={'console_scripts': 'dodo=dodo.app:main'},
 )

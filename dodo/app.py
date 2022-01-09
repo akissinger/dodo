@@ -276,3 +276,8 @@ class Dodo(QApplication):
         super().quit()
 
 
+def main():
+    """Main entry point for Dodo"""
+
+    dodo = Dodo()
+    dodo.exec_()
