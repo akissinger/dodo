@@ -34,15 +34,17 @@ All of this is pretty standard stuff, and should be installable via your package
 
 ## Install and run
 
-Make sure you have Python 3.7+ and [PyQt5](https://riverbankcomputing.com/software/pyqt/intro). Clone Dodo with:
+Dodo requires Python 3.7+ and [PyQt5](https://riverbankcomputing.com/software/pyqt/intro) 5.15 or above. You can install the latest git version of Dodo and its dependencies using [pip](https://pypi.org/project/pip/):
 
     % git clone https://github.com/akissinger/dodo.git
+    % cd dodo
+    % pip install .
     
-Then, add the `bin/` subdirectory to your `PATH` and run with:
+Then, run Dodo with:
 
     % dodo
 
-An optional Python dependency is [lxml](https://lxml.de/) for some limited HTML sanitization, which is off by default (see the next section for switching it on).
+If you don't have it already, you may need to add `~/.local/bin` to your `PATH`.
 
 
 ## Configuration
