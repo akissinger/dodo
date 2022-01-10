@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Dodo
+Comment=Dodo email client
+Exec=dodo
+Icon=dodo
+Terminal=false

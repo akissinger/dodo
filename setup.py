@@ -1,7 +1,17 @@
 import setuptools
 
+# read description from README.md
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
+
+# linux desktop entry and icons
+pngs = [(f'share/icons/hicolor/{res}x{res}/apps', [f'share/icons/hicolor/{res}x{res}/apps/dodo.png'])
+        for res in [16, 32, 64, 128, 256, 512, 1024]]
+
+data_files = [
+        ('share/applications', ['share/applications/dodo.desktop']),
+        ('share/icons/hicolor/scalable/apps', ['share/icons/hicolor/scalable/apps/dodo.svg']),
+        ] + pngs
 
 setuptools.setup(
     name="dodo-mail",
@@ -22,6 +32,7 @@ setuptools.setup(
     ],
     packages=["dodo"],
     package_data={'': ['*.svg']},
+    data_files=data_files,
     install_requires=["PyQt5>=5.15", "PyQtWebEngine>=5.15", "PyQt5-sip>=5.15"],
     python_requires=">=3.7",
     entry_points={'console_scripts': 'dodo=dodo.app:main'},
