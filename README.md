@@ -36,13 +36,13 @@ All of this is pretty standard stuff, and should be installable via your package
 
 Dodo requires Python 3.7+ and [PyQt5](https://riverbankcomputing.com/software/pyqt/intro) 5.15 or above. You can install the latest git version of Dodo and its dependencies using [pip](https://pypi.org/project/pip/):
 
-    % git clone https://github.com/akissinger/dodo.git
-    % cd dodo
-    % pip install .
+    git clone https://github.com/akissinger/dodo.git
+    cd dodo
+    pip install .
     
 Then, run Dodo with:
 
-    % dodo
+    dodo
 
 If you don't have it already, you may need to add `~/.local/bin` to your `PATH`.
 
