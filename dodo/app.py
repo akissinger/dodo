@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWebEngineCore import QWebEngineUrlScheme
 import sys
 import os
@@ -35,6 +35,7 @@ from . import keymap
 from . import commandbar
 from . import helpwindow
 from . import panel
+from . import mainwindow
 
 class SyncMailThread(QThread):
     """A QThread used for syncing local Maildir and notmuch with IMAP
@@ -49,6 +50,7 @@ class SyncMailThread(QThread):
         subprocess.run(settings.sync_mail_command, stdout=subprocess.PIPE, shell=True)
         subprocess.run(['notmuch', 'new'], stdout=subprocess.PIPE)
 
+
 class Dodo(QApplication):
     """The main Dodo application
 
@@ -59,7 +61,6 @@ class Dodo(QApplication):
 
     def __init__(self) -> None:
         super().__init__([])
-        conf = QSettings('dodo', 'dodo')
         self.setApplicationName('Dodo')
 
         # find a load config.py
@@ -83,49 +84,10 @@ class Dodo(QApplication):
         QWebEngineUrlScheme.registerScheme(scheme)
 
         # set up GUI
-        self.main_window = QWidget()
-
-        icon = os.path.dirname(__file__) + '/dodo.svg'
-        if os.path.exists(icon):
-            self.main_window.setWindowIcon(QIcon(icon))
-        self.main_window.setWindowTitle("Dodo")
-        self.main_window.setLayout(QVBoxLayout())
-        self.main_window.layout().setContentsMargins(0,0,0,0)
-        self.main_window.resize(1600, 800)
-        
-        geom = conf.value("main_window_geometry")
-        if geom: self.main_window.restoreGeometry(geom)
-        self.aboutToQuit.connect(lambda:
-                conf.setValue("main_window_geometry", self.main_window.saveGeometry()))
-
-        self.tabs = QTabWidget()
-        self.tabs.setFocusPolicy(Qt.NoFocus)
-        # self.tabs.resize(1600, 800)
-        self.main_window.layout().addWidget(self.tabs)
-
-        def panel_focused(i: int) -> None:
-            w = self.tabs.widget(i)
-            if w and isinstance(w, panel.Panel):
-                w.setFocus()
-                if w.dirty: w.refresh()
-
-        self.tabs.currentChanged.connect(panel_focused)
-        self.main_window.show()
-
-        self.command_label = QLabel("search")
-        self.command_bar = commandbar.CommandBar(self)
-        self.command_bar.setFocusPolicy(Qt.NoFocus)
-
-        self.command_area = QWidget()
-        self.command_area.setLayout(QHBoxLayout())
-        self.main_window.layout().setContentsMargins(0,0,0,0)
-        self.main_window.layout().setSpacing(0)
-
-        self.command_area.layout().addWidget(self.command_label)
-        self.command_area.layout().addWidget(self.command_bar)
-        self.main_window.layout().addWidget(self.command_area)
-
-        self.command_area.setVisible(False)
+        self.main_window = mainwindow.MainWindow(self)
+        self.tabs = self.main_window.tabs
+        self.command_bar = self.main_window.command_bar
+        self.lastWindowClosed.connect(self.quit)
 
         # set timer to sync email periodically
         if settings.sync_mail_interval != -1:
@@ -256,7 +218,6 @@ class Dodo(QApplication):
         t.finished.connect(done)
         t.start()
 
-
     def num_panels(self) -> int:
         """Returns the number of panels (i.e. tabs) currently open"""
 
@@ -273,12 +234,10 @@ class Dodo(QApplication):
             if isinstance(w, panel.Panel):
                 w.dirty = True
 
-    # TODO: this should not be an instance method
-    def quit(self):
-        for i in range(self.num_panels()):
-            w = self.tabs.widget(i)
-            if not w.before_close(): return
-        super().quit()
+    def prompt_quit(self) -> None:
+        """A 'soft' quit function, which gives each open tab the opportunity to prompt
+        the user and possible cancel closing."""
+        self.main_window.close()
 
 
 def main() -> None:

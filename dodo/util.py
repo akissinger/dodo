@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 from PyQt5.QtCore import Qt
 import re
 import os

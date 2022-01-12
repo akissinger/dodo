@@ -18,7 +18,7 @@
 
 global_keymap = {
   '?':       ('show help', lambda a: a.show_help()),
-  'Q':       ('quit', lambda a: a.quit()),
+  'Q':       ('quit', lambda a: a.prompt_quit()),
   '`':       ('sync mail', lambda a: a.sync_mail(quiet=False)),
   'l':       ('next panel', lambda a: a.next_panel()),
   'h':       ('previous panel', lambda a: a.previous_panel()),

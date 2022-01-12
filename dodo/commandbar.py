@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 from PyQt5.QtWidgets import *
 
 from . import util
@@ -27,9 +28,10 @@ class CommandBar(QLineEdit):
     """A command bar that appears on the bottom of the screen when searching
     or tagging."""
 
-    def __init__(self, app):
-        super().__init__()
+    def __init__(self, app, label: QLabel, parent: QWidget):
+        super().__init__(parent)
         self.app = app
+        self.label = label
         self.mode = ''
         self.history = { 'search': [0, []], 'tag': [0, []] }
 
@@ -43,8 +45,8 @@ class CommandBar(QLineEdit):
                      its behaviour. Recognized values are "search" and "tag"."""
 
         self.mode = mode
-        self.app.command_label.setText(mode)
-        self.app.command_area.setVisible(True)
+        self.label.setText(mode)
+        self.parent().setVisible(True)
         self.setFocus()
 
     def close(self):
@@ -57,7 +59,7 @@ class CommandBar(QLineEdit):
             h[0] = len(h[1])
 
         self.setText('')
-        self.app.command_area.setVisible(False)
+        self.parent().setVisible(False)
         w = self.app.tabs.currentWidget()
         if w: w.setFocus()
 
