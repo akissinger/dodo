@@ -41,10 +41,10 @@ class SyncMailThread(QThread):
 
     Called by the :func:`~dodo.app.Dodo.sync_mail` method."""
 
-    def __init__(self, parent: QObject=None):
+    def __init__(self, parent: QObject=None) -> None:
         super().__init__(parent)
 
-    def run(self):
+    def run(self) -> None:
         """Run :func:`~dodo.settings.sync_mail_command` then `notmuch new`"""
         subprocess.run(settings.sync_mail_command, stdout=subprocess.PIPE, shell=True)
         subprocess.run(['notmuch', 'new'], stdout=subprocess.PIPE)
@@ -57,7 +57,7 @@ class Dodo(QApplication):
     window, and synchronizing mail with the IMAP server.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__([])
         conf = QSettings('dodo', 'dodo')
         self.setApplicationName('Dodo')
@@ -103,9 +103,9 @@ class Dodo(QApplication):
         # self.tabs.resize(1600, 800)
         self.main_window.layout().addWidget(self.tabs)
 
-        def panel_focused(i):
+        def panel_focused(i: int) -> None:
             w = self.tabs.widget(i)
-            if w:
+            if w and isinstance(w, panel.Panel):
                 w.setFocus()
                 if w.dirty: w.refresh()
 
@@ -136,16 +136,17 @@ class Dodo(QApplication):
         # open inbox and make un-closeable
         self.search('tag:inbox', keep_open=True)
 
-    def show_help(self):
+    def show_help(self) -> None:
         """Show help window"""
 
         self.help_window.show()
 
-    def raise_panel(self, p: panel.Panel):
+    def raise_panel(self, p: panel.Panel) -> None:
         self.tabs.setCurrentWidget(p)
-        self.main_window.setWindowState(self.main_window.windowState() ^ Qt.WindowActive)
+        self.main_window.activateWindow()
+        # self.main_window.setWindowState(self.main_window.windowState() ^ Qt.WindowActive)
 
-    def add_panel(self, p: panel.Panel, focus: bool=True):
+    def add_panel(self, p: panel.Panel, focus: bool=True) -> None:
         """Add a panel to the tab view
 
         This method is used by the :func:`search`, :func:`thread`, and :func:`compose`
@@ -157,21 +158,21 @@ class Dodo(QApplication):
             self.tabs.setCurrentWidget(p)
         p.setFocus()
 
-    def next_panel(self):
+    def next_panel(self) -> None:
         """Go to the next panel"""
 
         i = self.tabs.currentIndex() + 1
         if i < self.tabs.count():
             self.tabs.setCurrentIndex(i)
 
-    def previous_panel(self):
+    def previous_panel(self) -> None:
         """Go to the previous panel"""
 
         i = self.tabs.currentIndex() - 1
         if i >= 0:
             self.tabs.setCurrentIndex(i)
     
-    def close_panel(self, index: Optional[int]=None):
+    def close_panel(self, index: Optional[int]=None) -> None:
         """Close the panel at `index` (if provided) or the current panel
 
         If `index` is not provided, close the current panel. This will only close
@@ -180,11 +181,11 @@ class Dodo(QApplication):
         if not index:
             index = self.tabs.currentIndex()
         w = self.tabs.widget(index)
-        if w and not w.keep_open:
+        if w and isinstance(w, panel.Panel) and not w.keep_open:
             if w.before_close():
                 self.tabs.removeTab(index)
 
-    def search(self, query: str, keep_open: bool=False):
+    def search(self, query: str, keep_open: bool=False) -> None:
         """Open a search panel with the given query
 
         If a panel with this query is already open, switch to it rather than
@@ -199,7 +200,7 @@ class Dodo(QApplication):
         p = search.SearchPanel(self, query, keep_open=keep_open)
         self.add_panel(p)
 
-    def open_thread(self, thread_id: str):
+    def open_thread(self, thread_id: str) -> None:
         """Open a thread panel with the given thread_id
 
         If a panel with this thread_id is already open, switch to it rather than
@@ -214,7 +215,7 @@ class Dodo(QApplication):
         p = thread.ThreadPanel(self, thread_id)
         self.add_panel(p)
 
-    def compose(self, mode: str='', msg: Optional[dict]=None):
+    def compose(self, mode: str='', msg: Optional[dict]=None) -> None:
         """Open a compose panel
 
         If reply_to is provided, set populate the 'To' and 'In-Reply-To' headers
@@ -228,7 +229,7 @@ class Dodo(QApplication):
         p = compose.ComposePanel(self, mode, msg)
         self.add_panel(p)
 
-    def sync_mail(self, quiet: bool=True):
+    def sync_mail(self, quiet: bool=True) -> None:
         """Sync mail with IMAP server
 
         This method runs :func:`~dodo.settings.sync_mail_command`, then 'notmuch new'
@@ -239,7 +240,7 @@ class Dodo(QApplication):
 
         t = SyncMailThread(parent=self)
 
-        def done():
+        def done() -> None:
             self.invalidate_panels()
             w = self.tabs.currentWidget()
             if w: w.refresh()
@@ -261,7 +262,7 @@ class Dodo(QApplication):
 
         return self.tabs.count()
 
-    def invalidate_panels(self):
+    def invalidate_panels(self) -> None:
         """Mark all panels as out of date
 
         This method gets called whenever tags have been changed or a new message has
@@ -269,8 +270,10 @@ class Dodo(QApplication):
 
         for i in range(self.num_panels()):
             w = self.tabs.widget(i)
-            w.dirty = True
+            if isinstance(w, panel.Panel):
+                w.dirty = True
 
+    # TODO: this should not be an instance method
     def quit(self):
         for i in range(self.num_panels()):
             w = self.tabs.widget(i)
@@ -278,7 +281,7 @@ class Dodo(QApplication):
         super().quit()
 
 
-def main():
+def main() -> None:
     """Main entry point for Dodo"""
 
     dodo = Dodo()
