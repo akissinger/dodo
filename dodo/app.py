@@ -17,8 +17,8 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from PyQt5.QtCore import *
-from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWebEngineCore import QWebEngineUrlScheme
 import sys
 import os
@@ -142,7 +142,7 @@ class Dodo(QApplication):
 
     def raise_panel(self, p: panel.Panel):
         self.tabs.setCurrentWidget(p)
-        self.main_window.setWindowState(self.main_window.windowState() ^ Qt.WindowActive)
+        self.main_window.setWindowState(self.main_window.windowState() ^ Qt.WindowState.WindowActive)
 
     def add_panel(self, p: panel.Panel, focus=True):
         """Add a panel to the tab view
