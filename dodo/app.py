@@ -33,13 +33,14 @@ from . import util
 from . import keymap
 from . import commandbar
 from . import helpwindow
+from . import panel
 
 class SyncMailThread(QThread):
     """A QThread used for syncing local Maildir and notmuch with IMAP
 
     Called by the :func:`~dodo.app.Dodo.sync_mail` method."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: QObject=None):
         super().__init__(parent)
 
     def run(self):
@@ -139,21 +140,21 @@ class Dodo(QApplication):
 
         self.help_window.show()
 
-    def raise_panel(self, panel):
-        self.tabs.setCurrentWidget(panel)
+    def raise_panel(self, p: panel.Panel):
+        self.tabs.setCurrentWidget(p)
         self.main_window.setWindowState(self.main_window.windowState() ^ Qt.WindowActive)
 
-    def add_panel(self, panel, focus=True):
+    def add_panel(self, p: panel.Panel, focus=True):
         """Add a panel to the tab view
 
         This method is used by the :func:`search`, :func:`thread`, and :func:`compose`
         methods to open new panels. In general, this method shouldn't be called directly
         from key mappings."""
 
-        self.tabs.addTab(panel, panel.title())
+        self.tabs.addTab(p, p.title())
         if focus:
-            self.tabs.setCurrentWidget(panel)
-        panel.setFocus()
+            self.tabs.setCurrentWidget(p)
+        p.setFocus()
 
     def next_panel(self):
         """Go to the next panel"""
