@@ -26,7 +26,7 @@ import email
 
 from . import settings
 
-def clean_html2html(s):
+def clean_html2html(s: str) -> str:
     """Sanitize the given HTML string
 
     This cleans the input string using :class:`~lxml.html.clean.Cleaner` with the default
@@ -49,7 +49,7 @@ def clean_html2html(s):
 #     c.images_to_alt = True
 #     return c.handle(s)
 
-def w3m_html2text(s):
+def w3m_html2text(s: str) -> str:
     """Convert HTML to plain text using "w3m -dump"
 
     :param s: an HTML input string
@@ -79,14 +79,14 @@ This is set to :func:`~dodo.util.w3m_html2text` by default, but can be changed
 by the user in "config.py".
 """
 
-def simple_escape(s):
+def simple_escape(s: str) -> str:
     """Provide (limited) HTML escaping
 
     This function only escapes &, <, and >."""
 
     return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
-def colorize_text(s, has_headers=False):
+def colorize_text(s: str, has_headers: bool=False) -> str:
     """Add some colors to HTML-escaped plaintext, for use inside <pre> tag
     """
 
@@ -116,13 +116,13 @@ def colorize_text(s, has_headers=False):
 
 
 
-def chop_s(s):
+def chop_s(s: str) -> str:
     if len(s) > 20:
         return s[0:20] + '...'
     else:
         return s
 
-def message_parts(m):
+def message_parts(m: dict) -> Iterator[dict]:
     """
     Iterate over JSON message parts recursively, in depth-first order
 

@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 from PyQt5.QtGui import QPalette, QColor
 
 # palettes used in theme definitions
@@ -117,7 +118,7 @@ nord = {
   'fg_tags': nord_p['aurora2'],
 }
 
-def apply_theme(app, theme):
+def apply_theme(app: 'Dodo', theme: dict) -> None:
     # Force the style to be the same on all OSs:
     app.setStyle("Fusion")
     # Now use a palette to switch to dark colors:

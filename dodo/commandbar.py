@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 from PyQt5.QtWidgets import *
+from PyQt5.QtGui import QKeyEvent
 
 from . import util
 from . import keymap
@@ -35,7 +36,7 @@ class CommandBar(QLineEdit):
         self.mode = ''
         self.history = { 'search': [0, []], 'tag': [0, []] }
 
-    def open(self, mode):
+    def open(self, mode: str) -> None:
         """Open the command bar and give it focus
 
         This method sets the `command_area` QWidget (which contains the command bar and
@@ -49,7 +50,7 @@ class CommandBar(QLineEdit):
         self.parent().setVisible(True)
         self.setFocus()
 
-    def close(self):
+    def close(self) -> None:
         """Clear the command and close
 
         Call this method by itself to cancel the command."""
@@ -63,7 +64,7 @@ class CommandBar(QLineEdit):
         w = self.app.tabs.currentWidget()
         if w: w.setFocus()
 
-    def accept(self):
+    def accept(self) -> None:
         """Apply the command typed into the command bar and close
 
         After the command has been applied, this method saves the command to the command
@@ -84,7 +85,7 @@ class CommandBar(QLineEdit):
 
         self.close()
 
-    def history_previous(self):
+    def history_previous(self) -> None:
         """Cycle to the previous command in the command history
 
         Note a separate history is kept for each mode."""
@@ -96,7 +97,7 @@ class CommandBar(QLineEdit):
                 h[0] = i
                 self.setText(h[1][i])
 
-    def history_next(self):
+    def history_next(self) -> None:
         """Cycle to the next command in the command history
 
         Note a separate history is kept for each mode."""
@@ -109,7 +110,7 @@ class CommandBar(QLineEdit):
                 self.setText(h[1][i])
 
 
-    def keyPressEvent(self, e):
+    def keyPressEvent(self, e: QKeyEvent) -> None:
         """Process keyboard input while the command bar is in focus
 
         Translate the key event into a string with :func:`~dodo.util.key_string`

@@ -22,12 +22,11 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon, QCloseEvent
 import os
 
-from .app import Dodo
 from .commandbar import CommandBar
 from .panel import Panel
 
 class MainWindow(QMainWindow):
-    def __init__(self, app: Dodo):
+    def __init__(self, app: 'Dodo'):
         super().__init__()
         conf = QSettings('dodo', 'dodo')
         self.app = app
