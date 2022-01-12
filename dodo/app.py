@@ -23,6 +23,7 @@ from PyQt5.QtWebEngineCore import QWebEngineUrlScheme
 import sys
 import os
 import subprocess
+from typing import Optional
 
 from . import search
 from . import thread
@@ -142,9 +143,9 @@ class Dodo(QApplication):
 
     def raise_panel(self, p: panel.Panel):
         self.tabs.setCurrentWidget(p)
-        self.main_window.setWindowState(self.main_window.windowState() ^ Qt.WindowState.WindowActive)
+        self.main_window.setWindowState(self.main_window.windowState() ^ Qt.WindowActive)
 
-    def add_panel(self, p: panel.Panel, focus=True):
+    def add_panel(self, p: panel.Panel, focus: bool=True):
         """Add a panel to the tab view
 
         This method is used by the :func:`search`, :func:`thread`, and :func:`compose`
@@ -170,7 +171,7 @@ class Dodo(QApplication):
         if i >= 0:
             self.tabs.setCurrentIndex(i)
     
-    def close_panel(self, index=None):
+    def close_panel(self, index: Optional[int]=None):
         """Close the panel at `index` (if provided) or the current panel
 
         If `index` is not provided, close the current panel. This will only close
@@ -183,7 +184,7 @@ class Dodo(QApplication):
             if w.before_close():
                 self.tabs.removeTab(index)
 
-    def search(self, query, keep_open=False):
+    def search(self, query: str, keep_open: bool=False):
         """Open a search panel with the given query
 
         If a panel with this query is already open, switch to it rather than
@@ -198,7 +199,7 @@ class Dodo(QApplication):
         p = search.SearchPanel(self, query, keep_open=keep_open)
         self.add_panel(p)
 
-    def thread(self, thread_id):
+    def open_thread(self, thread_id: str):
         """Open a thread panel with the given thread_id
 
         If a panel with this thread_id is already open, switch to it rather than
@@ -213,7 +214,7 @@ class Dodo(QApplication):
         p = thread.ThreadPanel(self, thread_id)
         self.add_panel(p)
 
-    def compose(self, mode='', msg=None):
+    def compose(self, mode: str='', msg: Optional[dict]=None):
         """Open a compose panel
 
         If reply_to is provided, set populate the 'To' and 'In-Reply-To' headers
@@ -227,7 +228,7 @@ class Dodo(QApplication):
         p = compose.ComposePanel(self, mode, msg)
         self.add_panel(p)
 
-    def sync_mail(self, quiet=True):
+    def sync_mail(self, quiet: bool=True):
         """Sync mail with IMAP server
 
         This method runs :func:`~dodo.settings.sync_mail_command`, then 'notmuch new'
@@ -255,7 +256,7 @@ class Dodo(QApplication):
         t.start()
 
 
-    def num_panels(self):
+    def num_panels(self) -> int:
         """Returns the number of panels (i.e. tabs) currently open"""
 
         return self.tabs.count()

@@ -213,7 +213,7 @@ class SearchPanel(Panel):
 
         thread_id = self.model.thread_id(self.tree.currentIndex())
         if thread_id:
-            self.app.thread(thread_id)
+            self.app.open_thread(thread_id)
     
     def toggle_thread_tag(self, tag):
         """Toggle the given thread tag"""

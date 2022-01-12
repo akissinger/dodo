@@ -88,7 +88,7 @@ class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
                     print("found cid")
                     content_type = part.get_content_type()
                     buf = QBuffer(parent=self)
-                    buf.open(QIODevice.OpenModeFlag.WriteOnly)
+                    buf.open(QIODevice.WriteOnly)
                     buf.write(part.get_payload(decode=True))
                     buf.close()
                     request.reply(content_type.encode('latin1'), buf)
@@ -99,7 +99,7 @@ class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
             # buf.close()
 
         if not content_type:
-            request.fail(QWebEngineUrlRequestJob.Error.UrlNotFound)
+            request.fail(QWebEngineUrlRequestJob.UrlNotFound)
 
 class ThreadModel(QAbstractItemModel):
     """A model containing a thread, its messages, and some metadata
