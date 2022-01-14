@@ -203,7 +203,8 @@ class ThreadModel(QAbstractItemModel):
         if not index or not index.isValid(): return self.num_messages()
         else: return 0
 
-    def parent(self, index: QModelIndex) -> QModelIndex:
+    # for some reason mypy doesn't like this one. Multiple implementations of parent()?
+    def parent(self, index: QModelIndex) -> QModelIndex: # type: ignore
         """Always return an invalid index, since there are no nested indices"""
 
         return QModelIndex()
@@ -252,7 +253,7 @@ class ThreadPanel(panel.Panel):
         self.message_request_interceptor = MessageRequestInterceptor(self.message_profile)
         self.message_profile.setUrlRequestInterceptor(self.message_request_interceptor)
         self.message_profile.settings().setAttribute(
-                QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
+                QWebEngineSettings.JavascriptEnabled, False)
 
         self.message_view = QWebEngineView(self)
 

@@ -17,28 +17,31 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+from typing import Optional, Any
+
 from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex
-from PyQt5.QtWidgets import QTreeView
+from PyQt5.QtWidgets import QTreeView, QWidget
 from PyQt5.QtGui import QFont, QColor
 import subprocess
 import json
 
+from . import app
 from . import settings
 from . import keymap
 from . import thread
-from .panel import Panel
+from . import panel
 
 columns = ['date', 'from', 'subject', 'tags']
 
 class SearchModel(QAbstractItemModel):
     """A model containing the results of a search"""
 
-    def __init__(self, q):
+    def __init__(self, q: str):
         super().__init__()
         self.q = q
         self.refresh()
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh the model by (re-) running "notmuch search"."""
         self.beginResetModel()
         r = subprocess.run(['notmuch', 'search', '--format=json', self.q],
@@ -47,12 +50,12 @@ class SearchModel(QAbstractItemModel):
         self.d = json.loads(self.json_str)
         self.endResetModel()
 
-    def num_threads(self):
+    def num_threads(self) -> int:
         """The number of threads returned by the search"""
 
         return len(self.d)
 
-    def thread_json(self, index):
+    def thread_json(self, index: QModelIndex) -> Optional[dict]:
         """Return a JSON object associated with the thread at the given model index"""
 
         row = index.row()
@@ -61,7 +64,7 @@ class SearchModel(QAbstractItemModel):
         else:
             return None
 
-    def thread_id(self, index):
+    def thread_id(self, index: QModelIndex) -> Optional[str]:
         """Return the notmuch thread id associated with the thread at the given model index"""
 
         thread = self.thread_json(index)
@@ -70,7 +73,7 @@ class SearchModel(QAbstractItemModel):
         else:
             return None
 
-    def data(self, index, role):
+    def data(self, index: QModelIndex, role: int=Qt.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.data` to populate a view with search results"""
 
         global columns
@@ -104,7 +107,7 @@ class SearchModel(QAbstractItemModel):
             else:
                 return QColor(settings.theme['fg'])
 
-    def headerData(self, section, orientation, role):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int=Qt.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.headerData` to populate a view with column names"""
 
         global columns
@@ -113,19 +116,19 @@ class SearchModel(QAbstractItemModel):
         else:
             return None
 
-    def index(self, row, column, parent=QModelIndex()):
+    def index(self, row: int, column: int, parent: QModelIndex=QModelIndex()) -> QModelIndex:
         """Construct a `QModelIndex` for the given row and column"""
 
         if not self.hasIndex(row, column, parent): return QModelIndex()
         else: return self.createIndex(row, column, None)
 
-    def columnCount(self, index):
+    def columnCount(self, index: QModelIndex=QModelIndex()) -> int:
         """The number of columns"""
 
         global columns
         return len(columns)
 
-    def rowCount(self, index=QModelIndex()):
+    def rowCount(self, index: QModelIndex=QModelIndex()) -> int:
         """The number of rows
 
         This is essentially an alias for :func:`num_threads`, but it also returns 0 if an index is
@@ -134,19 +137,20 @@ class SearchModel(QAbstractItemModel):
         if not index or not index.isValid(): return self.num_threads()
         else: return 0
 
-    def parent(self, index):
+    # for some reason mypy doesn't like this one. Multiple implementations of parent()?
+    def parent(self, index: QModelIndex) -> QModelIndex: # type: ignore
         """Always return an invalid index, since there are no nested indices"""
 
         return QModelIndex()
 
 
-class SearchPanel(Panel):
+class SearchPanel(panel.Panel):
     """A panel showing the results of a search
 
     This is used as the main entry point for the GUI, i.e. a search for "tag:inbox"."""
 
-    def __init__(self, app, q, keep_open=False, parent=None):
-        super().__init__(app, keep_open, parent)
+    def __init__(self, a: app.Dodo, q: str, keep_open: bool=False, parent: Optional[QWidget]=None):
+        super().__init__(a, keep_open, parent)
         self.set_keymap(keymap.search_keymap)
         self.q = q
         self.tree = QTreeView()
@@ -163,7 +167,7 @@ class SearchPanel(Panel):
         if self.tree.model().rowCount() > 0:
             self.tree.setCurrentIndex(self.tree.model().index(0,0))
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh the search listing and restore the selection, if possible."""
 
         current = self.tree.currentIndex()
@@ -176,47 +180,47 @@ class SearchPanel(Panel):
 
         super().refresh()
 
-    def title(self):
+    def title(self) -> str:
         """Give the query as the tab title"""
 
         return self.q
 
-    def next_thread(self):
+    def next_thread(self) -> None:
         """Select the next thread in the search"""
 
         row = self.tree.currentIndex().row() + 1
         if row >= 0 and row < self.tree.model().rowCount():
             self.tree.setCurrentIndex(self.tree.model().index(row, 0))
 
-    def previous_thread(self):
+    def previous_thread(self) -> None:
         """Select the previous thread in the search"""
 
         row = self.tree.currentIndex().row() - 1
         if row >= 0 and row < self.tree.model().rowCount():
             self.tree.setCurrentIndex(self.tree.model().index(row, 0))
 
-    def first_thread(self):
+    def first_thread(self) -> None:
         """Select the first thread in the search"""
 
         ix = self.model.index(0, 0)
         if self.model.checkIndex(ix):
             self.tree.setCurrentIndex(ix)
 
-    def last_thread(self):
+    def last_thread(self) -> None:
         """Select the last thread in the search"""
 
         ix = self.model.index(self.tree.model().rowCount()-1, 0)
         if self.model.checkIndex(ix):
             self.tree.setCurrentIndex(ix)
 
-    def open_current_thread(self):
+    def open_current_thread(self) -> None:
         """Open the selected thread"""
 
         thread_id = self.model.thread_id(self.tree.currentIndex())
         if thread_id:
             self.app.open_thread(thread_id)
     
-    def toggle_thread_tag(self, tag):
+    def toggle_thread_tag(self, tag: str) -> None:
         """Toggle the given thread tag"""
 
         thread = self.model.thread_json(self.tree.currentIndex())
@@ -228,7 +232,7 @@ class SearchPanel(Panel):
             self.tag_thread(tag_expr)
 
 
-    def tag_thread(self, tag_expr):
+    def tag_thread(self, tag_expr: str) -> None:
         """Apply the given tag expression to the selected thread
 
         A tag expression is a string consisting of one more statements of the form "+TAG"
