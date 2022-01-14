@@ -17,6 +17,8 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+from typing import List, Optional, Any, Union
+
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QFont, QColor
 from PyQt5.QtWidgets import *
@@ -27,19 +29,21 @@ import subprocess
 import json
 import html
 import email
+import email.message
 import tempfile
 
+from . import app
 from . import settings
 from . import util
 from . import keymap
-from .panel import Panel
+from . import panel
 
 
-def flat_thread(d):
+def flat_thread(d: dict) -> List[dict]:
     "Return the thread as a flattened list of messages, sorted by date."
 
-    thread = []
-    def dfs(x):
+    thread: List[dict] = []
+    def dfs(x: Union[list, dict]) -> None:
         if isinstance(x, list):
             for y in x:
                 dfs(y)
@@ -49,7 +53,7 @@ def flat_thread(d):
     thread.sort(key=lambda m: m['timestamp'])
     return thread
 
-def short_string(m):
+def short_string(m: dict) -> str:
     """Return a short string describing the provided message
 
     Currently, this just returns the contents of the "From" header, but something like a first name and
@@ -59,9 +63,11 @@ def short_string(m):
 
     if 'headers' in m and 'From' in m['headers']:
         return m['headers']['From']
+    else:
+        return '(message)'
 
 class MessageRequestInterceptor(QWebEngineUrlRequestInterceptor):
-    def interceptRequest(self, info: QWebEngineUrlRequestInfo):
+    def interceptRequest(self, info: QWebEngineUrlRequestInfo) -> None:
         # print("intercepted")
         if settings.html_block_remote_requests:
             if not (info.resourceType() == QWebEngineUrlRequestInfo.ResourceTypeMainFrame or
@@ -70,15 +76,15 @@ class MessageRequestInterceptor(QWebEngineUrlRequestInterceptor):
 
 
 class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QObject]=None):
         super().__init__(parent)
-        self.message = None
+        self.message: Optional[email.message.Message] = None
 
-    def set_message(self, filename):
+    def set_message(self, filename: str) -> None:
         with open(filename) as f:
             self.message = email.message_from_file(f)
 
-    def requestStarted(self, request: QWebEngineUrlRequestJob):
+    def requestStarted(self, request: QWebEngineUrlRequestJob) -> None:
         cid = request.requestUrl().toString()[4:]
         # print(f"got a request for content-id: {cid}")
 
@@ -113,12 +119,12 @@ class ThreadModel(QAbstractItemModel):
     :param thread_id: the unique thread identifier used by notmuch
     """
 
-    def __init__(self, thread_id):
+    def __init__(self, thread_id: str) -> None:
         super().__init__()
         self.thread_id = thread_id
         self.refresh()
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh the model by calling "notmuch show"."""
 
         r = subprocess.run(['notmuch', 'show', '--format=json', '--include-html', self.thread_id],
@@ -126,40 +132,40 @@ class ThreadModel(QAbstractItemModel):
         self.json_str = r.stdout
         self.d = json.loads(self.json_str)
         self.beginResetModel()
-        self.thread = flat_thread(self.d)
+        self.message_list = flat_thread(self.d)
         self.endResetModel()
 
-    def message_at(self, i):
+    def message_at(self, i: int) -> dict:
         """A JSON object describing the i-th message in the (flattened) thread"""
 
-        return self.thread[i]
+        return self.message_list[i]
 
-    def default_message(self):
+    def default_message(self) -> int:
         """Return the index of either the oldest unread message or the last message
         in the thread."""
 
-        for i, m in enumerate(self.thread):
+        for i, m in enumerate(self.message_list):
             if 'tags' in m and 'unread' in m['tags']:
                 return i
 
         return self.num_messages() - 1
 
-    def num_messages(self):
+    def num_messages(self) -> int:
         """The number of messages in the thread"""
 
-        return len(self.thread)
+        return len(self.message_list)
 
-    def data(self, index, role):
+    def data(self, index: QModelIndex, role: int=Qt.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.data` to populate a list view with short descriptions of
         messages in the thread.
 
         Currently, this just returns the message sender and makes it bold if the message is unread. Adding an
         emoji to show attachments would be good."""
 
-        if index.row() >= len(self.thread):
+        if index.row() >= len(self.message_list):
             return None
 
-        m = self.thread[index.row()]
+        m = self.message_list[index.row()]
 
         if role == Qt.DisplayRole:
             if 'headers' in m and 'From' in m["headers"]:
@@ -177,18 +183,18 @@ class ThreadModel(QAbstractItemModel):
             else:
                 return QColor(settings.theme['fg'])
 
-    def index(self, row, column, parent=QModelIndex()):
+    def index(self, row: int, column: int, parent: QModelIndex=QModelIndex()) -> QModelIndex:
         """Construct a `QModelIndex` for the given row and (irrelevant) column"""
 
         if not self.hasIndex(row, column, parent): return QModelIndex()
         else: return self.createIndex(row, column, None)
 
-    def columnCount(self, index):
+    def columnCount(self, index: QModelIndex=QModelIndex()) -> int:
         """Constant = 1"""
 
         return 1
 
-    def rowCount(self, index=QModelIndex()):
+    def rowCount(self, index: QModelIndex=QModelIndex()) -> int:
         """The number of rows
 
         This is essentially an alias for :func:`num_messages`, but it also returns 0 if an index is
@@ -197,13 +203,13 @@ class ThreadModel(QAbstractItemModel):
         if not index or not index.isValid(): return self.num_messages()
         else: return 0
 
-    def parent(self, index):
+    def parent(self, index: QModelIndex) -> QModelIndex:
         """Always return an invalid index, since there are no nested indices"""
 
         return QModelIndex()
 
 
-class ThreadPanel(Panel):
+class ThreadPanel(panel.Panel):
     """A panel showing an email thread
 
     This is the panel used for email viewing.
@@ -212,8 +218,8 @@ class ThreadPanel(Panel):
     :param thread_id: the unique ID notmuch uses to identify this thread
     """
 
-    def __init__(self, app, thread_id, parent=None):
-        super().__init__(app, parent)
+    def __init__(self, a: app.Dodo, thread_id: str, parent: Optional[QWidget]=None):
+        super().__init__(a, parent=parent)
         window_settings = QSettings("dodo", "dodo")
         self.set_keymap(keymap.thread_keymap)
         self.model = ThreadModel(thread_id)
@@ -269,14 +275,14 @@ class ThreadPanel(Panel):
         self.show_message(self.model.default_message())
 
 
-    def title(self):
+    def title(self) -> str:
         """The tab title
 
         The title is given as the (shortened) subject of the currently visible message.
         """
         return util.chop_s(self.subject)
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh the panel using the output of "notmuch show"
 
         Note the view of the message body is not refreshed, as this would pop the user back to
@@ -325,7 +331,7 @@ class ThreadPanel(Panel):
 
         super().refresh()
 
-    def show_message(self, i=-1):
+    def show_message(self, i: int=-1) -> None:
         """Show a message
 
         If an index is provided, switch the current message to that index, otherwise refresh
@@ -363,17 +369,20 @@ class ThreadPanel(Panel):
                     </html>""")
 
 
-    def next_message(self):
+    def next_message(self) -> None:
         """Show the next message in the thread"""
 
         self.show_message(min(self.current_message + 1, self.model.num_messages() - 1))
 
-    def previous_message(self):
+    def previous_message(self) -> None:
         """Show the previous message in the thread"""
 
         self.show_message(max(self.current_message - 1, 0))
 
-    def scroll_message(self, lines=None, pages=None, pos=None):
+    def scroll_message(self,
+            lines: Optional[int]=None,
+            pages: Optional[Union[float,int]]=None,
+            pos: Optional[str]=None) -> None:
         """Scroll the message body
         
         This operates in 3 different modes, depending on which arguments are given. Precisely one of the
@@ -396,7 +405,7 @@ class ThreadPanel(Panel):
             self.message_view.page().runJavaScript(f'window.scrollBy(0, {pages} * 0.9 * window.innerHeight)',
                     QWebEngineScript.ApplicationWorld)
 
-    def toggle_message_tag(self, tag):
+    def toggle_message_tag(self, tag: str) -> None:
         """Toggle the given tag on the current message"""
 
         m = self.model.message_at(self.current_message)
@@ -407,7 +416,7 @@ class ThreadPanel(Panel):
                 tag_expr = '+' + tag
             self.tag_message(tag_expr)
 
-    def tag_message(self, tag_expr):
+    def tag_message(self, tag_expr: str) -> None:
         """Apply the given tag expression to the current message
 
         A tag expression is a string consisting of one more statements of the form "+TAG"
@@ -422,13 +431,13 @@ class ThreadPanel(Panel):
             self.app.invalidate_panels()
             self.refresh()
 
-    def toggle_html(self):
+    def toggle_html(self) -> None:
         """Toggle between HTML and plain text message view"""
 
         self.html_mode = not self.html_mode
         self.show_message()
 
-    def reply(self, to_all=True):
+    def reply(self, to_all: bool=True) -> None:
         """Open a :class:`~dodo.compose.ComposePanel` populated with a reply
 
         This uses the current message as the message to reply to. This should probably do something
@@ -440,13 +449,13 @@ class ThreadPanel(Panel):
         self.app.compose(mode='replyall' if to_all else 'reply',
                          msg=self.model.message_at(self.current_message))
 
-    def forward(self):
+    def forward(self) -> None:
         """Open a :class:`~dodo.compose.ComposePanel` populated with a forwarded message
         """
 
         self.app.compose(mode='forward', msg=self.model.message_at(self.current_message))
 
-    def open_attachments(self):
+    def open_attachments(self) -> None:
         """Write attachments out into temp directory and open with `settings.file_browser_command`
 
         Currently, this exports a new copy of the attachments every time it is called. Maybe it should

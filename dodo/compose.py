@@ -24,6 +24,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineWidgets import *
 import mailbox
 import email
+import email.utils
+import email.parser
 import mimetypes
 import subprocess
 from subprocess import PIPE, Popen, TimeoutExpired
