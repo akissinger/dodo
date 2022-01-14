@@ -76,7 +76,7 @@ class Dodo(QApplication):
         self.help_window = helpwindow.HelpWindow()
 
         # apply theme
-        themes.apply_theme(self, settings.theme)
+        themes.apply_theme(settings.theme)
 
         # register URL scheme used by embedded images in HTML
         scheme = QWebEngineUrlScheme(b'cid')

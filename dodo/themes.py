@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtWidgets import QApplication
+
 
 # palettes used in theme definitions
 nord_p = {
@@ -118,10 +120,10 @@ nord = {
   'fg_tags': nord_p['aurora2'],
 }
 
-def apply_theme(app: 'Dodo', theme: dict) -> None:
+def apply_theme(theme: dict) -> None:
     # Force the style to be the same on all OSs:
-    app.setStyle("Fusion")
-    # Now use a palette to switch to dark colors:
+    QApplication.setStyle("Fusion")
+    # Now use a palette to switch to theme colors:
     palette = QPalette()
     palette.setColor(QPalette.Window, QColor(theme['bg']))
     palette.setColor(QPalette.WindowText, QColor(theme['fg']))
@@ -136,4 +138,4 @@ def apply_theme(app: 'Dodo', theme: dict) -> None:
     palette.setColor(QPalette.Link, QColor(theme['fg_link']))
     palette.setColor(QPalette.Highlight, QColor(theme['bg_highlight']))
     palette.setColor(QPalette.HighlightedText, QColor(theme['fg_highlight']))
-    app.setPalette(palette)
+    QApplication.setPalette(palette)

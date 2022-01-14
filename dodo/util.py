@@ -17,7 +17,10 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+from typing import Iterator, List
+
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeyEvent
 import re
 import os
 import tempfile
@@ -149,14 +152,14 @@ def message_parts(m: dict) -> Iterator[dict]:
     else:
         yield m
 
-def find_content(m, content_type):
+def find_content(m: dict, content_type: str) -> List[str]:
     """Return a flat list consisting of the 'content' field of each message
     part with the given content-type."""
 
     return [part['content'] for part in message_parts(m)
               if 'content' in part and part.get('content-type') == content_type]
 
-def body_text(m):
+def body_text(m: dict) -> str:
     """Get the body text of a message
 
     Search a message recursively for the first part with content-type equal to
@@ -175,7 +178,7 @@ def body_text(m):
             return html2text(hc[0])
     return ''
 
-def body_html(m):
+def body_html(m: dict) -> str:
     """Get the body HTML of a message
 
     Search a message recursively for the first part with content-type equal to
@@ -189,14 +192,14 @@ def body_html(m):
     if len(hc) != 0: return hc[0]
     else: return ''
 
-def quote_body_text(m):
+def quote_body_text(m: dict) -> str:
     """Return the body text of the message, with '>' prepended to each line"""
 
     text = body_text(m)
     if not text: return ''
     return ''.join([f'> {ln}\n' for ln in text.splitlines()])
 
-def write_attachments(m):
+def write_attachments(m: dict) -> None:
     """Write attachments out into temp directory and open with `settings.file_browser_command`
 
     Currently, this exports a new copy of the attachments every time it is called. Maybe it should
@@ -227,17 +230,18 @@ def write_attachments(m):
     else:
         return (temp_dir, file_paths)
 
-def strip_email_address(e):
+def strip_email_address(e: str) -> str:
     """Strip the display name, leaving just the email address
 
     E.g. "First Last <me@domain.com>" -> "me@domain.com"
     """
 
+    # TODO proper handling of quoted strings
     head = re.compile('^.*<')
     tail = re.compile('>.*$')
     return tail.sub('', head.sub('', e))
 
-def email_is_me(e):
+def email_is_me(e: str) -> bool:
     """Check whether the provided email is me
 
     This compares settings.email_address with the provided email, after calling
@@ -248,7 +252,7 @@ def email_is_me(e):
 
     return strip_email_address(settings.email_address) == strip_email_address(e)
 
-def add_header_line(s, h):
+def add_header_line(s: str, h: str) -> str:
     """Add the given string to the headers, i.e. before the first
     blank line, in the provided string."""
 
@@ -261,7 +265,7 @@ def add_header_line(s, h):
         out += line + '\n'
     return out
 
-def make_message_css():
+def make_message_css() -> str:
     """Fill placeholders in settings.message_css using the current theme
     and font settings."""
 
@@ -401,7 +405,7 @@ keytab = {
   Qt.Key_Space: 'space',
 }
 
-def key_string(e):
+def key_string(e: QKeyEvent) -> str:
     """Convert a Qt keycode plus modifiers into a human readable/writable string
 
     :param e: a QKeyEvent

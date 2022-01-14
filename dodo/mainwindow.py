@@ -22,14 +22,15 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon, QCloseEvent
 import os
 
-from .commandbar import CommandBar
-from .panel import Panel
+from . import app
+from . import commandbar
+from . import panel
 
 class MainWindow(QMainWindow):
-    def __init__(self, app: 'Dodo'):
+    def __init__(self, a: app.Dodo):
         super().__init__()
         conf = QSettings('dodo', 'dodo')
-        self.app = app
+        self.app = a
 
         icon = os.path.dirname(__file__) + '/dodo.svg'
         if os.path.exists(icon):
@@ -53,7 +54,7 @@ class MainWindow(QMainWindow):
 
         def panel_focused(i: int) -> None:
             w = self.tabs.widget(i)
-            if w and isinstance(w, Panel):
+            if w and isinstance(w, panel.Panel):
                 w.setFocus()
                 if w.dirty: w.refresh()
 
@@ -62,7 +63,7 @@ class MainWindow(QMainWindow):
 
         command_area = QWidget(self)
         command_label = QLabel("search", command_area)
-        self.command_bar = CommandBar(self.app, command_label, command_area)
+        self.command_bar = commandbar.CommandBar(self.app, command_label, command_area)
         self.command_bar.setFocusPolicy(Qt.NoFocus)
 
         command_area.setLayout(QHBoxLayout())
@@ -78,7 +79,7 @@ class MainWindow(QMainWindow):
         for i in range(self.tabs.count()):
             w = self.tabs.widget(i)
 
-            if isinstance(w, Panel) and not w.before_close():
+            if isinstance(w, panel.Panel) and not w.before_close():
                 e.ignore()
                 return
 
