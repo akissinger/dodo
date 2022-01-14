@@ -17,9 +17,11 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+from typing import Dict, List, Tuple
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QKeyEvent
 
+from . import app
 from . import util
 from . import keymap
 from . import search
@@ -29,12 +31,12 @@ class CommandBar(QLineEdit):
     """A command bar that appears on the bottom of the screen when searching
     or tagging."""
 
-    def __init__(self, app, label: QLabel, parent: QWidget):
+    def __init__(self, a: app.Dodo, label: QLabel, parent: QWidget):
         super().__init__(parent)
-        self.app = app
+        self.app = a
         self.label = label
         self.mode = ''
-        self.history = { 'search': [0, []], 'tag': [0, []] }
+        self.history: Dict[str, Tuple[int, List[str]]] = { 'search': (0, []), 'tag': (0, []) }
 
     def open(self, mode: str) -> None:
         """Open the command bar and give it focus
@@ -50,14 +52,15 @@ class CommandBar(QLineEdit):
         self.parent().setVisible(True)
         self.setFocus()
 
-    def close(self) -> None:
+    def close_bar(self) -> None:
         """Clear the command and close
 
-        Call this method by itself to cancel the command."""
+        Call this method by itself to cancel the command and close the bar. Note we use
+        `close_bar` to avoid a name clash with QWidget.close."""
 
         if self.mode in self.history:
-            h = self.history[self.mode]
-            h[0] = len(h[1])
+            _, h = self.history[self.mode]
+            self.history[self.mode] = (len(h), h)
 
         self.setText('')
         self.parent().setVisible(False)
@@ -68,7 +71,7 @@ class CommandBar(QLineEdit):
         """Apply the command typed into the command bar and close
 
         After the command has been applied, this method saves the command to the command
-        history associated with the current mode, then calls :func:`close` to clear
+        history associated with the current mode, then calls :func:`close_bar` to clear
         the command and close the command bar."""
 
         if self.mode == 'search':
@@ -81,9 +84,11 @@ class CommandBar(QLineEdit):
                 w.refresh()
 
         if self.mode in self.history:
-            self.history[self.mode][1].append(self.text())
+            pos, h = self.history[self.mode]
+            h.append(self.text())
+            self.history[self.mode] = (pos + 1, h)
 
-        self.close()
+        self.close_bar()
 
     def history_previous(self) -> None:
         """Cycle to the previous command in the command history
@@ -91,11 +96,11 @@ class CommandBar(QLineEdit):
         Note a separate history is kept for each mode."""
 
         if self.mode in self.history:
-            h = self.history[self.mode]
-            if len(h[1]) != 0:
-                i = max(h[0] - 1, 0)
-                h[0] = i
-                self.setText(h[1][i])
+            pos, h = self.history[self.mode]
+            if len(h) != 0:
+                pos = max(pos - 1, 0)
+                self.history[self.mode] = (pos, h)
+                self.setText(h[pos])
 
     def history_next(self) -> None:
         """Cycle to the next command in the command history
@@ -103,11 +108,11 @@ class CommandBar(QLineEdit):
         Note a separate history is kept for each mode."""
 
         if self.mode in self.history:
-            h = self.history[self.mode]
-            if len(h[1]) != 0:
-                i = min(h[0] + 1, len(h[1]) - 1)
-                h[0] = i
-                self.setText(h[1][i])
+            pos, h = self.history[self.mode]
+            if len(h) != 0:
+                pos = min(pos + 1, len(h) - 1)
+                self.history[self.mode] = (pos, h)
+                self.setText(h[pos])
 
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
@@ -122,9 +127,6 @@ class CommandBar(QLineEdit):
         """
         k = util.key_string(e)
         if k in keymap.command_bar_keymap:
-            if isinstance(keymap.command_bar_keymap[k], tuple):
-                keymap.command_bar_keymap[k][1](self)
-            else:
-                keymap.command_bar_keymap[k](self)
+            keymap.command_bar_keymap[k][1](self)
         else:
             super().keyPressEvent(e)

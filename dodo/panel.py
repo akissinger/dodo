@@ -16,12 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import Optional, List, Set
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QKeyEvent
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import *
 import shutil
 
+from . import app
 from . import keymap
 from . import util
 from . import settings
@@ -40,41 +43,41 @@ class Panel(QWidget):
                       always stays open.
     """
 
-    def __init__(self, app, keep_open=False, parent=None):
+    def __init__(self, a: app.Dodo, keep_open: bool=False, parent: Optional[QWidget]=None):
         """Initialise a panel"""
 
         super().__init__(parent)
-        self.app = app
+        self.app = a
         self.keep_open = keep_open
 
-        self.keymap = None
+        self.keymap: Optional[dict] = None
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.dirty = True
-        self.temp_dirs = []
+        self.temp_dirs: List[str] = []
 
         # set up timer and prefix cache for handling keychords
         self._prefix = ""
-        self._prefixes = set()
+        self._prefixes: Set[str] = set()
         self._prefix_timer = QTimer()
         self._prefix_timer.setSingleShot(True)
         self._prefix_timer.setInterval(500)
 
-        def prefix_timeout():
+        def prefix_timeout() -> None:
             if self.keymap and self._prefix in self.keymap:
-                self.keymap[self._prefix](self)
+                self.keymap[self._prefix][1](self)
             elif self._prefix in keymap.global_keymap:
-                keymap.global_keymap[self._prefix](self.app)
+                keymap.global_keymap[self._prefix][1](self.app)
             self._prefix = ""
 
         self._prefix_timer.timeout.connect(prefix_timeout)
 
-    def title(self):
+    def title(self) -> str:
         """The title shown on this panel's tab"""
 
         return 'view'
 
-    def set_keymap(self, mp):
+    def set_keymap(self, mp: dict) -> None:
         """Set the local keymap to be the given dictionary.
 
         This needs to be called in the :func:`__init__` method of each child class
@@ -90,10 +93,10 @@ class Panel(QWidget):
                     self._prefixes.add(k[0:-i])
 
 
-    def refresh(self):
+    def refresh(self) -> None:
         self.dirty = False
 
-    def before_close(self):
+    def before_close(self) -> bool:
         """Called before closing a panel
 
         Cleans up temp dirs and returns True. Overriding methods should call this method
@@ -116,7 +119,7 @@ class Panel(QWidget):
 
         return True
 
-    def keyPressEvent(self, e):
+    def keyPressEvent(self, e: QKeyEvent) -> None:
         """Passes key events to the appropriate keymap
 
         First a key press (possibly with modifiers) is translated into a string
@@ -141,13 +144,7 @@ class Panel(QWidget):
             self._prefix_timer.start()
         elif self.keymap and cmd in self.keymap:
             self._prefix = ""
-            if isinstance(self.keymap[cmd], tuple):
-                self.keymap[cmd][1](self)
-            else: 
-                self.keymap[cmd](self)
+            self.keymap[cmd][1](self)
         elif cmd in keymap.global_keymap:
             self._prefix = ""
-            if isinstance(keymap.global_keymap[cmd], tuple):
-                keymap.global_keymap[cmd][1](self.app)
-            else:
-                keymap.global_keymap[cmd](self.app)
+            keymap.global_keymap[cmd][1](self.app)

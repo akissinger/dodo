@@ -76,7 +76,7 @@ compose_keymap = {
 
 command_bar_keymap = {
   '<enter>':  ('accept', lambda b: b.accept()),
-  '<escape>': ('close', lambda b: b.close()),
+  '<escape>': ('close', lambda b: b.close_bar()),
   '<down>':   ('history next', lambda b: b.history_next()),
   '<up>':     ('history previous', lambda b: b.history_previous()),
   'C-n':      ('history next', lambda b: b.history_next()),

@@ -16,8 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import Optional
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeyEvent
 
 from . import keymap
 from . import util
@@ -26,7 +30,7 @@ from . import settings
 class HelpWindow(QWidget):
     """A window showing all keybindings"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget]=None):
         super().__init__(parent)
         self.setLayout(QVBoxLayout())
         self.help_text = QTextBrowser()
@@ -58,7 +62,7 @@ class HelpWindow(QWidget):
 
         self.help_text.setHtml(s)
 
-    def keyPressEvent(self, e):
+    def keyPressEvent(self, e: QKeyEvent) -> None:
         """Handle key press
 
         If <escape> is pressed, exit, otherwise pass the keypress on."""

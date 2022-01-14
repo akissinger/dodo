@@ -17,7 +17,7 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import Iterator, List
+from typing import Iterator, List, Tuple, Dict
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeyEvent
@@ -199,7 +199,7 @@ def quote_body_text(m: dict) -> str:
     if not text: return ''
     return ''.join([f'> {ln}\n' for ln in text.splitlines()])
 
-def write_attachments(m: dict) -> None:
+def write_attachments(m: dict) -> Tuple[str, List[str]]:
     """Write attachments out into temp directory and open with `settings.file_browser_command`
 
     Currently, this exports a new copy of the attachments every time it is called. Maybe it should
@@ -210,7 +210,7 @@ def write_attachments(m: dict) -> None:
               returns an empty string and empty list.
     """
 
-    if not (m and 'filename' in m): return None
+    if not (m and 'filename' in m): return ('', [])
     temp_dir = tempfile.mkdtemp(prefix='dodo-')
     file_paths = []
 
@@ -271,10 +271,10 @@ def make_message_css() -> str:
 
     d = settings.theme.copy()
     d["message_font"] = settings.message_font
-    d["message_font_size"] = settings.message_font_size
+    d["message_font_size"] = str(settings.message_font_size)
     return settings.message_css.format(**d)
 
-basic_keytab = {
+basic_keytab: Dict[int, str] = {
   Qt.Key_0: '0',
   Qt.Key_1: '1',
   Qt.Key_2: '2',
@@ -342,7 +342,7 @@ basic_keytab = {
   Qt.Key_Z: 'z',
 }
 
-keytab = {
+keytab: Dict[int, str] = {
   Qt.Key_Escape: 'escape',
   Qt.Key_Tab: 'tab',
   Qt.Key_Backtab: 'backtab',
@@ -416,19 +416,19 @@ def key_string(e: QKeyEvent) -> str:
     if e.key() in basic_keytab:
         cmd = basic_keytab[e.key()]
         shift_modifier = False
-        if e.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier:
+        if int(e.modifiers()) & int(Qt.ShiftModifier) == int(Qt.ShiftModifier):
             cmd = cmd.upper()
     elif e.key() in keytab:
         shift_modifier = True
         cmd = '<' + keytab[e.key()] + '>'
     else:
-        return None
+        return ''
 
-    if shift_modifier and (e.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier):
+    if shift_modifier and (int(e.modifiers()) & int(Qt.ShiftModifier) == int(Qt.ShiftModifier)):
         cmd = 'S-' + cmd
-    if e.modifiers() & Qt.AltModifier == Qt.AltModifier:
+    if int(e.modifiers()) & int(Qt.AltModifier) == int(Qt.AltModifier):
         cmd = 'M-' + cmd
-    if e.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
+    if int(e.modifiers()) & int(Qt.ControlModifier) == int(Qt.ControlModifier):
         cmd = 'C-' + cmd
 
     return cmd
