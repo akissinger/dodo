@@ -17,9 +17,9 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import Optional, Any
+from typing import Optional, Any, overload
 
-from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex
+from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject
 from PyQt5.QtWidgets import QTreeView, QWidget
 from PyQt5.QtGui import QFont, QColor
 import subprocess
@@ -137,12 +137,11 @@ class SearchModel(QAbstractItemModel):
         if not index or not index.isValid(): return self.num_threads()
         else: return 0
 
-    # for some reason mypy doesn't like this one. Multiple implementations of parent()?
-    def parent(self, index: QModelIndex) -> QModelIndex: # type: ignore
+    def parent(self, child: QModelIndex=None) -> Any:
         """Always return an invalid index, since there are no nested indices"""
 
-        return QModelIndex()
-
+        if not child: return super().parent()
+        else: return QModelIndex()
 
 class SearchPanel(panel.Panel):
     """A panel showing the results of a search

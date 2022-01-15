@@ -203,11 +203,11 @@ class ThreadModel(QAbstractItemModel):
         if not index or not index.isValid(): return self.num_messages()
         else: return 0
 
-    # for some reason mypy doesn't like this one. Multiple implementations of parent()?
-    def parent(self, index: QModelIndex) -> QModelIndex: # type: ignore
+    def parent(self, child: QModelIndex=None) -> Any:
         """Always return an invalid index, since there are no nested indices"""
 
-        return QModelIndex()
+        if not child: return super().parent()
+        else: return QModelIndex()
 
 
 class ThreadPanel(panel.Panel):
