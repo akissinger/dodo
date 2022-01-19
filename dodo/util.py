@@ -26,6 +26,7 @@ import os
 import tempfile
 import subprocess
 import email
+import email.header
 
 from . import settings
 
@@ -88,6 +89,11 @@ def simple_escape(s: str) -> str:
     This function only escapes &, <, and >."""
 
     return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+def decode_header(s: str) -> str:
+    """Decode any charset-encoded parts of an email header"""
+
+    return str(email.header.make_header(email.header.decode_header(s)))
 
 def colorize_text(s: str, has_headers: bool=False) -> str:
     """Add some colors to HTML-escaped plaintext, for use inside <pre> tag
@@ -219,7 +225,7 @@ def write_attachments(m: dict) -> Tuple[str, List[str]]:
             msg = email.message_from_file(f)
             for part in msg.walk():
                 if part.get_content_disposition() == 'attachment':
-                    p = temp_dir + '/' + part.get_filename()
+                    p = temp_dir + '/' + decode_header(part.get_filename())
                     with open(p, 'wb') as att:
                         att.write(part.get_payload(decode=True))
                     file_paths.append(p)
