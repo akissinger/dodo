@@ -27,6 +27,8 @@ import tempfile
 import subprocess
 import email
 import email.header
+from bleach.sanitizer import Cleaner
+from bleach.linkifier import Linker
 
 from . import settings
 
@@ -39,9 +41,8 @@ def clean_html2html(s: str) -> str:
     :param s: an HTML input string
 
     """
-    from lxml.html.clean import Cleaner # type: ignore
     c = Cleaner()
-    return c.clean_html(s)
+    return c.clean(s)
     
 # Pure python html2text, but results don't look nearly as good as w3m -dump
 #

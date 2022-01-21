@@ -84,6 +84,11 @@ body {{
   background: {bg_button};
 }}
 
+::selection {{
+  color: {bg};
+  background: {fg};
+}}
+
 a {{
   color: {fg_bright};
 }}
