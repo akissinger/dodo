@@ -31,7 +31,6 @@ import html
 import email
 import email.message
 import tempfile
-from bleach.linkifier import Linker
 
 from . import app
 from . import settings
@@ -356,8 +355,7 @@ class ThreadPanel(panel.Panel):
                 if html: self.message_view.page().setHtml(html)
             else:
                 text = util.colorize_text(util.simple_escape(util.body_text(m)))
-                linker = Linker(parse_email=True)
-                text = linker.linkify(text)
+                text = util.linkify(text)
 
                 if text:
                     self.message_view.page().setHtml(f"""

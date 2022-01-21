@@ -69,6 +69,18 @@ def w3m_html2text(s: str) -> str:
     os.remove(file)
     return p.stdout
 
+def linkify(s: str) -> str:
+    """Link URLs and email addresses
+
+    :param s: a plaintext input string
+    "returns: HTML with URLs and emails linked
+    """
+    lnk = Linker()
+    lnk_email = Linker(parse_email=True)
+
+    # using 2 instances of Linker() so explicit 'mailto:' links
+    # get preference over email addresses
+    return lnk_email.linkify(lnk.linkify(s))
 
 html2html = lambda s : s
 """Function used to process HTML messages
