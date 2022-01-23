@@ -379,13 +379,16 @@ class ThreadPanel(panel.Panel):
         if self.current_message >= 0 and self.current_message < self.model.num_messages():
             self.refresh()
             m = self.model.message_at(self.current_message)
+            if 'unread' in m['tags']:
+                # this might change the filename, so we should refresh the model
+                self.tag_message('-unread')
+                self.refresh()
+                m = self.model.message_at(self.current_message)
 
             self.message_handler.message_json = m
             if 'filename' in m and len(m['filename']) != 0:
                 self.image_handler.set_message(m['filename'][0])
 
-            if 'unread' in m['tags']:
-                self.tag_message('-unread')
 
             if self.html_mode:
                 self.message_view.page().setUrl(QUrl('message:html'))
