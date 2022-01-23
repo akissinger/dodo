@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import List, Optional, Any, Union
 
 from PyQt5.QtCore import *
-from PyQt5.QtGui import QFont, QColor
+from PyQt5.QtGui import QFont, QColor, QDesktopServices
 from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineCore import *
 from PyQt5.QtWebEngineWidgets import *
@@ -66,11 +66,28 @@ def short_string(m: dict) -> str:
     else:
         return '(message)'
 
-class MessageRequestInterceptor(QWebEngineUrlRequestInterceptor):
-    def interceptRequest(self, info: QWebEngineUrlRequestInfo) -> None:
-        proto = info.requestUrl().scheme()
-        if settings.html_block_remote_requests and proto not in app.LOCAL_PROTOCOLS:
-            info.block(True)
+class MessagePage(QWebEnginePage):
+    def acceptNavigationRequest(self, url: QUrl, type: QWebEnginePage.NavigationType, isMainFrame: bool) -> bool:
+        # if the protocol is 'message' or 'cid', let the request through
+        if url.scheme() in app.LOCAL_PROTOCOLS:
+            return True
+        else:
+            if type == QWebEnginePage.NavigationTypeLinkClicked:
+                if url.scheme() == 'mailto':
+                    # TODO: open a compose tab
+                    print("got a mailto link: " + url.toString)
+                else:
+                    if (not settings.html_confirm_open_links or
+                        QMessageBox.question(None, 'Open link',
+                            f'Open the following URL in browswer?\n\n  {url.toString()}') == QMessageBox.Yes):
+                        QDesktopServices.openUrl(url)
+                return False
+            if type == QWebEnginePage.NavigationTypeRedirect:
+                # never let a message do a <meta> redirect
+                return False
+            else:
+                return settings.html_block_remote_requests
+
 
 class MessageHandler(QWebEngineUrlSchemeHandler):
     def __init__(self, parent: Optional[QObject]=None):
@@ -286,8 +303,8 @@ class ThreadPanel(panel.Panel):
         self.message_handler = MessageHandler(self)
         self.message_profile.installUrlSchemeHandler(b'message', self.message_handler)
 
-        self.message_request_interceptor = MessageRequestInterceptor(self.message_profile)
-        self.message_profile.setUrlRequestInterceptor(self.message_request_interceptor)
+        # self.message_request_interceptor = MessageRequestInterceptor(self.message_profile)
+        # self.message_profile.setUrlRequestInterceptor(self.message_request_interceptor)
         self.message_profile.settings().setAttribute(
                 QWebEngineSettings.JavascriptEnabled, False)
 
@@ -297,7 +314,7 @@ class ThreadPanel(panel.Panel):
         # self.message_view.settings().setAttribute(
         #         QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
 
-        page = QWebEnginePage(self.message_profile, self.message_view)
+        page = MessagePage(self.message_profile, self.message_view)
         self.message_view.setPage(page)
 
         self.message_view.setZoomFactor(1.2)
@@ -388,7 +405,6 @@ class ThreadPanel(panel.Panel):
             self.message_handler.message_json = m
             if 'filename' in m and len(m['filename']) != 0:
                 self.image_handler.set_message(m['filename'][0])
-
 
             if self.html_mode:
                 self.message_view.page().setUrl(QUrl('message:html'))
