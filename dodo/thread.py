@@ -68,11 +68,45 @@ def short_string(m: dict) -> str:
 
 class MessageRequestInterceptor(QWebEngineUrlRequestInterceptor):
     def interceptRequest(self, info: QWebEngineUrlRequestInfo) -> None:
-        # print("intercepted")
-        if settings.html_block_remote_requests:
-            if not (info.resourceType() == QWebEngineUrlRequestInfo.ResourceTypeMainFrame or
-                    info.requestUrl().toString()[0:4] == 'cid:'):
-                info.block(True)
+        proto = info.requestUrl().scheme()
+        if settings.html_block_remote_requests and proto not in app.LOCAL_PROTOCOLS:
+            info.block(True)
+
+class MessageHandler(QWebEngineUrlSchemeHandler):
+    def __init__(self, parent: Optional[QObject]=None):
+        super().__init__(parent)
+        self.message_json: Optional[dict] = None
+
+    def requestStarted(self, request: QWebEngineUrlRequestJob) -> None:
+        mode = request.requestUrl().toString()[len('message:'):]
+
+        if self.message_json:
+            buf = QBuffer(parent=self)
+            buf.open(QIODevice.WriteOnly)
+            if mode == 'html':
+                html = util.body_html(self.message_json)
+                if html: buf.write(html.encode('utf-8'))
+            else:
+                text = util.colorize_text(util.simple_escape(util.body_text(self.message_json)))
+                text = util.linkify(text)
+
+                if text:
+                    buf.write(f"""
+                    <html>
+                    <head>
+                    <style type="text/css">
+                    {util.make_message_css()}
+                    </style>
+                    </head>
+                    <body>
+                    <pre style="white-space: pre-wrap">{text}</pre>
+                    </body>
+                    </html>""".encode('utf-8'))
+
+            buf.close()
+            request.reply('text/html'.encode('latin1'), buf)
+        else:
+            request.fail(QWebEngineUrlRequestJob.UrlNotFound)
 
 
 class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
@@ -85,14 +119,12 @@ class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
             self.message = email.message_from_file(f)
 
     def requestStarted(self, request: QWebEngineUrlRequestJob) -> None:
-        cid = request.requestUrl().toString()[4:]
-        # print(f"got a request for content-id: {cid}")
+        cid = request.requestUrl().toString()[len('cid:'):]
 
         content_type = None
         if self.message:
             for part in self.message.walk():
                 if "Content-id" in part and part["Content-id"] == f'<{cid}>':
-                    print("found cid")
                     content_type = part.get_content_type()
                     buf = QBuffer(parent=self)
                     buf.open(QIODevice.WriteOnly)
@@ -250,6 +282,10 @@ class ThreadPanel(panel.Panel):
 
         self.image_handler = EmbeddedImageHandler(self)
         self.message_profile.installUrlSchemeHandler(b'cid', self.image_handler)
+
+        self.message_handler = MessageHandler(self)
+        self.message_profile.installUrlSchemeHandler(b'message', self.message_handler)
+
         self.message_request_interceptor = MessageRequestInterceptor(self.message_profile)
         self.message_profile.setUrlRequestInterceptor(self.message_request_interceptor)
         self.message_profile.settings().setAttribute(
@@ -344,31 +380,17 @@ class ThreadPanel(panel.Panel):
             self.refresh()
             m = self.model.message_at(self.current_message)
 
+            self.message_handler.message_json = m
+            if 'filename' in m and len(m['filename']) != 0:
+                self.image_handler.set_message(m['filename'][0])
+
             if 'unread' in m['tags']:
                 self.tag_message('-unread')
 
             if self.html_mode:
-                if 'filename' in m and len(m['filename']) != 0:
-                    self.image_handler.set_message(m['filename'][0])
-
-                html = util.body_html(m)
-                if html: self.message_view.page().setHtml(html)
+                self.message_view.page().setUrl(QUrl('message:html'))
             else:
-                text = util.colorize_text(util.simple_escape(util.body_text(m)))
-                text = util.linkify(text)
-
-                if text:
-                    self.message_view.page().setHtml(f"""
-                    <html>
-                    <head>
-                    <style type="text/css">
-                    {util.make_message_css()}
-                    </style>
-                    </head>
-                    <body>
-                    <pre style="white-space: pre-wrap">{text}</pre>
-                    </body>
-                    </html>""")
+                self.message_view.page().setUrl(QUrl('message:plain'))
 
 
     def next_message(self) -> None:

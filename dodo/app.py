@@ -37,6 +37,8 @@ from . import helpwindow
 from . import panel
 from . import mainwindow
 
+LOCAL_PROTOCOLS = ['cid', 'message']
+
 class SyncMailThread(QThread):
     """A QThread used for syncing local Maildir and notmuch with IMAP
 
@@ -78,10 +80,11 @@ class Dodo(QApplication):
         # apply theme
         themes.apply_theme(settings.theme)
 
-        # register URL scheme used by embedded images in HTML
-        scheme = QWebEngineUrlScheme(b'cid')
-        scheme.setSyntax(QWebEngineUrlScheme.Syntax.Path)
-        QWebEngineUrlScheme.registerScheme(scheme)
+        # register custom URL schemes used by embedded HTML viewer
+        for proto in LOCAL_PROTOCOLS:
+            scheme = QWebEngineUrlScheme(proto.encode('utf-8'))
+            scheme.setSyntax(QWebEngineUrlScheme.Syntax.Path)
+            QWebEngineUrlScheme.registerScheme(scheme)
 
         # set up GUI
         self.main_window = mainwindow.MainWindow(self)
