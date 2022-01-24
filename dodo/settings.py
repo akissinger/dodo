@@ -23,6 +23,7 @@ email_address = ''
 sent_dir = ''
 editor_command = "xterm -e vim '{file}'"
 file_browser_command = "nautilus '{dir}'"
+web_browser_command = ''
 send_mail_command = 'msmtp -t'
 sync_mail_command = 'offlineimap'
 sync_mail_interval = 300 # seconds

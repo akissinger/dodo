@@ -85,7 +85,12 @@ class MessagePage(QWebEnginePage):
                     if (not settings.html_confirm_open_links or
                         QMessageBox.question(None, 'Open link',
                             f'Open the following URL in browswer?\n\n  {url.toString()}') == QMessageBox.Yes):
-                        QDesktopServices.openUrl(url)
+                        if settings.web_browser_command == '':
+                            QDesktopServices.openUrl(url)
+                        else:
+                            subprocess.Popen([settings.web_browser_command, url.toString()],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
                 return False
             if type == QWebEnginePage.NavigationTypeRedirect:
                 # never let a message do a <meta> redirect
