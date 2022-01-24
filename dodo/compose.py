@@ -42,7 +42,7 @@ from . import util
 class ComposePanel(panel.Panel):
     """A panel for composing messages
 
-    :param mode: Composition mode. Possible values are '', 'reply', 'replyall',
+    :param mode: Composition mode. Possible values are '', 'mailto', 'reply', 'replyall',
                  and 'forward'
     :param msg: A JSON message referenced in a reply or forward. If mode != '',
                 this cannot be None.
@@ -60,7 +60,18 @@ class ComposePanel(panel.Panel):
 
         self.message_string = f'From: {settings.email_address}\n'
 
-        if msg and (mode == 'reply' or mode == 'replyall'):
+        if msg and mode == 'mailto':
+            if 'To' in msg['headers']:
+                self.message_string += f'To: {msg["headers"]["To"]}\n'
+
+            if 'Subject' in msg['headers']:
+                self.message_string += f'Subject: {msg["headers"]["Subject"]}\n'
+            else:
+                self.message_string += 'Subject: \n'
+
+            self.message_string += '\n\n\n'
+
+        elif msg and (mode == 'reply' or mode == 'replyall'):
             if 'From' in msg['headers']:
                 self.message_string += f'To: {msg["headers"]["From"]}\n'
 

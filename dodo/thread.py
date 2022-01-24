@@ -67,6 +67,10 @@ def short_string(m: dict) -> str:
         return '(message)'
 
 class MessagePage(QWebEnginePage):
+    def __init__(self, a: app.Dodo, profile: QWebEngineProfile, parent: Optional[QObject]=None):
+        super().__init__(profile, parent)
+        self.app = a
+
     def acceptNavigationRequest(self, url: QUrl, type: QWebEnginePage.NavigationType, isMainFrame: bool) -> bool:
         # if the protocol is 'message' or 'cid', let the request through
         if url.scheme() in app.LOCAL_PROTOCOLS:
@@ -74,8 +78,9 @@ class MessagePage(QWebEnginePage):
         else:
             if type == QWebEnginePage.NavigationTypeLinkClicked:
                 if url.scheme() == 'mailto':
-                    # TODO: open a compose tab
-                    print("got a mailto link: " + url.toString)
+                    query = QUrlQuery(url)
+                    msg = {'headers':{'To': url.path(), 'Subject': query.queryItemValue('subject')}}
+                    self.app.compose(mode='mailto', msg=msg)
                 else:
                     if (not settings.html_confirm_open_links or
                         QMessageBox.question(None, 'Open link',
@@ -314,7 +319,7 @@ class ThreadPanel(panel.Panel):
         # self.message_view.settings().setAttribute(
         #         QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
 
-        page = MessagePage(self.message_profile, self.message_view)
+        page = MessagePage(self.app, self.message_profile, self.message_view)
         self.message_view.setPage(page)
 
         self.message_view.setZoomFactor(1.2)
