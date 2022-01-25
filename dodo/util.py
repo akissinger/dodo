@@ -73,7 +73,7 @@ def linkify(s: str) -> str:
     """Link URLs and email addresses
 
     :param s: a plaintext input string
-    "returns: HTML with URLs and emails linked
+    :returns: HTML with URLs and emails linked
     """
     lnk = Linker()
     lnk_email = Linker(parse_email=True)

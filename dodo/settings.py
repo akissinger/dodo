@@ -16,16 +16,59 @@
 # You should have received a copy of the GNU General Public License
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
+"""
+This module holds settings and sets their default values. The values set
+here should be overridden by the user in `~/.config/dodo/config.py`. This
+can be done as follows:
+
+.. code-block:: python
+
+  import dodo
+  dodo.settings.email_address = 'First Last <me@domain.com>''
+  dodo.settings.sent_dir = '~/mail/work/Sent'
+
+The settings :func:`~dodo.settings.email_address` and
+:func:`~dodo.settings.sent_dir` are required. Dodo may not work correctly
+unless you set them properly. The rest of the settings have reasonable
+defaults, as detailed below.
+"""
+
 from . import themes
 
 # functional
 email_address = ''
+"""Your email address (REQUIRED)
+
+This is used both to populate the 'From' field of emails and to (mostly)
+avoid CC'ing yourself when replying to all. It can be given as 'NAME <ADDRESS@DOMAIN>'
+format."""
+
 sent_dir = ''
+"""Where to store sent messages (REQUIRED)
+
+This will usually be a subdirectory of the Maildir sync'ed with
+:func:`~dodo.settings.sync_mail_command`."""
+
 editor_command = "xterm -e vim '{file}'"
+"""Command used to launch external text editor
+
+This is a shell command, which additionally takes the `{file}` placeholder,
+which is passed the name of a temp file being edited while composing an email.
+"""
+
 file_browser_command = "nautilus '{dir}'"
+"""Command used to launch external text editor
+
+This is a shell command, which additionally takes the `{file}` placeholder,
+which is passed the name of a temp file being edited while composing an email.
+"""
+
 web_browser_command = ''
 send_mail_command = 'msmtp -t'
+
 sync_mail_command = 'offlineimap'
+"""Command used to sync IMAP with local Maildir"""
+
 sync_mail_interval = 300 # seconds
 default_to_html = False
 remove_temp_dirs = 'ask' # should be 'always', 'never', or 'ask'
