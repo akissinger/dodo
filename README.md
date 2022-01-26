@@ -72,13 +72,13 @@ A theme is just a Python dictionary mapping some fixed color names to HTML color
 
 All of the settings of the form `..._command` are given as shell command. The `editor_command` setting takes a placeholder `{file}` for the file to edit and `file_browser_command` takes the placeholder `{dir}` for the directory to browse.
 
-The settings above replace the default text editor (`xterm -e vim`) with [neovim](https://neovim.io/) run inside a new [kitty](https://sw.kovidgoyal.net/kitty/) terminal. I am also using Michael Herrmann's excellent dual-pane file manager [fman](https://fman.io/) instead of the default (`nautilus`). With these settings, showing attachments will open `fman` with a fixed directory in the left pane (`/home/user/Documents`) and a directory containing the attachments on the right. A similar effect can be obtained with [ranger](https://github.com/ranger/ranger) using the `multipane` view mode.
+The settings above replace the default text editor (`xterm -e vim`) with [neovim](https://neovim.io/) run inside a new [kitty](https://sw.kovidgoyal.net/kitty/) terminal. I am also using Michael Herrmann's excellent dual-pane file manager [fman](https://fman.io/) instead of the default (`nautilus`). With these settings, showing attachments will open `fman` with a fixed directory in the right pane (`/home/user/Documents`) and a directory containing the attachments on the left. A similar effect can be obtained with [ranger](https://github.com/ranger/ranger) using the `multipane` view mode.
 
 While Javascript is disabled in the HTML email viewer, you may want to set up a custom HTML sanitizer function as follows:
 
     dodo.util.html2html = dodo.util.clean_html2html
 
-The above function passes the HTML through the `Cleaner` object of the [lxml](https://lxml.de/) library. Note this still allows some dodgy stuff, such as calling home via embedded `img` tags. Fully safe and private HTML email from untrusted sources should be considered a work-in-progress.
+The above function passes the HTML through the `Cleaner` object of the [bleach](https://github.com/mozilla/bleach) library. Note this still allows some dodgy stuff, such as calling home via embedded `img` tags, so remote requests from HTML messages are disabled by default via the setting `html_block_remote_requests`. Javascript is also disabled.
 
 ### Key mapping
 
