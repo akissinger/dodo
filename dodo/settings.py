@@ -64,18 +64,55 @@ which is passed the name of a temp file being edited while composing an email.
 """
 
 web_browser_command = ''
+"""Web browser to use when clicking links in emails
+
+This should be a single command which expects a URL as its first argument. If this
+is an empty string, Dodo will attempt to use the default web browser supplied by
+the desktop environment, if it exists.
+"""
 send_mail_command = 'msmtp -t'
+"""Command used to send mail via SMTP
+
+This is a shell command that expects a (sendmail-compatible) email message to be
+written to STDIN. Note that it should read the destination from the `From:` header
+of the message and not a command-line argument.
+"""
 
 sync_mail_command = 'offlineimap'
 """Command used to sync IMAP with local Maildir"""
 
-sync_mail_interval = 300 # seconds
+sync_mail_interval = 300
+"""Interval to run :func:`~dodo.settings.sync_mail_command` automatically, in seconds
+
+Set this to -1 to disable automatic syncing.
+"""
+
 default_to_html = False
-remove_temp_dirs = 'ask' # should be 'always', 'never', or 'ask'
+"""Open messages in HTML mode by default, rather than plaintext"""
+
+remove_temp_dirs = 'ask'
+"""Set whether to remove temporary directories when closing a panel
+
+Thread panels create temporary directories to open attachments. These can be cleaned up
+automatically when a panel (or Dodo) is closed. Possible values are: 'always', 'never',
+or 'ask'.
+"""
 
 # security
 html_block_remote_requests = True
+"""Block remote requests for HTML messages
+
+HTML messages, especially from dodgy senders, can display remote content or 'call home'
+from embedded image tags or iframes. If set to True, Dodo will not allow these requests.
+"""
+
 html_confirm_open_links = True
+"""Display a confirmation dialog before opening a link in browser
+
+If this is True, Dodo will display a confirmation dialog showing the *actual* URL that
+the web browser will request before opening. This is an extra measure against phishing
+or emails opening your web browser without your permission.
+"""
 
 # visual
 theme = themes.nord
