@@ -121,6 +121,7 @@ class MessageHandler(QWebEngineUrlSchemeHandler):
                     buf.write(f"""
                     <html>
                     <head>
+                    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
                     <style type="text/css">
                     {util.make_message_css()}
                     </style>

@@ -64,7 +64,7 @@ def w3m_html2text(s: str) -> str:
     (fd, file) = tempfile.mkstemp(suffix='.html') 
     with os.fdopen(fd, 'w') as f:
         f.write(s)
-    p = subprocess.run(['w3m', '-dump', file],
+    p = subprocess.run(['w3m', '-O', 'utf8', '-dump', file],
             stdout=subprocess.PIPE, encoding='utf8')
     os.remove(file)
     return p.stdout
