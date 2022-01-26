@@ -57,10 +57,11 @@ which is passed the name of a temp file being edited while composing an email.
 """
 
 file_browser_command = "nautilus '{dir}'"
-"""Command used to launch external text editor
+"""Command used to launch external file browser
 
-This is a shell command, which additionally takes the `{file}` placeholder,
-which is passed the name of a temp file being edited while composing an email.
+This is a shell command, which additionally takes the `{dir}` placeholder. This
+command is used when viewing attachments, which first dumps the attachments to a
+temp directory given by `{dir}`, then opens that directory in a file browser.
 """
 
 web_browser_command = ''
@@ -70,6 +71,7 @@ This should be a single command which expects a URL as its first argument. If th
 is an empty string, Dodo will attempt to use the default web browser supplied by
 the desktop environment, if it exists.
 """
+
 send_mail_command = 'msmtp -t'
 """Command used to send mail via SMTP
 

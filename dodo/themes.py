@@ -79,6 +79,10 @@ solarized_dark = {
   'fg_date': solarized_p['cyan'],
   'fg_tags': solarized_p['violet'],
 }
+"""Theme based on the `Solarized`_ palette (dark background).
+
+.. _Solarized: https://ethanschoonover.com/solarized/
+"""
 
 solarized_light = {
   'bg': solarized_p['base3'],
@@ -99,6 +103,10 @@ solarized_light = {
   'fg_date': solarized_p['cyan'],
   'fg_tags': solarized_p['violet'],
 }
+"""Theme based on the `Solarized`_ palette (light background).
+
+.. _Solarized: https://ethanschoonover.com/solarized/
+"""
 
 nord = {
   'bg': nord_p['polar0'],
@@ -119,8 +127,16 @@ nord = {
   'fg_date': nord_p['polar3'],
   'fg_tags': nord_p['aurora2'],
 }
+"""Theme based on the `Nord`_ palette
+
+.. _Nord: https://www.nordtheme.com/
+"""
 
 def apply_theme(theme: dict) -> None:
+    """"Apply the given theme to GUI components
+
+    This is called when :class:`~dodo.app.Dodo` is initialised."""
+
     # Force the style to be the same on all OSs:
     QApplication.setStyle("Fusion")
     # Now use a palette to switch to theme colors:

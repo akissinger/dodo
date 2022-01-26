@@ -51,7 +51,7 @@ If you don't have it already, you may need to add `~/.local/bin` to your `PATH`.
 
 Dodo is configured via `~/.config/dodo/config.py`. This is just a Python file that gets `eval`-ed right before the main window is shown.
 
-Settings and their default values are defined in [settings.py](https://github.com/akissinger/dodo/blob/master/dodo/settings.py). Full documentation can be found [here](https://dodomail.readthedocs.io/en/latest/api.html#module-dodo.settings).
+Settings and their default values are defined in [settings.py](https://github.com/akissinger/dodo/blob/master/dodo/settings.py). A complete list, with documentation, can be found [here](https://dodomail.readthedocs.io/en/latest/api.html#module-dodo.settings).
 
 Most settings have reasonable defaults (assuming your are using offlineimap/msmtp). The only two things that must be set for Dodo to work properly are your email address and the location of your sent mail folder. Some things you probably also want to set up are the text editor (for composing messages) and the file browser (for viewing attachments).
 
