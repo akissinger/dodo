@@ -116,12 +116,28 @@ or emails opening your web browser without your permission.
 
 # visual
 theme = themes.nord
+"""The GUI theme
+
+A theme is a dictionary mapping a dozen or so named colors to HEX values.
+Several themes are defined in `dodo.themes`, based on the popular Nord
+and Solarized color palettes.
+"""
+
 search_font = 'DejaVu Sans Mono'
+"""The font used for search output and various other list-boxes"""
+
 search_font_size = 13
+"""The font size used for search output and various other list-boxes"""
+
 message_font = 'DejaVu Sans Mono'
+"""The font used for plaintext messages"""
+
 message_font_size = 12
+"""The font size used for plaintext messages"""
 
 search_view_padding = 1
+"""A bit of spacing around each line in the search panel"""
+
 tag_icons = {
   'inbox': '',
   'unread': '',
@@ -132,10 +148,12 @@ tag_icons = {
   'marked': '',
   'signed': '',
 }
+"""Tag icons
 
-# css used in view and compose window. Placeholders may be included in
-# curly brackets for any color named in the current theme, as well as
-# {message_font} and {message_font_size}.
+This is a dictionary of substitutions used to abbreviate common tag names as unicode
+icons in the search and thread panels.
+"""
+
 message_css = """
 pre {{
   font-family: {message_font};
@@ -176,4 +194,10 @@ body {{
 a {{
   color: {fg_bright};
 }}
+"""
+"""CSS used in view and compose window
+
+Placeholders may be included in curly brackets for any color named in the current theme, as
+well as {message_font} and {message_font_size}. Literal curly braces should be doubled, i.e.
+'{' should be '{{' and '}' should be '}}'.
 """
