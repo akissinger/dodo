@@ -4,7 +4,7 @@
 
 Dodo is a graphical email client written in Python/PyQt5, based on the command line email swiss-army-knife [notmuch](https://notmuchmail.org/).
 
-![Dodo](/images/dodo-screen-inbox.png?raw=true)
+![Dodo](/images/dodo-screen-plus-icon.png?raw=true)
 
 It's main goals are to:
 
