@@ -243,8 +243,7 @@ class SearchPanel(panel.Panel):
         
         if thread_id:
             subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'thread:' + thread_id])
-            self.app.invalidate_panels()
-            self.refresh()
+            self.app.refresh_panels()
 
 
 

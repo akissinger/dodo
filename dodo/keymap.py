@@ -24,12 +24,12 @@ global_keymap = {
   'h':       ('previous panel', lambda a: a.previous_panel()),
   'x':       ('close panel', lambda a: a.close_panel()),
   'X':       ('close all', lambda a: [a.close_panel(i) for i in reversed(range(a.num_panels()))]),
-  'c':       ('compose', lambda a: a.compose()),
-  'I':       ('show inbox', lambda a: a.search('tag:inbox')),
-  'U':       ('show unread', lambda a: a.search('tag:inbox and tag:unread')),
-  'F':       ('show flagged', lambda a: a.search('tag:flagged')),
-  '/':       ('search', lambda a: a.command_bar.open('search')),
-  't':       ('tag', lambda a: a.command_bar.open('tag')),
+  'c':       ('compose', lambda a: a.open_compose()),
+  'I':       ('show inbox', lambda a: a.open_search('tag:inbox')),
+  'U':       ('show unread', lambda a: a.open_search('tag:inbox and tag:unread')),
+  'F':       ('show flagged', lambda a: a.open_search('tag:flagged')),
+  '/':       ('search', lambda a: a.search_bar()),
+  't':       ('tag', lambda a: a.tag_bar()),
 }
 
 search_keymap = {

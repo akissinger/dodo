@@ -294,7 +294,7 @@ class SendmailThread(QThread):
                 if ((self.panel.mode == 'reply' or self.panel.mode == 'replyall') and
                         self.panel.msg and 'id' in self.panel.msg):
                     subprocess.run(['notmuch', 'tag', '+replied', '--', 'id:' + self.panel.msg['id']])
-                self.panel.app.invalidate_panels()
+                self.panel.app.refresh_panels()
                 self.panel.status = f'<i style="color:{settings.theme["fg_good"]}">sent</i>'
             else:
                 self.panel.status = f'<i style="color:{settings.theme["fg_bad"]}">error</i>'

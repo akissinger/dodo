@@ -99,7 +99,7 @@ class Dodo(QApplication):
             timer.start(settings.sync_mail_interval * 1000)
 
         # open inbox and make un-closeable
-        self.search('tag:inbox', keep_open=True)
+        self.open_search('tag:inbox', keep_open=True)
 
     def show_help(self) -> None:
         """Show help window"""
@@ -150,7 +150,7 @@ class Dodo(QApplication):
             if w.before_close():
                 self.tabs.removeTab(index)
 
-    def search(self, query: str, keep_open: bool=False) -> None:
+    def open_search(self, query: str, keep_open: bool=False) -> None:
         """Open a search panel with the given query
 
         If a panel with this query is already open, switch to it rather than
@@ -180,7 +180,7 @@ class Dodo(QApplication):
         p = thread.ThreadPanel(self, thread_id)
         self.add_panel(p)
 
-    def compose(self, mode: str='', msg: Optional[dict]=None) -> None:
+    def open_compose(self, mode: str='', msg: Optional[dict]=None) -> None:
         """Open a compose panel
 
         If reply_to is provided, set populate the 'To' and 'In-Reply-To' headers
@@ -194,6 +194,20 @@ class Dodo(QApplication):
         p = compose.ComposePanel(self, mode, msg)
         self.add_panel(p)
 
+    def search_bar(self) -> None:
+        """Open command bar for searching"""
+        self.command_bar.open('search', callback=self.open_search)
+
+    def tag_bar(self) -> None:
+        """Open command bar for tagging"""
+        def callback(tag_expr: str) -> None:
+            w = self.tabs.currentWidget()
+            if w:
+                if isinstance(w, search.SearchPanel): w.tag_thread(tag_expr)
+                elif isinstance(w, thread.ThreadPanel): w.tag_message(tag_expr)
+                w.refresh()
+        self.command_bar.open('tag', callback)
+
     def sync_mail(self, quiet: bool=True) -> None:
         """Sync mail with IMAP server
 
@@ -206,9 +220,7 @@ class Dodo(QApplication):
         t = SyncMailThread(parent=self)
 
         def done() -> None:
-            self.invalidate_panels()
-            w = self.tabs.currentWidget()
-            if w: w.refresh()
+            self.refresh_panels()
             if not quiet:
                 title = self.main_window.windowTitle()
                 self.main_window.setWindowTitle(title.replace(' [syncing]', ''))
@@ -226,8 +238,8 @@ class Dodo(QApplication):
 
         return self.tabs.count()
 
-    def invalidate_panels(self) -> None:
-        """Mark all panels as out of date
+    def refresh_panels(self) -> None:
+        """Refresh current panel and mark the others as out of date
 
         This method gets called whenever tags have been changed or a new message has
         been sent. The refresh will happen the next time a panel is switched to."""
@@ -236,6 +248,9 @@ class Dodo(QApplication):
             w = self.tabs.widget(i)
             if isinstance(w, panel.Panel):
                 w.dirty = True
+
+        w = self.tabs.currentWidget()
+        if w: w.refresh()
 
     def prompt_quit(self) -> None:
         """A 'soft' quit function, which gives each open tab the opportunity to prompt

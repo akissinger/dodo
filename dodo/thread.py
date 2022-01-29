@@ -80,7 +80,7 @@ class MessagePage(QWebEnginePage):
                 if url.scheme() == 'mailto':
                     query = QUrlQuery(url)
                     msg = {'headers':{'To': url.path(), 'Subject': query.queryItemValue('subject')}}
-                    self.app.compose(mode='mailto', msg=msg)
+                    self.app.open_compose(mode='mailto', msg=msg)
                 else:
                     if (not settings.html_confirm_open_links or
                         QMessageBox.question(None, 'Open link',
@@ -482,8 +482,7 @@ class ThreadPanel(panel.Panel):
                 tag_expr = '+' + tag_expr
             r = subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'id:' + m['id']],
                     stdout=subprocess.PIPE)
-            self.app.invalidate_panels()
-            self.refresh()
+            self.app.refresh_panels()
 
     def toggle_html(self) -> None:
         """Toggle between HTML and plain text message view"""
@@ -500,14 +499,14 @@ class ThreadPanel(panel.Panel):
         :param to_all: if True, do a reply to all instead (see `~dodo.compose.ComposePanel`)
         """
 
-        self.app.compose(mode='replyall' if to_all else 'reply',
-                         msg=self.model.message_at(self.current_message))
+        self.app.open_compose(mode='replyall' if to_all else 'reply',
+                              msg=self.model.message_at(self.current_message))
 
     def forward(self) -> None:
         """Open a :class:`~dodo.compose.ComposePanel` populated with a forwarded message
         """
 
-        self.app.compose(mode='forward', msg=self.model.message_at(self.current_message))
+        self.app.open_compose(mode='forward', msg=self.model.message_at(self.current_message))
 
     def open_attachments(self) -> None:
         """Write attachments out into temp directory and open with `settings.file_browser_command`

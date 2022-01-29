@@ -17,7 +17,7 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional, Callable, Any
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QKeyEvent
 
@@ -36,9 +36,10 @@ class CommandBar(QLineEdit):
         self.app = a
         self.label = label
         self.mode = ''
-        self.history: Dict[str, Tuple[int, List[str]]] = { 'search': (0, []), 'tag': (0, []) }
+        self.history: Dict[str, Tuple[int, List[str]]] = {}
+        self.callback: Optional[Callable[[app.Dodo, str], Any]] = None
 
-    def open(self, mode: str) -> None:
+    def open(self, mode: str, callback: Callable[[app.Dodo, str], Any]) -> None:
         """Open the command bar and give it focus
 
         This method sets the `command_area` QWidget (which contains the command bar and
@@ -48,6 +49,7 @@ class CommandBar(QLineEdit):
                      its behaviour. Recognized values are "search" and "tag"."""
 
         self.mode = mode
+        self.callback = callback
         self.label.setText(mode)
         self.parent().setVisible(True)
         self.setFocus()
@@ -74,19 +76,15 @@ class CommandBar(QLineEdit):
         history associated with the current mode, then calls :func:`close_bar` to clear
         the command and close the command bar."""
 
-        if self.mode == 'search':
-            self.app.search(self.text())
-        elif self.mode == 'tag':
-            w = self.app.tabs.currentWidget()
-            if w:
-                if isinstance(w, search.SearchPanel): w.tag_thread(self.text())
-                elif isinstance(w, thread.ThreadPanel): w.tag_message(self.text())
-                w.refresh()
+        if self.callback:
+            self.callback(self.text())
 
         if self.mode in self.history:
             pos, h = self.history[self.mode]
             h.append(self.text())
             self.history[self.mode] = (pos + 1, h)
+        else:
+            self.history[self.mode] = (1, [self.text()])
 
         self.close_bar()
 
