@@ -37,9 +37,9 @@ class CommandBar(QLineEdit):
         self.label = label
         self.mode = ''
         self.history: Dict[str, Tuple[int, List[str]]] = {}
-        self.callback: Optional[Callable[[app.Dodo, str], Any]] = None
+        self.callback: Optional[Callable[[str], Any]] = None
 
-    def open(self, mode: str, callback: Callable[[app.Dodo, str], Any]) -> None:
+    def open(self, mode: str, callback: Callable[[str], Any]) -> None:
         """Open the command bar and give it focus
 
         This method sets the `command_area` QWidget (which contains the command bar and
