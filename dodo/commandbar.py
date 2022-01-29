@@ -45,8 +45,11 @@ class CommandBar(QLineEdit):
         This method sets the `command_area` QWidget (which contains the command bar and
         its label) to be visible, and sets the `command_label` to be equal to `mode`.
 
-        :param mode: a string used to set both the label next to the command bar and to dictate
-                     its behaviour. Recognized values are "search" and "tag"."""
+        :param mode: a string used to set the label next to the command bar and
+                     keep a unique command history (e.g. 'search' history should be
+                     different from 'tag' history).
+        :param callback: a function called with the user input to run the command
+        """
 
         self.mode = mode
         self.callback = callback

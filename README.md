@@ -116,7 +116,7 @@ del dodo.keymap.global_keymap['Q']
 
 ### Custom commands with the command bar
 
-By default, the command bar can be opened in two modes, `'search'` and `'tag'`, for searching and tagging messages, respectively. You can create more modes on-the-fly from `config.py` by passing a new name and a Python callback function to `CommandBar.open`. Here's an example which creates a new mode called `'notmuch'` for running arbitrary notmuch commands:
+By default, the command bar can be opened in two modes, `'search'` and `'tag'`, for searching and tagging messages, respectively. You can create more modes on-the-fly from `config.py` by passing a new name and a Python callback function to [CommandBar.open](https://dodomail.readthedocs.io/en/latest/api.html#dodo.commandbar.CommandBar.open). Here's an example which creates a new mode called `'notmuch'` for running arbitrary notmuch commands:
 
 ```python
 import dodo
