@@ -23,7 +23,7 @@ from PyQt5.QtWebEngineCore import QWebEngineUrlScheme
 import sys
 import os
 import subprocess
-from typing import Optional
+from typing import Optional, Literal
 
 from . import search
 from . import thread
@@ -198,7 +198,7 @@ class Dodo(QApplication):
         """Open command bar for searching"""
         self.command_bar.open('search', callback=self.open_search)
 
-    def tag_bar(self, mode: str='tag') -> None:
+    def tag_bar(self, mode: Literal['tag', 'tag marked']='tag') -> None:
         """Open command bar for tagging"""
         def callback(tag_expr: str) -> None:
             w = self.tabs.currentWidget()

@@ -17,7 +17,7 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import Optional, Any, overload
+from typing import Optional, Any, overload, Literal
 
 from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject
 from PyQt5.QtWidgets import QTreeView, QWidget
@@ -231,7 +231,7 @@ class SearchPanel(panel.Panel):
             self.tag_thread(tag_expr)
 
 
-    def tag_thread(self, tag_expr: str, mode: str='tag') -> None:
+    def tag_thread(self, tag_expr: str, mode: Literal['tag', 'tag marked']='tag') -> None:
         """Apply the given tag expression to the selected thread
 
         A tag expression is a string consisting of one more statements of the form "+TAG"
