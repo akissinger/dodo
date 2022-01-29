@@ -31,6 +31,12 @@ global_keymap = {
   '/':       ('search', lambda a: a.search_bar()),
   't':       ('tag', lambda a: a.tag_bar()),
 }
+"""The global keymap
+
+A dictionary from key strings to pairs consisting of a short docstring and a function
+taking :class:`~dodo.app.Dodo` as input. This commands can be superseded by the various
+local keymaps.
+"""
 
 search_keymap = {
   'j':       ('next thread', lambda p: p.next_thread()),
@@ -47,6 +53,11 @@ search_keymap = {
   'f':       ('toggle flagged', lambda p: p.toggle_thread_tag('flagged')),
   '<space>': ('toggle marked', lambda p: [p.toggle_thread_tag('marked'), p.next_thread()]),
 }
+"""The local keymap for search panels
+
+A dictionary from key strings to pairs consisting of a short docstring and a function
+taking :class:`~dodo.search.SearchPanel` as input.
+"""
 
 thread_keymap = {
   'J':       ('next message', lambda p: p.next_message()),
@@ -67,12 +78,22 @@ thread_keymap = {
   'C-f':     ('forward', lambda p: p.forward()),
   'A':       ('show attachments in file browser', lambda p: p.open_attachments()),
 }
+"""The local keymap for thread panels
+
+A dictionary from key strings to pairs consisting of a short docstring and a function
+taking :class:`~dodo.thread.ThreadPanel` as input.
+"""
 
 compose_keymap = {
   '<enter>': ('edit message', lambda p: p.edit()),
   'S':       ('send', lambda p: p.send()),
   'a':       ('attach file', lambda p: p.attach_file()),
 }
+"""The local keymap for compose panels
+
+A dictionary from key strings to pairs consisting of a short docstring and a function
+taking :class:`~dodo.compose.ComposePanel` as input.
+"""
 
 command_bar_keymap = {
   '<enter>':  ('accept', lambda b: b.accept()),
@@ -82,3 +103,10 @@ command_bar_keymap = {
   'C-n':      ('history next', lambda b: b.history_next()),
   'C-p':      ('history previous', lambda b: b.history_previous()),
 }
+"""The keymap active when the command bar is visible
+
+A dictionary from key strings to pairs consisting of a short docstring and a function
+taking :class:`~dodo.compose.CommandBar` as input. Unlike the other keymaps, the
+command bar keymap doesn't accept keychords. Also, you should avoid mapping alphanumeric
+keys to commands, as this will interfere with typing.
+"""

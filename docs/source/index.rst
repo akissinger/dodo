@@ -18,10 +18,4 @@ For installation, usage, and basic configuration, see the README_ on GitHub.
 
    api
 
-
-
-Indices and tables
-==================
-
 * :ref:`genindex`
-* :ref:`modindex`
