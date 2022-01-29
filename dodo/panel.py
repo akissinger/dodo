@@ -148,3 +148,5 @@ class Panel(QWidget):
         elif cmd in keymap.global_keymap:
             self._prefix = ""
             keymap.global_keymap[cmd][1](self.app)
+        else:
+            self._prefix = ""
