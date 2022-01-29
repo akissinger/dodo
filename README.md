@@ -111,8 +111,26 @@ dodo.keymap.global_keymap['C-x C-c'] = (
 
 You can unmap a single key by deleting it from the dictionary:
 ```python
-del dodo.keymap.global_keymap["Q"]
+del dodo.keymap.global_keymap['Q']
 ```
+
+### Custom commands with the command bar
+
+By default, the command bar can be opened in two modes, `'search'` and `'tag'`, for searching and tagging messages, respectively. You can create more modes on-the-fly from `config.py` by passing a new name and a Python callback function to `CommandBar.open`. Here's an example which creates a new mode called `'notmuch'` for running arbitrary notmuch commands:
+
+```python
+import dodo
+import subprocess
+
+def run_notmuch(app):
+    def callback(cmd):
+        subprocess.run('notmuch ' + cmd, shell=True)
+        app.refresh_panels()
+    app.command_bar.open('notmuch', callback)
+
+dodo.keymap.global_keymap['N'] = ('run notmuch from command bar', run_notmuch)
+```
+
 
 ## Basic use
 
