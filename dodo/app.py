@@ -198,15 +198,15 @@ class Dodo(QApplication):
         """Open command bar for searching"""
         self.command_bar.open('search', callback=self.open_search)
 
-    def tag_bar(self) -> None:
+    def tag_bar(self, mode: str='tag') -> None:
         """Open command bar for tagging"""
         def callback(tag_expr: str) -> None:
             w = self.tabs.currentWidget()
             if w:
-                if isinstance(w, search.SearchPanel): w.tag_thread(tag_expr)
+                if isinstance(w, search.SearchPanel): w.tag_thread(tag_expr, mode)
                 elif isinstance(w, thread.ThreadPanel): w.tag_message(tag_expr)
                 w.refresh()
-        self.command_bar.open('tag', callback)
+        self.command_bar.open(mode, callback)
 
     def sync_mail(self, quiet: bool=True) -> None:
         """Sync mail with IMAP server

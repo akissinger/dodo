@@ -29,7 +29,8 @@ global_keymap = {
   'U':       ('show unread', lambda a: a.open_search('tag:inbox and tag:unread')),
   'F':       ('show flagged', lambda a: a.open_search('tag:flagged')),
   '/':       ('search', lambda a: a.search_bar()),
-  't':       ('tag', lambda a: a.tag_bar()),
+  't t':     ('tag', lambda a: a.tag_bar()),
+  't m':     ('tag marked', lambda a: a.tag_bar(mode='tag marked')),
 }
 """The global keymap
 

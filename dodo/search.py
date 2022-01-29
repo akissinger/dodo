@@ -231,19 +231,24 @@ class SearchPanel(panel.Panel):
             self.tag_thread(tag_expr)
 
 
-    def tag_thread(self, tag_expr: str) -> None:
+    def tag_thread(self, tag_expr: str, mode: str='tag') -> None:
         """Apply the given tag expression to the selected thread
 
         A tag expression is a string consisting of one more statements of the form "+TAG"
         or "-TAG" to add or remove TAG, respectively, separated by whitespace."""
 
-        thread_id = self.model.thread_id(self.tree.currentIndex())
         if not ('+' in tag_expr or '-' in tag_expr):
             tag_expr = '+' + tag_expr
         
-        if thread_id:
-            subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'thread:' + thread_id])
-            self.app.refresh_panels()
+        if mode == 'tag':
+            thread_id = self.model.thread_id(self.tree.currentIndex())
+            if thread_id:
+                subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'thread:' + thread_id])
+        elif mode == 'tag marked':
+            subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['-marked','--', f'tag:marked AND ({self.q})'])
+
+        self.app.refresh_panels()
+
 
 
 
