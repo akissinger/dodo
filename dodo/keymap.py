@@ -44,6 +44,8 @@ search_keymap = {
   'k':       ('previous thread', lambda p: p.previous_thread()),
   '<down>':  ('next thread', lambda p: p.next_thread()),
   '<up>':    ('previous thread', lambda p: p.previous_thread()),
+  '<tab>':   ('next unread', lambda p: p.next_thread(unread=True)),
+  'S-<tab>': ('previous unread', lambda p: p.previous_thread(unread=True)),
   'g g':     ('first thread', lambda p: p.first_thread()),
   'G':       ('last thread', lambda p: p.last_thread()),
   'C-d':     ('down 20', lambda p: [p.next_thread() for i in range(20)]),

@@ -364,7 +364,7 @@ basic_keytab: Dict[int, str] = {
 keytab: Dict[int, str] = {
   Qt.Key_Escape: 'escape',
   Qt.Key_Tab: 'tab',
-  Qt.Key_Backtab: 'backtab',
+  Qt.Key_Backtab: 'tab',
   Qt.Key_Backspace: 'backspace',
   Qt.Key_Return: 'enter',
   Qt.Key_Enter: 'enter',
@@ -450,4 +450,5 @@ def key_string(e: QKeyEvent) -> str:
     if int(e.modifiers()) & int(Qt.ControlModifier) == int(Qt.ControlModifier):
         cmd = 'C-' + cmd
 
+    print(cmd)
     return cmd

@@ -184,19 +184,39 @@ class SearchPanel(panel.Panel):
 
         return self.q
 
-    def next_thread(self) -> None:
-        """Select the next thread in the search"""
+    def next_thread(self, unread: bool=False) -> None:
+        """Select the next thread in the search
 
-        row = self.tree.currentIndex().row() + 1
-        if row >= 0 and row < self.tree.model().rowCount():
-            self.tree.setCurrentIndex(self.tree.model().index(row, 0))
+        :param unread: if True, this will jump to the next unread thread
+        """
 
-    def previous_thread(self) -> None:
-        """Select the previous thread in the search"""
+        row = self.tree.currentIndex().row()
+        while True:
+            row += 1
+            i = self.tree.model().index(row, 0)
+            thread = self.model.thread_json(i)
+            if not thread:
+                break
+            elif not unread or (thread and 'tags' in thread and 'unread' in thread['tags']):
+                self.tree.setCurrentIndex(i)
+                break
 
-        row = self.tree.currentIndex().row() - 1
-        if row >= 0 and row < self.tree.model().rowCount():
-            self.tree.setCurrentIndex(self.tree.model().index(row, 0))
+    def previous_thread(self, unread: bool=False) -> None:
+        """Select the previous thread in the search
+
+        :param unread: if True, this will jump to the previous unread thread
+        """
+
+        row = self.tree.currentIndex().row()
+        while True:
+            row -= 1
+            i = self.tree.model().index(row, 0)
+            thread = self.model.thread_json(i)
+            if not thread:
+                break
+            elif not unread or ('tags' in thread and 'unread' in thread['tags']):
+                self.tree.setCurrentIndex(i)
+                break
 
     def first_thread(self) -> None:
         """Select the first thread in the search"""
