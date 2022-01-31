@@ -72,20 +72,24 @@ class ComposePanel(panel.Panel):
 
         elif msg and (mode == 'reply' or mode == 'replyall'):
             send_to: List[str] = []
+            email_sep = re.compile('\s*,\s*')
+
             if 'From' in msg['headers']:
                 send_to.append(msg["headers"]["From"])
+            if 'To' in msg['headers']:
+                send_to += email_sep.split(msg['headers']['To'])
+            if 'Cc' in msg['headers']:
+                send_to += email_sep.split(msg['headers']['Cc'])
 
-            if mode == 'replyall':
-                email_sep = re.compile('\s*,\s*')
-                if 'To' in msg['headers']:
-                    send_to += email_sep.split(msg['headers']['To'])
-                if 'Cc' in msg['headers']:
-                    send_to += email_sep.split(msg['headers']['Cc'])
-                send_to = [e for e in send_to if not util.email_is_me(e)]
+            send_to = [e for e in send_to if not util.email_is_me(e)]
 
-            # put the first non-me email in To, and the rest (if any) in Cc
-            if len(send_to) != 0: self.message_string += f'To: {send_to.pop(0)}\n'
-            if len(send_to) != 0: self.message_string += f'Cc: {", ".join(send_to)}\n'
+            # put the first non-me email in To
+            if len(send_to) != 0:
+                self.message_string += f'To: {send_to.pop(0)}\n'
+
+            # for replyall, put the rest of the emails in Cc
+            if len(send_to) != 0 and mode == 'replyall':
+                self.message_string += f'Cc: {", ".join(send_to)}\n'
 
             if 'Subject' in msg['headers']:
                 subject = msg['headers']['Subject']
