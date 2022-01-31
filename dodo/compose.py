@@ -57,7 +57,6 @@ class ComposePanel(panel.Panel):
         self.message_view.setZoomFactor(1.2)
         self.layout().addWidget(self.message_view)
         self.status = f'<i style="color:{settings.theme["fg"]}">draft</i>'
-
         self.message_string = f'From: {settings.email_address}\n'
 
         if msg and mode == 'mailto':
@@ -72,24 +71,27 @@ class ComposePanel(panel.Panel):
             self.message_string += '\n\n\n'
 
         elif msg and (mode == 'reply' or mode == 'replyall'):
+            send_to: List[str] = []
             if 'From' in msg['headers']:
-                self.message_string += f'To: {msg["headers"]["From"]}\n'
+                send_to.append(msg["headers"]["From"])
+
+            if mode == 'replyall':
+                email_sep = re.compile('\s*,\s*')
+                if 'To' in msg['headers']:
+                    send_to += email_sep.split(msg['headers']['To'])
+                if 'Cc' in msg['headers']:
+                    send_to += email_sep.split(msg['headers']['Cc'])
+                send_to = [e for e in send_to if not util.email_is_me(e)]
+
+            # put the first non-me email in To, and the rest (if any) in Cc
+            if len(send_to) != 0: self.message_string += f'To: {send_to.pop(0)}\n'
+            if len(send_to) != 0: self.message_string += f'Cc: {", ".join(send_to)}\n'
 
             if 'Subject' in msg['headers']:
                 subject = msg['headers']['Subject']
                 if subject[0:3].upper() != 'RE:':
                     subject = 'RE: ' + subject
                 self.message_string += f'Subject: {subject}\n'
-
-            if mode == 'replyall':
-                cc = []
-                email_sep = re.compile('\s*[;,]\s*')
-                if 'To' in msg['headers']:
-                    cc += email_sep.split(msg['headers']['To'])
-                if 'Cc' in msg['headers']:
-                    cc += email_sep.split(msg['headers']['Cc'])
-                cc = [e for e in cc if not util.email_is_me(e)]
-                if len(cc) != 0: self.message_string += f'Cc: {", ".join(cc)}\n'
 
             self.message_string += '\n\n\n' + util.quote_body_text(msg)
 

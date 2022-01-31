@@ -450,5 +450,5 @@ def key_string(e: QKeyEvent) -> str:
     if int(e.modifiers()) & int(Qt.ControlModifier) == int(Qt.ControlModifier):
         cmd = 'C-' + cmd
 
-    print(cmd)
+    # print(cmd)
     return cmd
