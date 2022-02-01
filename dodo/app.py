@@ -62,7 +62,7 @@ class Dodo(QApplication):
     """
 
     def __init__(self) -> None:
-        super().__init__([])
+        super().__init__(sys.argv)
         self.setApplicationName('Dodo')
 
         # find a load config.py
