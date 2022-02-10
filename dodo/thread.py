@@ -114,7 +114,8 @@ class MessageHandler(QWebEngineUrlSchemeHandler):
                 html = util.body_html(self.message_json)
                 if html: buf.write(html.encode('utf-8'))
             else:
-                text = util.colorize_text(util.simple_escape(util.body_text(self.message_json)))
+                text = util.simple_escape(util.body_text(self.message_json))
+                text = util.colorize_text(text)
                 text = util.linkify(text)
 
                 if text:
