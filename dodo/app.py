@@ -119,9 +119,10 @@ class Dodo(QApplication):
         from key mappings."""
 
         self.tabs.addTab(p, p.title())
+
         if focus:
             self.tabs.setCurrentWidget(p)
-        p.setFocus()
+            p.setFocus()
 
     def next_panel(self) -> None:
         """Go to the next panel"""
