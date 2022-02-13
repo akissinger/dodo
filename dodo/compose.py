@@ -57,18 +57,21 @@ class ComposePanel(panel.Panel):
         self.message_view.setZoomFactor(1.2)
         self.layout().addWidget(self.message_view)
         self.status = f'<i style="color:{settings.theme["fg"]}">draft</i>'
-        self.message_string = f'From: {settings.email_address}\n'
+
+        self.wrap_message = settings.wrap_message
+        self.raw_message_string = f'From: {settings.email_address}\n'
+        self.message_string = ''
 
         if msg and mode == 'mailto':
             if 'To' in msg['headers']:
-                self.message_string += f'To: {msg["headers"]["To"]}\n'
+                self.raw_message_string += f'To: {msg["headers"]["To"]}\n'
 
             if 'Subject' in msg['headers']:
-                self.message_string += f'Subject: {msg["headers"]["Subject"]}\n'
+                self.raw_message_string += f'Subject: {msg["headers"]["Subject"]}\n'
             else:
-                self.message_string += 'Subject: \n'
+                self.raw_message_string += 'Subject: \n'
 
-            self.message_string += '\n\n\n'
+            self.raw_message_string += '\n\n\n'
 
         elif msg and (mode == 'reply' or mode == 'replyall'):
             send_to: List[str] = []
@@ -85,43 +88,43 @@ class ComposePanel(panel.Panel):
 
             # put the first non-me email in To
             if len(send_to) != 0:
-                self.message_string += f'To: {send_to.pop(0)}\n'
+                self.raw_message_string += f'To: {send_to.pop(0)}\n'
 
             # for replyall, put the rest of the emails in Cc
             if len(send_to) != 0 and mode == 'replyall':
-                self.message_string += f'Cc: {", ".join(send_to)}\n'
+                self.raw_message_string += f'Cc: {", ".join(send_to)}\n'
 
             if 'Subject' in msg['headers']:
                 subject = msg['headers']['Subject']
                 if subject[0:3].upper() != 'RE:':
                     subject = 'RE: ' + subject
-                self.message_string += f'Subject: {subject}\n'
+                self.raw_message_string += f'Subject: {subject}\n'
 
-            self.message_string += '\n\n\n' + util.quote_body_text(msg)
+            self.raw_message_string += '\n\n\n' + util.quote_body_text(msg)
 
         elif msg and mode == 'forward':
-            self.message_string += f'To: \n'
+            self.raw_message_string += f'To: \n'
 
             if 'Subject' in msg['headers']:
                 subject = msg['headers']['Subject']
                 if subject[0:3].upper() != 'FW:':
                     subject = 'FW: ' + subject
-                self.message_string += f'Subject: {subject}\n'
+                self.raw_message_string += f'Subject: {subject}\n'
 
             # if the message has attachments, dump them to temp dir and attach them
             temp_dir, att = util.write_attachments(msg)
             if temp_dir: self.temp_dirs.append(temp_dir)
-            for f in att: self.message_string += f'A: {f}\n'
+            for f in att: self.raw_message_string += f'A: {f}\n'
 
-            self.message_string += '\n\n\n---------- Forwarded message ---------\n'
+            self.raw_message_string += '\n\n\n---------- Forwarded message ---------\n'
             for h in ['From', 'Date', 'Subject', 'To']:
                 if h in msg['headers']:
-                    self.message_string += f'{h}: {msg["headers"][h]}\n'
+                    self.raw_message_string += f'{h}: {msg["headers"][h]}\n'
 
-            self.message_string += '\n' + util.body_text(msg) + '\n'
+            self.raw_message_string += '\n' + util.body_text(msg) + '\n'
 
         else:
-            self.message_string += 'To: \nSubject: \n\n'
+            self.raw_message_string += 'To: \nSubject: \n\n'
 
         self.editor_thread: Optional[EditorThread] = None
         self.sendmail_thread: Optional[SendmailThread] = None
@@ -135,6 +138,13 @@ class ComposePanel(panel.Panel):
         """Refresh the message text
 
         This gets called automatically after the external editor has closed."""
+
+        # set message_string to be wrapped version of raw_message_string, depending on
+        # preferences
+        if self.wrap_message:
+            self.message_string = util.wrap_message(self.raw_message_string)
+        else:
+            self.message_string = self.raw_message_string
 
         text = util.colorize_text(util.simple_escape(self.message_string), has_headers=True)
 
@@ -178,6 +188,10 @@ class ComposePanel(panel.Panel):
             self.message_string = util.add_header_line(self.message_string, 'A: ' + f[0])
             self.refresh()
 
+    def toggle_wrap(self) -> None:
+        self.wrap_message = not self.wrap_message
+        self.refresh()
+
     def send(self) -> None:
         """Send the message
 
@@ -212,13 +226,14 @@ class EditorThread(QThread):
     def run(self) -> None:
         fd, file = tempfile.mkstemp('.eml')
         with os.fdopen(fd, 'w') as f:
-            f.write(self.panel.message_string)
+            f.write(self.panel.raw_message_string)
 
         cmd = settings.editor_command.format(file=file)
         subprocess.run(cmd, shell=True)
 
         with open(file, 'r') as f1:
-            self.panel.message_string = f1.read()
+            self.panel.raw_message_string = f1.read()
+
         os.remove(file)
 
 class SendmailThread(QThread):

@@ -91,6 +91,7 @@ compose_keymap = {
   '<enter>': ('edit message', lambda p: p.edit()),
   'S':       ('send', lambda p: p.send()),
   'a':       ('attach file', lambda p: p.attach_file()),
+  'w':       ('toggle word wrap', lambda p: p.toggle_wrap()),
 }
 """The local keymap for compose panels
 

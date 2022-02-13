@@ -27,6 +27,7 @@ import tempfile
 import subprocess
 import email
 import email.header
+import textwrap
 from bleach.sanitizer import Cleaner
 from bleach.linkifier import Linker
 
@@ -271,18 +272,40 @@ def email_is_me(e: str) -> bool:
 
     return strip_email_address(settings.email_address) == strip_email_address(e)
 
+def separate_headers(s: str) -> Tuple[str, str]:
+    """Split a message into its header part and body part"""
+
+    h = ''
+    b = ''
+    headers = True
+    for line in s.splitlines():
+        if headers and line == '':
+            headers = False
+        elif headers:
+            h += line + '\n'
+        else:
+            b += line + '\n'
+    return (h, b)
+
+def wrap_message(s: str) -> str:
+    """Hard wrap message body using :func:`~dodo.settings.wrap_column`
+
+    Wrap the body part of the message. Headers are not affected.
+    """
+
+    headers, body = separate_headers(s)
+    body_wrap = ''
+
+    for line in body.splitlines():
+        body_wrap += textwrap.fill(line, width=settings.wrap_column) + '\n'
+    return headers + '\n' + body_wrap
+
 def add_header_line(s: str, h: str) -> str:
     """Add the given string to the headers, i.e. before the first
     blank line, in the provided string."""
 
-    out = ''
-    headers = True
-    for line in s.splitlines():
-        if headers and line == '':
-            out += h + '\n'
-            headers = False
-        out += line + '\n'
-    return out
+    (headers, body) = separate_headers(s)
+    return headers + h + '\n' + body
 
 def make_message_css() -> str:
     """Fill placeholders in settings.message_css using the current theme

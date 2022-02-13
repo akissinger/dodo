@@ -92,6 +92,17 @@ Set this to -1 to disable automatic syncing.
 default_to_html = False
 """Open messages in HTML mode by default, rather than plaintext"""
 
+wrap_message = True
+"""Hard-wrap message text by default
+
+You may wish to disable this if you don't want hard wraps in your email messages or
+your text editor does hard wrapping already.
+"""
+
+wrap_column = 70
+"""Wrap text to this column when composing emails
+"""
+
 remove_temp_dirs = 'ask'
 """Set whether to remove temporary directories when closing a panel
 
