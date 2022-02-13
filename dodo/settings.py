@@ -99,7 +99,7 @@ You may wish to disable this if you don't want hard wraps in your email messages
 your text editor does hard wrapping already.
 """
 
-wrap_column = 70
+wrap_column = 78
 """Wrap text to this column when composing emails
 """
 

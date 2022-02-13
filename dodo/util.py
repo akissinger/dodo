@@ -290,14 +290,18 @@ def separate_headers(s: str) -> Tuple[str, str]:
 def wrap_message(s: str) -> str:
     """Hard wrap message body using :func:`~dodo.settings.wrap_column`
 
-    Wrap the body part of the message. Headers are not affected.
+    Wrap the body part of the message. Headers and quoted text are not affected.
     """
 
     headers, body = separate_headers(s)
     body_wrap = ''
 
     for line in body.splitlines():
-        body_wrap += textwrap.fill(line, width=settings.wrap_column) + '\n'
+        if line[0:1] == '>':
+            body_wrap += line + '\n'
+        else:
+            body_wrap += textwrap.fill(line, width=settings.wrap_column) + '\n'
+
     return headers + '\n' + body_wrap
 
 def add_header_line(s: str, h: str) -> str:
