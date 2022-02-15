@@ -167,6 +167,9 @@ This is a dictionary of substitutions used to abbreviate common tag names as uni
 icons in the search and thread panels.
 """
 
+hide_tags = ['unread', 'sent']
+"""Tags to hide in search panel"""
+
 message_css = """
 pre {{
   font-family: {message_font};

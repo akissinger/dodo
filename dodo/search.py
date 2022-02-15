@@ -93,8 +93,8 @@ class SearchModel(QAbstractItemModel):
             elif col == 'tags':
                 tag_icons = []
                 for t in thread_d['tags']:
-                    # don't bother adding TAG if the query is specifically 'tag:TAG'
-                    if self.q != 'tag:' + t:
+                    # don't bother showing TAG if it is in settings.hide_tags or the query is specifically 'tag:TAG'
+                    if t not in settings.hide_tags and self.q != 'tag:' + t:
                         tag_icons.append(settings.tag_icons[t] if t in settings.tag_icons else f'[{t}]')
                 return ' '.join(tag_icons)
         elif role == Qt.FontRole:
