@@ -91,7 +91,12 @@ class SearchModel(QAbstractItemModel):
             elif col == 'subject':
                 return thread_d['subject']
             elif col == 'tags':
-                return ' '.join([settings.tag_icons[t] if t in settings.tag_icons else f'[{t}]' for t in thread_d['tags']])
+                tag_icons = []
+                for t in thread_d['tags']:
+                    # don't bother adding TAG if the query is specifically 'tag:TAG'
+                    if self.q != 'tag:' + t:
+                        tag_icons.append(settings.tag_icons[t] if t in settings.tag_icons else f'[{t}]')
+                return ' '.join(tag_icons)
         elif role == Qt.FontRole:
             font = QFont(settings.search_font, settings.search_font_size)
             if 'unread' in thread_d['tags']:
