@@ -142,6 +142,12 @@ search_font = 'DejaVu Sans Mono'
 search_font_size = 13
 """The font size used for search output and various other list-boxes"""
 
+tag_font = 'DejaVu Sans Mono'
+"""The font used for tags and tag icons"""
+
+tag_font_size = 13
+"""The font size used for tags and tag icons"""
+
 message_font = 'DejaVu Sans Mono'
 """The font used for plaintext messages"""
 

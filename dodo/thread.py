@@ -380,7 +380,7 @@ class ThreadPanel(panel.Panel):
                 tags = ' '.join([settings.tag_icons[t] if t in settings.tag_icons else f'[{t}]' for t in m['tags']])
                 header_html += f"""<tr>
                   <td><b style="color: {settings.theme["fg_bright"]}">Tags:&nbsp;</b></td>
-                  <td><span style="color: {settings.theme["fg_tags"]}">{tags}</span></td>
+                  <td><span style="color: {settings.theme["fg_tags"]}; font-family: {settings.tag_font}; font-size: {settings.tag_font_size}">{tags}</span></td>
                 </tr>"""
 
             attachments = [f'[{part["filename"]}]' for part in util.message_parts(m)

@@ -98,7 +98,11 @@ class SearchModel(QAbstractItemModel):
                         tag_icons.append(settings.tag_icons[t] if t in settings.tag_icons else f'[{t}]')
                 return ' '.join(tag_icons)
         elif role == Qt.FontRole:
-            font = QFont(settings.search_font, settings.search_font_size)
+            if col == 'tags':
+                font = QFont(settings.tag_font, settings.tag_font_size)
+            else:
+                font = QFont(settings.search_font, settings.search_font_size)
+
             if 'unread' in thread_d['tags']:
                 font.setBold(True)
             return font
