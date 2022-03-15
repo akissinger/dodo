@@ -84,7 +84,7 @@ class MessagePage(QWebEnginePage):
                 else:
                     if (not settings.html_confirm_open_links or
                         QMessageBox.question(None, 'Open link',
-                            f'Open the following URL in browswer?\n\n  {url.toString()}') == QMessageBox.Yes):
+                            f'Open the following URL in browser?\n\n  {url.toString()}') == QMessageBox.Yes):
                         if settings.web_browser_command == '':
                             QDesktopServices.openUrl(url)
                         else:
