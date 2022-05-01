@@ -143,7 +143,7 @@ dodo.keymap.global_keymap['N'] = ('run notmuch from command bar', run_notmuch)
 
 ### Snooze
 
-Using `notmuch` hooks and Dodo, it is easy to set up some basic snooze functionality. Here's how I do it.
+Snoozing lets you temporarily hide messages to help clear your inbox (and your mind) for a few days at a time. After the snooze is up, they pop back into the inbox as unread messages again. Using `notmuch` hooks and Dodo, it is easy to set up some basic snooze functionality. Here's how I do it.
 
 First, in your `notmuch` hooks directory (usually `~/MAILDIR/.notmuch/hooks`), add this to the `pre-new` hook:
 
