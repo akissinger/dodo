@@ -36,7 +36,7 @@ columns = ['date', 'from', 'subject', 'tags']
 class SearchModel(QAbstractItemModel):
     """A model containing the results of a search"""
 
-    def __init__(self, q: str):
+    def __init__(self, q: str) -> None:
         super().__init__()
         self.q = q
         self.refresh()

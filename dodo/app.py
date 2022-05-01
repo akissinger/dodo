@@ -28,6 +28,7 @@ from typing import Optional, Literal
 from . import search
 from . import thread
 from . import compose
+from . import tag
 from . import settings
 from . import themes
 from . import util
@@ -193,6 +194,19 @@ class Dodo(QApplication):
         """
 
         p = compose.ComposePanel(self, mode, msg)
+        self.add_panel(p)
+
+    def open_tags(self, keep_open: bool=False) -> None:
+        """Open tag panel"""
+
+        for i in range(self.num_panels()):
+            w = self.tabs.widget(i)
+            if isinstance(w, tag.TagPanel):
+                w.keep_open = keep_open
+                self.tabs.setCurrentIndex(i)
+                return
+
+        p = tag.TagPanel(self, keep_open)
         self.add_panel(p)
 
     def search_bar(self) -> None:

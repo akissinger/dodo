@@ -28,6 +28,7 @@ global_keymap = {
   'I':       ('show inbox', lambda a: a.open_search('tag:inbox')),
   'U':       ('show unread', lambda a: a.open_search('tag:inbox and tag:unread')),
   'F':       ('show flagged', lambda a: a.open_search('tag:flagged')),
+  'T':       ('show tags', lambda a: a.open_tags()),
   '/':       ('search', lambda a: a.search_bar()),
   't t':     ('tag', lambda a: a.tag_bar()),
   't m':     ('tag marked', lambda a: a.tag_bar(mode='tag marked')),
@@ -60,6 +61,23 @@ search_keymap = {
 
 A dictionary from key strings to pairs consisting of a short docstring and a function
 taking :class:`~dodo.search.SearchPanel` as input.
+"""
+
+tag_keymap = {
+  'j':       ('next tag', lambda p: p.next_tag()),
+  'k':       ('previous tag', lambda p: p.previous_tag()),
+  '<down>':  ('next tag', lambda p: p.next_tag()),
+  '<up>':    ('previous tag', lambda p: p.previous_tag()),
+  'g g':     ('first tag', lambda p: p.first_tag()),
+  'G':       ('last tag', lambda p: p.last_tag()),
+  'C-d':     ('down 20', lambda p: [p.next_tag() for i in range(20)]),
+  'C-u':     ('up 20', lambda p: [p.previous_tag() for i in range(20)]),
+  '<enter>': ('search tag', lambda p: p.search_current_tag()),
+}
+"""The local keymap for the tag panel
+
+A dictionary from key strings to pairs consisting of a short docstring and a function
+taking :class:`~dodo.search.TagPanel` as input.
 """
 
 thread_keymap = {
