@@ -131,6 +131,38 @@ def run_notmuch(app):
 dodo.keymap.global_keymap['N'] = ('run notmuch from command bar', run_notmuch)
 ```
 
+### Snooze
+
+Using `notmuch` hooks and Dodo, it is easy to set up some basic snooze functionality. Here's how I do it.
+
+First, in your `notmuch` hooks directory (usually `~/MAILDIR/.notmuch/hooks`), add this to the `pre-new` hook:
+
+```bash
+#!/bin/bash
+
+notmuch tag -zzz-`date -I` +inbox +unread -- tag:zzz-`date -I`
+```
+
+This will automatically un-snooze messages tagged `zzz-CURRENT-DATE` whenever you refresh your email. Now, all you need to do is set up some keyboard shortcuts for snoozing messages. You can do this by adding the following to your `config.py`:
+
+```python
+def snooze(days, mode='tag'):
+    import datetime
+    d = datetime.date.today() + datetime.timedelta(days=days)
+    def f(search):
+        search.tag_thread(f'-inbox -unread +zzz-{d}', mode)
+    return f
+
+dodo.keymap.search_keymap['z z'] = ("snooze for 1 day", snooze(days=1))
+dodo.keymap.search_keymap['z w'] = ("snooze for 1 week", snooze(days=7))
+dodo.keymap.search_keymap['z Z'] = ("snooze marked for 1 day", snooze(days=1, mode='tag marked'))
+dodo.keymap.search_keymap['z W'] = ("snooze marked for 1 week", snooze(days=7, mode='tag marked'))
+```
+
+This allows snoozing single messages or bulk snoozing all marked messages (by default, you can mark messages with SPACE).
+
+Note this doesn't return messages to the top, since it doesn't change the date they were received. Hence, it will work best if you keep your inbox relatively empty.
+
 
 ## Basic use
 
