@@ -46,6 +46,16 @@ Then, run Dodo with:
 
 If you don't have it already, you may need to add `~/.local/bin` to your `PATH`.
 
+## Basic use
+
+Before you fire up Dodo for the first time, make sure you at least configure `email_address` and `sent_dir` in `config.py` (see next section).
+
+Most functionality in Dodo comes from keyboard shortcuts. Press `?` to get a full list of the key mappings at any time.
+
+Dodo has 4 different kinds of view: search views, thread views, compose views, and the tag view. It opens initially with a search view with the query `tag:inbox`. Pressing enter or double-clicking a thread with open that thread in the thread view. Pressing `c` at any time or `r` while looking at a message in the thread view will open the compose view. Pressing `T` will open a list of all the known tags in a new tab.
+
+In the compose view, press `<enter>` to edit the message on your chosen editor. Once you save and exit, the message will be updated. Press `a` to add attachments (or use the special `A:` header). Press `S` to send.
+
 
 ## Configuration
 
@@ -159,18 +169,10 @@ dodo.keymap.search_keymap['z Z'] = ("snooze marked for 1 day", snooze(days=1, mo
 dodo.keymap.search_keymap['z W'] = ("snooze marked for 1 week", snooze(days=7, mode='tag marked'))
 ```
 
-This allows snoozing single messages or bulk snoozing all marked messages (by default, you can mark messages with SPACE).
+This allows snoozing single messages or bulk snoozing all marked messages (by default, you can (un)mark messages with `<space>`).
 
 Note this doesn't return messages to the top, since it doesn't change the date they were received. Hence, it will work best if you keep your inbox relatively empty.
 
-
-## Basic use
-
-Most functionality in Dodo comes from keyboard shortcuts. Press `?` to get a full list of the key mappings at any time.
-
-Dodo has 3 different kinds of view: search views, thread views, and compose views. It opens initially with a search view with the query `tag:inbox`. Pressing enter or double-clicking a thread with open that thread in the thread view. Pressing `c` at any time or `r` while looking at a message in the thread view will open the compose view.
-
-In the compose view, press `<enter>` to edit the message on your chosen editor. Once you save and exit, the message will be updated. Press `a` to add attachments (or use the special `A:` header). Press `S` to send.
 
 
 ## Setting up the prerequisites
