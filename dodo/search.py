@@ -103,14 +103,17 @@ class SearchModel(QAbstractItemModel):
             else:
                 font = QFont(settings.search_font, settings.search_font_size)
 
-            if 'unread' in thread_d['tags']:
+            if 'unread' in thread_d['tags'] or 'flagged' in thread_d['tags']:
                 font.setBold(True)
             return font
         elif role == Qt.ForegroundRole:
             color = 'fg_' + col
             unread_color = 'fg_' + col + '_unread'
+            flagged_color = 'fg_' + col + '_flagged'
             if 'unread' in thread_d['tags'] and unread_color in settings.theme:
                 return QColor(settings.theme[unread_color])
+            elif 'flagged' in thread_d['tags'] and flagged_color in settings.theme:
+                return QColor(settings.theme[flagged_color])
             elif color in settings.theme:
                 return QColor(settings.theme[color])
             else:

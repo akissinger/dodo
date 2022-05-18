@@ -75,6 +75,7 @@ solarized_dark = {
   'fg_highlight': solarized_p['base01'],
   'fg_subject': solarized_p['base0'],
   'fg_subject_unread': solarized_p['base2'],
+  'fg_subject_flagged': solarized_p['violet'],
   'fg_from': solarized_p['blue'],
   'fg_date': solarized_p['cyan'],
   'fg_tags': solarized_p['violet'],
@@ -99,6 +100,7 @@ solarized_light = {
   'fg_highlight': solarized_p['base1'],
   'fg_subject': solarized_p['base0'],
   'fg_subject_unread': solarized_p['base02'],
+  'fg_subject_flagged': solarized_p['violet'],
   'fg_from': solarized_p['blue'],
   'fg_date': solarized_p['cyan'],
   'fg_tags': solarized_p['violet'],
@@ -123,9 +125,10 @@ nord = {
   'fg_highlight': nord_p['polar0'],
   'fg_subject': nord_p['snow0'],
   'fg_subject_unread': nord_p['aurora4'],
+  'fg_subject_flagged': nord_p['aurora2'],
   'fg_from': nord_p['frost3'],
   'fg_date': nord_p['polar3'],
-  'fg_tags': nord_p['aurora2'],
+  'fg_tags': nord_p['frost2'],
 }
 """Theme based on the `Nord`_ palette
 
