@@ -41,13 +41,19 @@ email_address = ''
 
 This is used both to populate the 'From' field of emails and to (mostly)
 avoid CC'ing yourself when replying to all. It can be given as 'NAME <ADDRESS@DOMAIN>'
-format."""
+format. For just one email address, this can be given as a string. From multiple
+emails, use a dictionary mapping the account names in :func:`~dodo.settings.smtp_accounts`
+to the associated email addresses.
+"""
 
 sent_dir = ''
 """Where to store sent messages (REQUIRED)
 
 This will usually be a subdirectory of the Maildir sync'ed with
-:func:`~dodo.settings.sync_mail_command`."""
+:func:`~dodo.settings.sync_mail_command`. This setting can be given either
+as a string to use one global sent directory, or as a dictionary mapping
+account names in :func:`~dodo.settings.smtp_accounts` to their own sent dirs.
+"""
 
 editor_command = "xterm -e vim '{file}'"
 """Command used to launch external text editor

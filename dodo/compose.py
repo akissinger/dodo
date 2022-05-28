@@ -60,7 +60,8 @@ class ComposePanel(panel.Panel):
         self.current_account = 0
 
         self.wrap_message = settings.wrap_message
-        self.raw_message_string = f'From: {settings.email_address}\n'
+        
+        self.raw_message_string = f'From: {self.email_address()}\n'
         self.message_string = ''
 
         if msg and mode == 'mailto':
@@ -198,7 +199,7 @@ class ComposePanel(panel.Panel):
         pseudo-header. This will be translated into a proper attachment when the message is sent."""
         f = QFileDialog.getOpenFileName()
         if f[0]:
-            self.message_string = util.add_header_line(self.message_string, 'A: ' + f[0])
+            self.raw_message_string = util.add_header_line(self.raw_message_string, 'A: ' + f[0])
             self.refresh()
 
     def toggle_wrap(self) -> None:
@@ -210,16 +211,39 @@ class ComposePanel(panel.Panel):
         self.wrap_message = not self.wrap_message
         self.refresh()
 
+    def account_name(self) -> str:
+        """Return the name of the current SMTP account"""
+
+        return settings.smtp_accounts[self.current_account]
+
+    def email_address(self) -> str:
+        """Return email address that should be used in From: header"""
+
+        if isinstance(settings.email_address, dict):
+            return settings.email_address[self.account_name()]
+        else:
+            return settings.email_address
+
     def next_account(self) -> None:
         """Cycle to the next SMTP account in :func:`~dodo.settings.smtp_accounts`"""
 
+        old_email = self.email_address()
         self.current_account = (self.current_account+1) % len(settings.smtp_accounts)
+
+        if self.email_address() != old_email:
+            self.raw_message_string = util.replace_header(self.raw_message_string, 'From', self.email_address())
+
         self.refresh()
 
     def previous_account(self) -> None:
         """Cycle to the previous SMTP account in :func:`~dodo.settings.smtp_accounts`"""
 
+        old_email = self.email_address()
         self.current_account = (self.current_account-1) % len(settings.smtp_accounts)
+
+        if self.email_address() != old_email:
+            self.raw_message_string = util.replace_header(self.raw_message_string, 'From', self.email_address())
+
         self.refresh()
 
     def send(self) -> None:
@@ -277,7 +301,7 @@ class SendmailThread(QThread):
 
     def run(self) -> None:
         try:
-            account = settings.smtp_accounts[self.panel.current_account]
+            account = self.panel.account_name()
             m = email.message_from_string(self.panel.message_string)
             eml = email.message.EmailMessage()
             attachments = []

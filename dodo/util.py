@@ -270,7 +270,17 @@ def email_is_me(e: str) -> bool:
     a "reply-to-all" message.
     """
 
-    return strip_email_address(settings.email_address) == strip_email_address(e)
+    e_strip = strip_email_address(e)
+
+    if isinstance(settings.email_address, dict):
+        for v in settings.email_address.values():
+            if strip_email_address(v) == e_strip:
+                return True
+    else:
+        if strip_email_address(settings.email_address) == e_strip:
+            return True
+
+    return False
 
 def separate_headers(s: str) -> Tuple[str, str]:
     """Split a message into its header part and body part"""
@@ -310,6 +320,18 @@ def add_header_line(s: str, h: str) -> str:
 
     (headers, body) = separate_headers(s)
     return headers + h + '\n' + body
+
+def replace_header(s: str, h: str, new_value: str) -> str:
+    """Replace a single header without doing full message parsing
+
+    Note this ONLY works for short (i.e. unwrapped) headers."""
+    
+    (headers, body) = separate_headers(s)
+    old_h = re.compile('^' + h + ':.*$', re.MULTILINE)
+    headers = old_h.sub(h + ': ' + new_value, headers)
+    
+    return headers + '\n' + body
+
 
 def make_message_css() -> str:
     """Fill placeholders in settings.message_css using the current theme
