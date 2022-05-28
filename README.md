@@ -124,6 +124,25 @@ You can unmap a single key by deleting it from the dictionary:
 del dodo.keymap.global_keymap['Q']
 ```
 
+
+### Multiple accounts
+
+If you are using something like [msmtp](https://marlam.de/msmtp/) to send emails, it is possible to send mail from multiple accounts. To set this up, simply set a list of account names your SMTP client recognises in `config.py`. You can also provide per-account email addresses and sent directories by passing dictionaries to `email_address` and `sent_dir` settings, respectively.
+
+```python
+import dodo
+
+dodo.settings.smtp_accounts = ['work', 'fun']
+
+dodo.settings.email_address = {'work': 'First Last <me@super-serious-company.com>',
+                               'fun': 'First Last <me@super-silly-domain.ninja>'}
+dodo.settings.sent_dir =      {'work': '/home/user/mail/Work/Sent',
+                               'fun': '/home/user/mail/Fun/Sent'}
+```
+
+For multiple incoming mail accounts, just sync all accounts into subdirectories of a single directory and point `notmuch` to the main directory.
+
+
 ### Custom commands with the command bar
 
 By default, the command bar can be opened in two modes, `'search'` and `'tag'`, for searching and tagging messages, respectively. You can create more modes on-the-fly from `config.py` by passing a new name and a Python callback function to [CommandBar.open](https://dodomail.readthedocs.io/en/latest/api.html#dodo.commandbar.CommandBar.open). Here's an example which creates a new mode called `'notmuch'` for running arbitrary notmuch commands:
