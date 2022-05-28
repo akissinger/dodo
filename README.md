@@ -140,6 +140,8 @@ dodo.settings.sent_dir =      {'work': '/home/user/mail/Work/Sent',
                                'fun': '/home/user/mail/Fun/Sent'}
 ```
 
+By default, you can use the `[` and `]` keys to cycle through different accounts in the Compose panel. The first account in the list is selected by default.
+
 For multiple incoming mail accounts, just sync all accounts into subdirectories of a single directory and point `notmuch` to the main directory.
 
 
