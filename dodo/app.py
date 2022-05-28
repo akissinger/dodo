@@ -65,6 +65,7 @@ class Dodo(QApplication):
     def __init__(self) -> None:
         super().__init__(sys.argv)
         self.setApplicationName('Dodo')
+        self.setDesktopFileName("dodo")
 
         # find a load config.py
         self.config_file = QStandardPaths.locate(QStandardPaths.ConfigLocation, 'dodo/config.py')
@@ -138,7 +139,7 @@ class Dodo(QApplication):
         i = self.tabs.currentIndex() - 1
         if i >= 0:
             self.tabs.setCurrentIndex(i)
-    
+
     def close_panel(self, index: Optional[int]=None) -> None:
         """Close the panel at `index` (if provided) or the current panel
 
