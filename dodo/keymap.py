@@ -110,6 +110,8 @@ compose_keymap = {
   'S':       ('send', lambda p: p.send()),
   'a':       ('attach file', lambda p: p.attach_file()),
   'w':       ('toggle word wrap', lambda p: p.toggle_wrap()),
+  ']':       ('next SMTP account', lambda p: p.next_account()),
+  '[':       ('previous SMTP account', lambda p: p.previous_account()),
 }
 """The local keymap for compose panels
 

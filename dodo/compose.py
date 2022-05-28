@@ -57,6 +57,7 @@ class ComposePanel(panel.Panel):
         self.message_view.setZoomFactor(1.2)
         self.layout().addWidget(self.message_view)
         self.status = f'<i style="color:{settings.theme["fg"]}">draft</i>'
+        self.current_account = 0
 
         self.wrap_message = settings.wrap_message
         self.raw_message_string = f'From: {settings.email_address}\n'
@@ -148,11 +149,23 @@ class ComposePanel(panel.Panel):
 
         text = util.colorize_text(util.simple_escape(self.message_string), has_headers=True)
 
+        if len(settings.smtp_accounts) > 1:
+            account_str = f'<pre style="color: {settings.theme["fg_good"]}"><b>Account:</b> '
+            for i,acct in enumerate(settings.smtp_accounts):
+                if i == self.current_account:
+                    account_str += f'[{acct}]'
+                else:
+                    account_str += f' {acct} '
+            account_str += '</pre>'
+        else:
+            account_str = ''
+
         self.message_view.setHtml(f"""<html>
         <style type="text/css">
         {util.make_message_css()}
         </style>
         <body>
+        {account_str}
         <p>{self.status}</p>
         <pre style="white-space: pre-wrap">{text}</pre>
         </body></html>""")
@@ -189,7 +202,24 @@ class ComposePanel(panel.Panel):
             self.refresh()
 
     def toggle_wrap(self) -> None:
+        """Toggle message wrapping
+
+        Tell Dodo to apply hard wrapping to message text for viewing and sending. This maintains an unwrapped
+        copy of the text for editing."""
+
         self.wrap_message = not self.wrap_message
+        self.refresh()
+
+    def next_account(self) -> None:
+        """Cycle to the next SMTP account in :func:`~dodo.settings.smtp_accounts`"""
+
+        self.current_account = (self.current_account+1) % len(settings.smtp_accounts)
+        self.refresh()
+
+    def previous_account(self) -> None:
+        """Cycle to the previous SMTP account in :func:`~dodo.settings.smtp_accounts`"""
+
+        self.current_account = (self.current_account-1) % len(settings.smtp_accounts)
         self.refresh()
 
     def send(self) -> None:
@@ -247,6 +277,7 @@ class SendmailThread(QThread):
 
     def run(self) -> None:
         try:
+            account = settings.smtp_accounts[self.panel.current_account]
             m = email.message_from_string(self.panel.message_string)
             eml = email.message.EmailMessage()
             attachments = []
@@ -298,7 +329,8 @@ class SendmailThread(QThread):
                 except IOError:
                     print("Can't read attachment: " + att)
 
-            sendmail = Popen(settings.send_mail_command, stdin=PIPE, encoding='utf8', shell=True)
+            cmd = settings.send_mail_command.replace('{account}', account)
+            sendmail = Popen(cmd, stdin=PIPE, encoding='utf8', shell=True)
             if sendmail.stdin:
                 sendmail.stdin.write(str(eml))
                 sendmail.stdin.close()
@@ -307,7 +339,11 @@ class SendmailThread(QThread):
                 # save to sent folder
                 m = mailbox.MaildirMessage(str(eml))
                 m.set_flags('S')
-                key = mailbox.Maildir(settings.sent_dir).add(m)
+                if isinstance(settings.sent_dir, dict):
+                    sent_dir = settings.sent_dir[account]
+                else:
+                    sent_dir = settings.sent_dir
+                key = mailbox.Maildir(sent_dir).add(m)
                 # print(f'add: {key}')
 
                 subprocess.run(['notmuch', 'new'])

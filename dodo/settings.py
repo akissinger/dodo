@@ -72,12 +72,20 @@ is an empty string, Dodo will attempt to use the default web browser supplied by
 the desktop environment, if it exists.
 """
 
-send_mail_command = 'msmtp -t'
+send_mail_command = 'msmtp -a "{account}" -t'
 """Command used to send mail via SMTP
 
 This is a shell command that expects a (sendmail-compatible) email message to be
 written to STDIN. Note that it should read the destination from the `From:` header
-of the message and not a command-line argument.
+of the message and not a command-line argument. Use the `{account}` placeholder
+to read the currently selected account.
+"""
+
+smtp_accounts = ['default']
+"""A list of SMTP account names recognised by `send_mail_command`
+
+This setting allows switching SMTP accounts in the Compose panel. The first account
+in the list is selected by default.
 """
 
 sync_mail_command = 'offlineimap'
