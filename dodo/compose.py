@@ -304,11 +304,11 @@ class SendmailThread(QThread):
             account = self.panel.account_name()
             m = email.message_from_string(self.panel.message_string)
             eml = email.message.EmailMessage()
-            attachments = []
+            attachments = m.get_all('A', [])
+
+            # n.b. this kills duplicate headers. May want to revisit this if it causes problems.
             for h in m.keys():
-                if h == 'A':
-                    attachments.append(m[h])
-                else:
+                if h != 'A':
                     eml[h] = m[h]
 
             eml['Message-ID'] = email.utils.make_msgid()
