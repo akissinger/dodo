@@ -19,9 +19,9 @@
 from __future__ import annotations
 from typing import Optional, Any, overload, Literal, List, Tuple
 
-from PyQt5.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject
-from PyQt5.QtWidgets import QTreeView, QWidget
-from PyQt5.QtGui import QFont, QColor
+from PyQt6.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject
+from PyQt6.QtWidgets import QTreeView, QWidget
+from PyQt6.QtGui import QFont, QColor
 import subprocess
 import json
 

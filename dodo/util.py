@@ -19,8 +19,8 @@
 from __future__ import annotations
 from typing import Iterator, List, Tuple, Dict
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeyEvent
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QKeyEvent
 import re
 import os
 import tempfile

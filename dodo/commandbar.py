@@ -18,8 +18,8 @@
 
 from __future__ import annotations
 from typing import Dict, List, Tuple, Optional, Callable, Any
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QKeyEvent
+from PyQt6.QtWidgets import *
+from PyQt6.QtGui import QKeyEvent
 
 from . import app
 from . import util

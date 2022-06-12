@@ -33,7 +33,7 @@ setuptools.setup(
     packages=["dodo"],
     package_data={'': ['*.svg']},
     data_files=data_files,
-    install_requires=["PyQt5>=5.15", "PyQtWebEngine>=5.15", "PyQt5-sip>=5.15", "bleach>=3.1.1"],
+    install_requires=["PyQt6>=6.2", "PyQt6-WebEngine>=6.2", "bleach>=5.0"],
     python_requires=">=3.7",
     entry_points={'console_scripts': 'dodo=dodo.app:main'},
 )

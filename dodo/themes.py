@@ -17,8 +17,8 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtGui import QPalette, QColor
+from PyQt6.QtWidgets import QApplication
 
 
 # palettes used in theme definitions

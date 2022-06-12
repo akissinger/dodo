@@ -17,9 +17,9 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtWebEngineCore import QWebEngineUrlScheme
+from PyQt6.QtCore import *
+from PyQt6.QtWidgets import *
+from PyQt6.QtWebEngineCore import QWebEngineUrlScheme
 import sys
 import os
 import subprocess

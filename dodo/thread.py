@@ -19,11 +19,11 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Union
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import QFont, QColor, QDesktopServices
-from PyQt5.QtWidgets import *
-from PyQt5.QtWebEngineCore import *
-from PyQt5.QtWebEngineWidgets import *
+from PyQt6.QtCore import *
+from PyQt6.QtGui import QFont, QColor, QDesktopServices
+from PyQt6.QtWidgets import *
+from PyQt6.QtWebEngineCore import *
+from PyQt6.QtWebEngineWidgets import *
 
 import subprocess
 import json

@@ -19,9 +19,9 @@
 from __future__ import annotations
 from typing import Optional, List, Set
 
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtWebEngineWidgets import *
+from PyQt6.QtCore import *
+from PyQt6.QtWidgets import *
+from PyQt6.QtWebEngineWidgets import *
 import mailbox
 import email
 import email.utils

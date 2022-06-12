@@ -19,9 +19,9 @@
 from __future__ import annotations
 from typing import Optional
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeyEvent
+from PyQt6.QtWidgets import *
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QKeyEvent
 
 from . import keymap
 from . import util
