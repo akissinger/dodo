@@ -15,7 +15,7 @@ data_files = [
 
 setuptools.setup(
     name="dodo-mail",
-    version="0.1",
+    version="0.2",
     author="Aleks Kissinger",
     author_email="aleks0@gmail.com",
     description="A graphical, hackable email client based on notmuch",
