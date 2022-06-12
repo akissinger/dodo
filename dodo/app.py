@@ -68,11 +68,11 @@ class Dodo(QApplication):
         self.setDesktopFileName("dodo")
 
         # find a load config.py
-        self.config_file = QStandardPaths.locate(QStandardPaths.ConfigLocation, 'dodo/config.py')
+        self.config_file = QStandardPaths.locate(QStandardPaths.StandardLocation.ConfigLocation, 'dodo/config.py')
         if self.config_file:
             exec(open(self.config_file).read())
         else:
-            config_locs = QStandardPaths.standardLocations(QStandardPaths.ConfigLocation)
+            config_locs = QStandardPaths.standardLocations(QStandardPaths.StandardLocation.ConfigLocation)
             print('No config.py found in:\n' + '\n'.join([f'  {d}/dodo' for d in config_locs]))
             sys.exit(1)
 
@@ -278,4 +278,4 @@ def main() -> None:
     """Main entry point for Dodo"""
 
     dodo = Dodo()
-    dodo.exec_()
+    dodo.exec()

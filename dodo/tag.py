@@ -74,7 +74,7 @@ class TagModel(QAbstractItemModel):
         else:
             return None
 
-    def data(self, index: QModelIndex, role: int=Qt.DisplayRole) -> Any:
+    def data(self, index: QModelIndex, role: int=Qt.ItemDataRole.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.data` to populate a view with tags"""
 
         row = index.row()
@@ -82,23 +82,23 @@ class TagModel(QAbstractItemModel):
         if row >= len(self.d) or index.column() > 1:
             return None
 
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             if col == 1:
                 return f'[{self.d[row][1]}/{self.d[row][2]}]'
             else:
                 return self.d[row][0]
-        elif role == Qt.FontRole:
+        elif role == Qt.ItemDataRole.FontRole:
             font = QFont(settings.search_font, settings.search_font_size)
             if self.d[row][1] != '0':
                 font.setBold(True)
             return font
-        elif role == Qt.ForegroundRole:
+        elif role == Qt.ItemDataRole.ForegroundRole:
             if self.d[row][1] != '0':
                 return QColor(settings.theme['fg_subject_unread'])
             else:
                 return QColor(settings.theme['fg'])
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int=Qt.DisplayRole) -> Any:
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int=Qt.ItemDataRole.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.headerData` to populate a view with column names"""
 
         if section == 0:
@@ -139,7 +139,7 @@ class TagPanel(panel.Panel):
         super().__init__(a, keep_open, parent)
         self.set_keymap(keymap.tag_keymap)
         self.tree = QTreeView()
-        self.tree.setFocusPolicy(Qt.NoFocus)
+        self.tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setStyleSheet(f'QTreeView::item {{ padding: {settings.search_view_padding}px }}')
         self.model = TagModel()
         self.tree.setModel(self.model)

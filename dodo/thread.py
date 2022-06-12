@@ -109,7 +109,7 @@ class MessageHandler(QWebEngineUrlSchemeHandler):
 
         if self.message_json:
             buf = QBuffer(parent=self)
-            buf.open(QIODevice.WriteOnly)
+            buf.open(QIODevice.OpenModeFlag.WriteOnly)
             if mode == 'html':
                 html = util.body_html(self.message_json)
                 if html: buf.write(html.encode('utf-8'))
@@ -156,7 +156,7 @@ class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
                 if "Content-id" in part and part["Content-id"] == f'<{cid}>':
                     content_type = part.get_content_type()
                     buf = QBuffer(parent=self)
-                    buf.open(QIODevice.WriteOnly)
+                    buf.open(QIODevice.OpenModeFlag.WriteOnly)
                     buf.write(part.get_payload(decode=True))
                     buf.close()
                     request.reply(content_type.encode('latin1'), buf)
@@ -216,7 +216,7 @@ class ThreadModel(QAbstractItemModel):
 
         return len(self.message_list)
 
-    def data(self, index: QModelIndex, role: int=Qt.DisplayRole) -> Any:
+    def data(self, index: QModelIndex, role: int=Qt.ItemDataRole.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.data` to populate a list view with short descriptions of
         messages in the thread.
 
@@ -228,17 +228,17 @@ class ThreadModel(QAbstractItemModel):
 
         m = self.message_list[index.row()]
 
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             if 'headers' in m and 'From' in m["headers"]:
                 return m['headers']['From']
             else:
                 return '(message)'
-        elif role == Qt.FontRole:
+        elif role == Qt.ItemDataRole.FontRole:
             font = QFont(settings.search_font, settings.search_font_size)
             if 'tags' in m and 'unread' in m['tags']:
                 font.setBold(True)
             return font
-        elif role == Qt.ForegroundRole:
+        elif role == Qt.ItemDataRole.ForegroundRole:
             if 'tags' in m and 'unread' in m['tags']:
                 return QColor(settings.theme['fg_subject_unread'])
             else:
@@ -291,12 +291,12 @@ class ThreadPanel(panel.Panel):
         self.subject = '(no subject)'
         self.current_message = -1
 
-        self.splitter = QSplitter(Qt.Vertical)
+        self.splitter = QSplitter(Qt.Orientation.Vertical)
         info_area = QWidget()
         info_area.setLayout(QHBoxLayout())
 
         self.thread_list = QListView()
-        self.thread_list.setFocusPolicy(Qt.NoFocus)
+        self.thread_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.thread_list.setModel(self.model)
         self.thread_list.setFixedWidth(250)
         self.thread_list.clicked.connect(lambda ix: self.show_message(ix.row()))
@@ -318,7 +318,7 @@ class ThreadPanel(panel.Panel):
         # self.message_request_interceptor = MessageRequestInterceptor(self.message_profile)
         # self.message_profile.setUrlRequestInterceptor(self.message_request_interceptor)
         self.message_profile.settings().setAttribute(
-                QWebEngineSettings.JavascriptEnabled, False)
+                QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
 
         self.message_view = QWebEngineView(self)
 

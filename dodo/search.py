@@ -73,7 +73,7 @@ class SearchModel(QAbstractItemModel):
         else:
             return None
 
-    def data(self, index: QModelIndex, role: int=Qt.DisplayRole) -> Any:
+    def data(self, index: QModelIndex, role: int=Qt.ItemDataRole.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.data` to populate a view with search results"""
 
         global columns
@@ -83,7 +83,7 @@ class SearchModel(QAbstractItemModel):
         thread_d = self.d[index.row()]
         col = columns[index.column()]
 
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             if col == 'date':
                 return thread_d['date_relative']
             elif col == 'from':
@@ -97,7 +97,7 @@ class SearchModel(QAbstractItemModel):
                     if t not in settings.hide_tags and self.q != 'tag:' + t:
                         tag_icons.append(settings.tag_icons[t] if t in settings.tag_icons else f'[{t}]')
                 return ' '.join(tag_icons)
-        elif role == Qt.FontRole:
+        elif role == Qt.ItemDataRole.FontRole:
             if col == 'tags':
                 font = QFont(settings.tag_font, settings.tag_font_size)
             else:
@@ -106,7 +106,7 @@ class SearchModel(QAbstractItemModel):
             if 'unread' in thread_d['tags'] or 'flagged' in thread_d['tags']:
                 font.setBold(True)
             return font
-        elif role == Qt.ForegroundRole:
+        elif role == Qt.ItemDataRole.ForegroundRole:
             color = 'fg_' + col
             unread_color = 'fg_' + col + '_unread'
             flagged_color = 'fg_' + col + '_flagged'
@@ -119,11 +119,11 @@ class SearchModel(QAbstractItemModel):
             else:
                 return QColor(settings.theme['fg'])
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int=Qt.DisplayRole) -> Any:
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int=Qt.ItemDataRole.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.headerData` to populate a view with column names"""
 
         global columns
-        if role == Qt.DisplayRole and section <= len(columns):
+        if role == Qt.ItemDataRole.DisplayRole and section <= len(columns):
             return columns[section]
         else:
             return None
@@ -165,7 +165,7 @@ class SearchPanel(panel.Panel):
         self.set_keymap(keymap.search_keymap)
         self.q = q
         self.tree = QTreeView()
-        self.tree.setFocusPolicy(Qt.NoFocus)
+        self.tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setStyleSheet(f'QTreeView::item {{ padding: {settings.search_view_padding}px }}')
         self.model = SearchModel(q)
         self.tree.setModel(self.model)

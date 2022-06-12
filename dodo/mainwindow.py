@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
         if geom: self.restoreGeometry(geom)
 
         self.tabs = QTabWidget()
-        self.tabs.setFocusPolicy(Qt.NoFocus)
+        self.tabs.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         # self.tabs.resize(1600, 800)
         w.layout().addWidget(self.tabs)
 
@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
         command_area = QWidget(self)
         command_label = QLabel("search", command_area)
         self.command_bar = commandbar.CommandBar(self.app, command_label, command_area)
-        self.command_bar.setFocusPolicy(Qt.NoFocus)
+        self.command_bar.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
         command_area.setLayout(QHBoxLayout())
         command_area.layout().addWidget(command_label)
