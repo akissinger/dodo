@@ -114,7 +114,7 @@ class Panel(QWidget):
                     q += f'  - {d}\n'
                 q += '\nClean them up now?'
 
-                if QMessageBox.question(self, 'Remove temp dirs', q) == QMessageBox.Yes:
+                if QMessageBox.question(self, 'Remove temp dirs', q) == QMessageBox.StandardButton.Yes:
                     for d in self.temp_dirs: shutil.rmtree(d)
 
         return True

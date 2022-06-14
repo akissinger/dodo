@@ -71,12 +71,12 @@ class MessagePage(QWebEnginePage):
         super().__init__(profile, parent)
         self.app = a
 
-    def acceptNavigationRequest(self, url: QUrl, type: QWebEnginePage.NavigationType, isMainFrame: bool) -> bool:
+    def acceptNavigationRequest(self, url: QUrl, ty: QWebEnginePage.NavigationType, isMainFrame: bool) -> bool:
         # if the protocol is 'message' or 'cid', let the request through
         if url.scheme() in app.LOCAL_PROTOCOLS:
             return True
         else:
-            if type == QWebEnginePage.NavigationTypeLinkClicked:
+            if ty == QWebEnginePage.NavigationType.NavigationTypeLinkClicked:
                 if url.scheme() == 'mailto':
                     query = QUrlQuery(url)
                     msg = {'headers':{'To': url.path(), 'Subject': query.queryItemValue('subject')}}
@@ -84,7 +84,7 @@ class MessagePage(QWebEnginePage):
                 else:
                     if (not settings.html_confirm_open_links or
                         QMessageBox.question(None, 'Open link',
-                            f'Open the following URL in browser?\n\n  {url.toString()}') == QMessageBox.Yes):
+                            f'Open the following URL in browser?\n\n  {url.toString()}') == QMessageBox.StandardButton.Yes):
                         if settings.web_browser_command == '':
                             QDesktopServices.openUrl(url)
                         else:
@@ -92,7 +92,7 @@ class MessagePage(QWebEnginePage):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
                 return False
-            if type == QWebEnginePage.NavigationTypeRedirect:
+            if ty == QWebEnginePage.NavigationType.NavigationTypeRedirect:
                 # never let a message do a <meta> redirect
                 return False
             else:
