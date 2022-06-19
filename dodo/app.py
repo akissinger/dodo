@@ -218,7 +218,7 @@ class Dodo(QApplication):
         """Open command bar for tagging"""
         def callback(tag_expr: str) -> None:
             w = self.tabs.currentWidget()
-            if w:
+            if w and isinstance(w, panel.Panel):
                 if isinstance(w, search.SearchPanel): w.tag_thread(tag_expr, mode)
                 elif isinstance(w, thread.ThreadPanel): w.tag_message(tag_expr)
                 w.refresh()
@@ -266,7 +266,7 @@ class Dodo(QApplication):
                 w.dirty = True
 
         w = self.tabs.currentWidget()
-        if w: w.refresh()
+        if w and isinstance(w, panel.Panel): w.refresh()
 
     def prompt_quit(self) -> None:
         """A 'soft' quit function, which gives each open tab the opportunity to prompt

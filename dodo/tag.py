@@ -210,16 +210,6 @@ class TagPanel(panel.Panel):
         if tag:
             self.app.open_search('tag:' + tag)
     
-    def toggle_thread_tag(self, tag: str) -> None:
-        """Toggle the given thread tag"""
-
-        thread = self.model.thread_json(self.tree.currentIndex())
-        if thread:
-            if tag in thread['tags']:
-                tag_expr = '-' + tag
-            else:
-                tag_expr = '+' + tag
-            self.tag_thread(tag_expr)
 
 
 

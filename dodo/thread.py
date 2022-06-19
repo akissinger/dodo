@@ -135,7 +135,7 @@ class MessageHandler(QWebEngineUrlSchemeHandler):
             buf.close()
             request.reply('text/html'.encode('latin1'), buf)
         else:
-            request.fail(QWebEngineUrlRequestJob.UrlNotFound)
+            request.fail(QWebEngineUrlRequestJob.Error.UrlNotFound)
 
 
 class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
@@ -167,7 +167,7 @@ class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
             # buf.close()
 
         if not content_type:
-            request.fail(QWebEngineUrlRequestJob.UrlNotFound)
+            request.fail(QWebEngineUrlRequestJob.Error.UrlNotFound)
 
 class ThreadModel(QAbstractItemModel):
     """A model containing a thread, its messages, and some metadata
@@ -449,16 +449,16 @@ class ThreadPanel(panel.Panel):
         """
         if pos == 'top':
             self.message_view.page().runJavaScript(f'window.scrollTo(0, 0)',
-                    QWebEngineScript.ApplicationWorld)
+                    QWebEngineScript.ScriptWorldId.ApplicationWorld)
         elif pos == 'bottom':
             self.message_view.page().runJavaScript(f'window.scrollTo(0, document.body.scrollHeight)',
-                    QWebEngineScript.ApplicationWorld)
+                    QWebEngineScript.ScriptWorldId.ApplicationWorld)
         elif lines is not None:
             self.message_view.page().runJavaScript(f'window.scrollBy(0, {lines} * 20)',
-                    QWebEngineScript.ApplicationWorld)
+                    QWebEngineScript.ScriptWorldId.ApplicationWorld)
         elif pages is not None:
             self.message_view.page().runJavaScript(f'window.scrollBy(0, {pages} * 0.9 * window.innerHeight)',
-                    QWebEngineScript.ApplicationWorld)
+                    QWebEngineScript.ScriptWorldId.ApplicationWorld)
 
     def toggle_message_tag(self, tag: str) -> None:
         """Toggle the given tag on the current message"""

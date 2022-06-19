@@ -304,7 +304,7 @@ class SendmailThread(QThread):
             account = self.panel.account_name()
             m = email.message_from_string(self.panel.message_string)
             eml = email.message.EmailMessage()
-            attachments = m.get_all('A', [])
+            attachments: List[str] = m.get_all('A', [])
 
             # n.b. this kills duplicate headers. May want to revisit this if it causes problems.
             for h in m.keys():

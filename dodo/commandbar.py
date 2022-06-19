@@ -54,7 +54,10 @@ class CommandBar(QLineEdit):
         self.mode = mode
         self.callback = callback
         self.label.setText(mode)
-        self.parent().setVisible(True)
+
+        p = self.parent()
+        if isinstance(p, QWidget): p.setVisible(True)
+
         self.setFocus()
 
     def close_bar(self) -> None:
@@ -68,7 +71,9 @@ class CommandBar(QLineEdit):
             self.history[self.mode] = (len(h), h)
 
         self.setText('')
-        self.parent().setVisible(False)
+        p = self.parent()
+        if isinstance(p, QWidget): p.setVisible(False)
+
         w = self.app.tabs.currentWidget()
         if w: w.setFocus()
 

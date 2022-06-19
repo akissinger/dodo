@@ -67,7 +67,7 @@ class HelpWindow(QWidget):
 
         If <escape> is pressed, exit, otherwise pass the keypress on."""
 
-        if e.key() == Qt.Key_Escape:
+        if e.key() == Qt.Key.Key_Escape:
             self.close()
         else:
             super().keyPressEvent(e)
