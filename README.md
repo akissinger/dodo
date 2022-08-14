@@ -162,6 +162,37 @@ def run_notmuch(app):
 dodo.keymap.global_keymap['N'] = ('run notmuch from command bar', run_notmuch)
 ```
 
+### Custom layouts
+
+You can customise the layout of the thread view by replacing the method `ThreadPanel.layout_panel` with your own version in `config.py`. This method is responsible for displaying three widgets: `self.thread_list`, `self.message_info`, and `self.message_view`. Normally, it draws the first two side-by-side, then places this above the third with an adjustable splitter.
+
+Here's an example, making thread list twice as wide and putting the message view on top instead:
+
+```python
+def my_layout(self):
+    splitter = QSplitter(Qt.Orientation.Vertical)
+    info_area = QWidget()
+    info_area.setLayout(QHBoxLayout())
+    self.thread_list.setFixedWidth(500)
+    info_area.layout().addWidget(self.thread_list)
+    info_area.layout().addWidget(self.message_info)
+    splitter.addWidget(self.message_view)
+    splitter.addWidget(info_area)
+    self.layout().addWidget(splitter)
+
+    # save splitter position
+    window_settings = QSettings("dodo", "dodo")
+    state = window_settings.value("thread_splitter_state")
+    splitter.splitterMoved.connect(
+            lambda x: window_settings.setValue("thread_splitter_state", splitter.saveState()))
+    if state: splitter.restoreState(state)
+
+dodo.thread.ThreadPanel.layout_panel = my_layout
+```
+
+Note that everything in `PyQt6.QtCore` and `PyQt6.QtWidgets` is already imported before `config.py` is exec'ed.
+
+
 ### Snooze
 
 Snoozing lets you temporarily hide messages to help clear your inbox (and your mind) for a few days at a time. After the snooze is up, they pop back into the inbox as unread messages again. Using `notmuch` hooks and Dodo, it is easy to set up some basic snooze functionality. Here's how I do it.

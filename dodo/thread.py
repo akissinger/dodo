@@ -320,7 +320,6 @@ class ThreadPanel(panel.Panel):
     def layout_panel(self):
         """Method for laying out various components in the ThreadPanel"""
 
-        window_settings = QSettings("dodo", "dodo")
         splitter = QSplitter(Qt.Orientation.Vertical)
         info_area = QWidget()
         info_area.setLayout(QHBoxLayout())
@@ -332,6 +331,7 @@ class ThreadPanel(panel.Panel):
         self.layout().addWidget(splitter)
 
         # save splitter position
+        window_settings = QSettings("dodo", "dodo")
         state = window_settings.value("thread_splitter_state")
         splitter.splitterMoved.connect(
                 lambda x: window_settings.setValue("thread_splitter_state", splitter.saveState()))
