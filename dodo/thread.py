@@ -282,7 +282,6 @@ class ThreadPanel(panel.Panel):
 
     def __init__(self, a: app.Dodo, thread_id: str, parent: Optional[QWidget]=None):
         super().__init__(a, parent=parent)
-        window_settings = QSettings("dodo", "dodo")
         self.set_keymap(keymap.thread_keymap)
         self.model = ThreadModel(thread_id)
         self.thread_id = thread_id
@@ -291,20 +290,12 @@ class ThreadPanel(panel.Panel):
         self.subject = '(no subject)'
         self.current_message = -1
 
-        self.splitter = QSplitter(Qt.Orientation.Vertical)
-        info_area = QWidget()
-        info_area.setLayout(QHBoxLayout())
-
         self.thread_list = QListView()
         self.thread_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.thread_list.setModel(self.model)
-        self.thread_list.setFixedWidth(250)
         self.thread_list.clicked.connect(lambda ix: self.show_message(ix.row()))
 
         self.message_info = QTextBrowser()
-        info_area.layout().addWidget(self.thread_list)
-        info_area.layout().addWidget(self.message_info)
-        self.splitter.addWidget(info_area)
 
         # TODO: this leaks memory, but stops Qt from cleaning up the profile too soon
         self.message_profile = QWebEngineProfile(self.app)
@@ -314,32 +305,37 @@ class ThreadPanel(panel.Panel):
 
         self.message_handler = MessageHandler(self)
         self.message_profile.installUrlSchemeHandler(b'message', self.message_handler)
-
-        # self.message_request_interceptor = MessageRequestInterceptor(self.message_profile)
-        # self.message_profile.setUrlRequestInterceptor(self.message_request_interceptor)
         self.message_profile.settings().setAttribute(
                 QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
 
         self.message_view = QWebEngineView(self)
-
-        # QWebEngineProfile.defaultProfile().setRequestInterceptor(self.message_request_interceptor)
-        # self.message_view.settings().setAttribute(
-        #         QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
-
         page = MessagePage(self.app, self.message_profile, self.message_view)
         self.message_view.setPage(page)
-
         self.message_view.setZoomFactor(1.2)
-        self.splitter.addWidget(self.message_view)
 
-        self.layout().addWidget(self.splitter)
-        state = window_settings.value("thread_splitter_state")
-        self.splitter.splitterMoved.connect(
-                lambda x: window_settings.setValue("thread_splitter_state", self.splitter.saveState()))
-        if state: self.splitter.restoreState(state)
+        self.layout_panel()
 
         self.show_message(self.model.default_message())
 
+    def layout_panel(self):
+        """Method for laying out various components in the ThreadPanel"""
+
+        window_settings = QSettings("dodo", "dodo")
+        splitter = QSplitter(Qt.Orientation.Vertical)
+        info_area = QWidget()
+        info_area.setLayout(QHBoxLayout())
+        self.thread_list.setFixedWidth(250)
+        info_area.layout().addWidget(self.thread_list)
+        info_area.layout().addWidget(self.message_info)
+        splitter.addWidget(info_area)
+        splitter.addWidget(self.message_view)
+        self.layout().addWidget(splitter)
+
+        # save splitter position
+        state = window_settings.value("thread_splitter_state")
+        splitter.splitterMoved.connect(
+                lambda x: window_settings.setValue("thread_splitter_state", splitter.saveState()))
+        if state: splitter.restoreState(state)
 
     def title(self) -> str:
         """The tab title
