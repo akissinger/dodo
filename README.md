@@ -2,7 +2,7 @@
 
 [![Documentation Status](https://readthedocs.org/projects/dodomail/badge/?version=latest)](https://dodomail.readthedocs.io/en/latest/?badge=latest)
 
-Dodo is a graphical email client written in Python/PyQt5, based on the command line email swiss-army-knife [notmuch](https://notmuchmail.org/).
+Dodo is a graphical email client written in Python/PyQt6, based on the command line email swiss-army-knife [notmuch](https://notmuchmail.org/).
 
 ![Dodo](/images/dodo-screen-plus-icon.png?raw=true)
 
@@ -34,7 +34,7 @@ All of this is pretty standard stuff, and should be installable via your package
 
 ## Install and run
 
-Dodo requires Python 3.7+ and [PyQt5](https://riverbankcomputing.com/software/pyqt/intro) 5.15 or above. You can install the latest git version of Dodo and its dependencies using [pip](https://pypi.org/project/pip/):
+Dodo requires Python 3.7+ and [PyQt6](https://riverbankcomputing.com/software/pyqt/intro) 6.2 or above. You can install the latest git version of Dodo and its dependencies using [pip](https://pypi.org/project/pip/):
 
     git clone https://github.com/akissinger/dodo.git
     cd dodo
