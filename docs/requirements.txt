@@ -1,4 +1,4 @@
 sphinx-autodoc-typehints
 PyQt6
-PyQtWebEngine
+PyQt6-WebEngine
 bleach
