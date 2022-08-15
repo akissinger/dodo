@@ -86,6 +86,10 @@ All of the settings of the form `..._command` are given as shell command. The `e
 
 The settings above replace the default text editor (`xterm -e vim`) with [neovim](https://neovim.io/) run inside a new [kitty](https://sw.kovidgoyal.net/kitty/) terminal. I am also using Michael Herrmann's excellent dual-pane file manager [fman](https://fman.io/) instead of the default (`nautilus`). With these settings, showing attachments will open `fman` with a fixed directory in the right pane (`/home/user/Documents`) and a directory containing the attachments on the left. A similar effect can be obtained with [ranger](https://github.com/ranger/ranger) using the `multipane` view mode.
 
+If you are using a file browser that supports it, you can also set a custom `file_picker_command` for choosing attachments. This setting is `None` by default, which tells Dodo to use the built-in file picker. This accepts a `{tempfile}` placeholder, where the names of the chosen files should be written after running the command. Here's an example using `ranger --choosefiles`:
+
+    dodo.settings.file_picker_command = "kitty ranger --choosefiles='{tempfile}'"
+
 While Javascript is disabled in the HTML email viewer, you may want to set up a custom HTML sanitizer function as follows:
 
     dodo.util.html2html = dodo.util.clean_html2html
