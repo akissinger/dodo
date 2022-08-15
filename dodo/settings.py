@@ -70,6 +70,16 @@ command is used when viewing attachments, which first dumps the attachments to a
 temp directory given by `{dir}`, then opens that directory in a file browser.
 """
 
+file_picker_command = None
+"""Command used to launch external file picker
+
+This is an optional shell command, which additionally takes the `{tempfile}` placeholder.
+This command is used when picking files to attach to an email. The command should write
+out the chosen files to {tempfile}, which will then be read and deleted, if it exists.
+
+By default, this is set to None, in which case the built-in file picker will be used.
+"""
+
 web_browser_command = ''
 """Web browser to use when clicking links in emails
 

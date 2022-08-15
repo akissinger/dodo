@@ -196,11 +196,30 @@ class ComposePanel(panel.Panel):
         """Attach a file
 
         Opens a file browser for selecting a file to attach. If a file is selected, add it using the "A:"
-        pseudo-header. This will be translated into a proper attachment when the message is sent."""
-        f = QFileDialog.getOpenFileName()
-        if f[0]:
-            self.raw_message_string = util.add_header_line(self.raw_message_string, 'A: ' + f[0])
+        pseudo-header. This will be translated into a proper attachment when the message is sent.
+
+        This command can also use the optional setting file_picker_command to run an external file picker
+        instead of Qt's built-in one."""
+
+        if settings.file_picker_command == None:
+            f = QFileDialog.getOpenFileName()
+            if f[0]:
+                self.raw_message_string = util.add_header_line(self.raw_message_string, 'A: ' + f[0])
+                self.refresh()
+        else:
+            fd, file = tempfile.mkstemp()
+            cmd = settings.file_picker_command.format(tempfile=file)
+            subprocess.run(cmd, shell=True)
+
+            with open(file, 'r') as f1:
+                file_list = f1.read().split('\n')
+            os.remove(file)
+
+            for att in file_list:
+                if att != '':
+                    self.raw_message_string = util.add_header_line(self.raw_message_string, 'A: ' + att)
             self.refresh()
+
 
     def toggle_wrap(self) -> None:
         """Toggle message wrapping
