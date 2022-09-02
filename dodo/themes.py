@@ -60,8 +60,6 @@ solarized_p = {
   'green':     '#859900',
 }
 
-# Catppuccin pallette
-# https://github.com/catppuccin/catppuccin
 cat_macchiato_p = {
   'rosewater':  '#f4dbd6',
   'flamingo':   '#f0c6c6',
@@ -98,18 +96,18 @@ catppuccin_macchiato = {
   'fg_dim': cat_macchiato_p['subtext0'],
   'fg_good': cat_macchiato_p['green'],
   'fg_bad': cat_macchiato_p['red'],
-  'bg_alt': cat_macchiato_p['surface1'],
-  'bg_button': cat_macchiato_p['overlay1'],
-  'fg_button': cat_macchiato_p['crust'],
+  'bg_alt': cat_macchiato_p['crust'],
+  'bg_button': cat_macchiato_p['surface0'],
+  'fg_button': cat_macchiato_p['rosewater'],
   'fg_link': cat_macchiato_p['blue'],
-  'bg_highlight': cat_macchiato_p['peach'],
+  'bg_highlight': cat_macchiato_p['blue'],
   'fg_highlight': cat_macchiato_p['crust'],
   'fg_subject': cat_macchiato_p['text'],
-  'fg_subject_unread': cat_macchiato_p['sapphire'],
+  'fg_subject_unread': cat_macchiato_p['mauve'],
   'fg_subject_flagged': cat_macchiato_p['yellow'],
-  'fg_from': cat_macchiato_p['lavender'],
-  'fg_date': cat_macchiato_p['mauve'],
-  'fg_tags': cat_macchiato_p['teal'],
+  'fg_from': cat_macchiato_p['blue'],
+  'fg_date': cat_macchiato_p['flamingo'],
+  'fg_tags': cat_macchiato_p['peach'],
 }
 """Theme based on the `Catppuchin`_ palette (macchiatto version).
 
