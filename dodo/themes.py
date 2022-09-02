@@ -93,7 +93,7 @@ catppuccin_macchiato = {
   'bg': cat_macchiato_p['base'],
   'fg': cat_macchiato_p['text'],
   'fg_bright': cat_macchiato_p['lavender'],
-  'fg_dim': cat_macchiato_p['subtext0'],
+  'fg_dim': cat_macchiato_p['overlay1'],
   'fg_good': cat_macchiato_p['green'],
   'fg_bad': cat_macchiato_p['red'],
   'bg_alt': cat_macchiato_p['crust'],
