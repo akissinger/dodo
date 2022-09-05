@@ -55,6 +55,10 @@ class MainWindow(QMainWindow):
         def panel_focused(i: int) -> None:
             w = self.tabs.widget(i)
             if w and isinstance(w, panel.Panel):
+                if w in self.app.panel_history:
+                    self.app.panel_history.remove(w)
+                self.app.panel_history.append(w)
+                # print("saving " + repr(w) + " to history")
                 w.setFocus()
                 if w.dirty: w.refresh()
 

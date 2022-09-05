@@ -89,6 +89,7 @@ class Dodo(QApplication):
             QWebEngineUrlScheme.registerScheme(scheme)
 
         # set up GUI
+        self.panel_history = []
         self.main_window = mainwindow.MainWindow(self)
         self.tabs = self.main_window.tabs
         self.command_bar = self.main_window.command_bar
@@ -151,6 +152,14 @@ class Dodo(QApplication):
         w = self.tabs.widget(index)
         if w and isinstance(w, panel.Panel) and not w.keep_open:
             if w.before_close():
+                # remove this panel from the history
+                if w in self.panel_history:
+                    self.panel_history.remove(w)
+                # focus the last focused panel
+                if len(self.panel_history) > 0:
+                    w0 = self.panel_history.pop()
+                    self.tabs.setCurrentWidget(w0)
+                # remove the panel itself
                 self.tabs.removeTab(index)
 
     def open_search(self, query: str, keep_open: bool=False) -> None:
