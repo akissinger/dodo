@@ -80,7 +80,7 @@ dodo.settings.editor_command = "kitty nvim '{file}'"
 dodo.settings.file_browser_command = "fman '{dir}' /home/user/Documents"
 ```
 
-A theme is just a Python dictionary mapping some fixed color names to HTML color codes. Currently, the themes implemented in [themes.py](https://github.com/akissinger/dodo/blob/master/dodo/themes.py) are `nord`, `solarized_light` and `solarized_dark`. If you want more, feel free to roll your own, or (better) send me a pull request!
+A theme is just a Python dictionary mapping some fixed color names to HTML color codes. Currently, the themes implemented in [themes.py](https://github.com/akissinger/dodo/blob/master/dodo/themes.py) are `catppuccin_macchiato`, `nord`, `solarized_light` and `solarized_dark`. If you want more, feel free to roll your own, or (better) send me a pull request!
 
 All of the settings of the form `..._command` are given as shell command. The `editor_command` setting takes a placeholder `{file}` for the file to edit and `file_browser_command` takes the placeholder `{dir}` for the directory to browse.
 
