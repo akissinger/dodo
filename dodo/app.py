@@ -101,8 +101,10 @@ class Dodo(QApplication):
             timer.timeout.connect(self.sync_mail)
             timer.start(settings.sync_mail_interval * 1000)
 
-        # open inbox and make un-closeable
-        self.open_search('tag:inbox', keep_open=True)
+        # open init_queries and make un-closeable
+        #
+        for query in settings.init_queries:
+            self.open_search(query, keep_open=True)
 
     def show_help(self) -> None:
         """Show help window"""
