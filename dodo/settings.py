@@ -135,6 +135,13 @@ automatically when a panel (or Dodo) is closed. Possible values are: 'always', '
 or 'ask'.
 """
 
+init_queries = [ 'tag:inbox' ]
+"""List of non closable queries open at startup
+
+You can save query with `notmuch config set query:inbox "tag:inbox and not
+tag:trash"` and use `query:inbox` as a search term.
+"""
+
 # security
 html_block_remote_requests = True
 """Block remote requests for HTML messages
