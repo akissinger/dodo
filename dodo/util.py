@@ -17,7 +17,7 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import Iterator, List, Tuple, Dict
+from typing import Iterator, List, Tuple, Dict, Union
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeyEvent
@@ -44,7 +44,7 @@ def clean_html2html(s: str) -> str:
     """
     c = Cleaner()
     return c.clean(s)
-    
+
 # Pure python html2text, but results don't look nearly as good as w3m -dump
 #
 # def python_html2text(s):
@@ -62,7 +62,7 @@ def w3m_html2text(s: str) -> str:
     :returns: plain text representation of the HTML
     """
 
-    (fd, file) = tempfile.mkstemp(suffix='.html') 
+    (fd, file) = tempfile.mkstemp(suffix='.html')
     with os.fdopen(fd, 'w') as f:
         f.write(s)
     p = subprocess.run(['w3m', '-O', 'utf8', '-dump', file],
@@ -282,6 +282,20 @@ def email_is_me(e: str) -> bool:
 
     return False
 
+def email_smtp_account_index(e: str) -> Union[int, None]:
+    """Index in settings.smtp_accounts of account having the provided email address
+
+    This method is used e.g. by :class:`dodo.compose.Compose` to autmatically
+    select the account to be used when replying to a mail. It returns the index
+    of first matching account or None if provided email does not match
+    any smtp account.  """
+
+    return next(
+            (i for i, acc in enumerate(settings.smtp_accounts) if
+             strip_email_address(e) ==
+             strip_email_address(settings.email_address[acc])
+             ), None)
+
 def separate_headers(s: str) -> Tuple[str, str]:
     """Split a message into its header part and body part"""
 
@@ -325,11 +339,11 @@ def replace_header(s: str, h: str, new_value: str) -> str:
     """Replace a single header without doing full message parsing
 
     Note this ONLY works for short (i.e. unwrapped) headers."""
-    
+
     (headers, body) = separate_headers(s)
     old_h = re.compile('^' + h + ':.*$', re.MULTILINE)
     headers = old_h.sub(h + ': ' + new_value, headers)
-    
+
     return headers + '\n' + body
 
 
