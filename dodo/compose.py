@@ -72,6 +72,35 @@ class ComposePanel(panel.Panel):
         self.raw_message_string = f'From: {self.email_address()}\n'
         self.message_string = ''
 
+        if msg:
+            senders: List[str] = []
+            recipients: List[str] = []
+            email_sep = re.compile('\s*,\s*')
+            if 'From' in msg['headers']:
+                senders.append(msg["headers"]["From"])
+            if 'To' in msg['headers']:
+                recipients += email_sep.split(msg['headers']['To'])
+            if 'Cc' in msg['headers']:
+                recipients += email_sep.split(msg['headers']['Cc'])
+
+            # Select current_account by checking which smtp_account's address
+            # is found first in the headers. Start with the recipient headers
+            # and continus in the senders. Select account with index 0 if none
+            # of the smtp_accounts matches.
+            if isinstance(settings.email_address, dict):
+                self.current_account = next(
+                        (
+                         util.email_smtp_account_index(m) for m in
+                         recipients + senders if
+                         util.email_smtp_account_index(m) is not None
+                         ), 0)
+            else:
+                self.current_account = 0
+        else:
+            self.current_account = 0
+
+        self.raw_message_string = f'From: {self.email_address()}\n'
+
         if msg and mode == 'mailto':
             if 'To' in msg['headers']:
                 self.raw_message_string += f'To: {msg["headers"]["To"]}\n'
@@ -84,17 +113,7 @@ class ComposePanel(panel.Panel):
             self.raw_message_string += '\n\n\n'
 
         elif msg and (mode == 'reply' or mode == 'replyall'):
-            send_to: List[str] = []
-            email_sep = re.compile('\s*,\s*')
-
-            if 'From' in msg['headers']:
-                send_to.append(msg["headers"]["From"])
-            if 'To' in msg['headers']:
-                send_to += email_sep.split(msg['headers']['To'])
-            if 'Cc' in msg['headers']:
-                send_to += email_sep.split(msg['headers']['Cc'])
-
-            send_to = [e for e in send_to if not util.email_is_me(e)]
+            send_to = [e for e in senders + recipients if not util.email_is_me(e)]
 
             # put the first non-me email in To
             if len(send_to) != 0:
