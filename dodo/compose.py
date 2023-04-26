@@ -28,7 +28,6 @@ import email.utils
 import email.parser
 import email.generator
 import mimetypes
-import gnupg
 from io import BytesIO
 import subprocess
 from subprocess import PIPE, Popen, TimeoutExpired
@@ -41,6 +40,11 @@ from . import panel
 from . import keymap
 from . import settings
 from . import util
+
+try:
+    import gnupg
+except ImportError as ex:
+    pass
 
 class ComposePanel(panel.Panel):
     """A panel for composing messages

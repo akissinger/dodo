@@ -378,12 +378,6 @@ class ThreadPanel(panel.Panel):
                   <td><b style="color: {settings.theme["fg_bright"]}">Tags:&nbsp;</b></td>
                   <td><span style="color: {settings.theme["fg_tags"]}; font-family: {settings.tag_font}; font-size: {settings.tag_font_size}">{tags}</span></td>
                 </tr>"""
-
-            if 'crypto' in m and 'signed' in m['crypto']:
-                header_html += f"""<tr>
-                  <td><b style="color: {settings.theme["fg_bright"]}">Signature:&nbsp;</b></td>
-                  <td>{m["crypto"]["signed"]["status"][0]}</td>
-                </tr>"""
             attachments = [f'[{part["filename"]}]' for part in util.message_parts(m)
                     if part.get('content-disposition') == 'attachment' and 'filename' in part]
 
@@ -392,6 +386,21 @@ class ThreadPanel(panel.Panel):
                   <td><b style="color: {settings.theme["fg_bright"]}">Attachments:&nbsp;</b></td>
                   <td><span style="color: {settings.theme["fg_tags"]}">{' '.join(attachments)}</span></td>
                 </tr>"""
+
+            # pgp-Signature Status
+            for body in m['body']:
+                if 'sigstatus' in body:
+                    for sig in body['sigstatus']:
+                        header_html += f"""<tr>
+                          <td><b style="color: {settings.theme["fg_bright"]}">Pgp-signed:&nbsp;</b></td>
+                          <td>{sig['status']}: """
+                        if sig['status'] == 'error':
+                            header_html += f"{' '.join(sig['errors'].keys())} (keyid={sig['keyid']})"
+                        elif sig['status'] == 'good':
+                            header_html += f"{sig['userid']} ({sig['fingerprint']})"
+                        elif sig['status'] == 'bad':
+                            header_html += f"keyid={sig['keyid']}"
+                        header_html += "</td></tr>"
 
             header_html += '</table>'
             self.message_info.setHtml(header_html)
