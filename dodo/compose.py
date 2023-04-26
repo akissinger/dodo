@@ -26,7 +26,10 @@ import mailbox
 import email
 import email.utils
 import email.parser
+import email.generator
 import mimetypes
+import gnupg
+from io import BytesIO
 import subprocess
 from subprocess import PIPE, Popen, TimeoutExpired
 import tempfile
@@ -60,7 +63,7 @@ class ComposePanel(panel.Panel):
         self.current_account = 0
 
         self.wrap_message = settings.wrap_message
-        
+
         self.raw_message_string = f'From: {self.email_address()}\n'
         self.message_string = ''
 
@@ -181,7 +184,7 @@ class ComposePanel(panel.Panel):
         # only open one editor at a time
         if self.editor_thread is None:
             self.editor_thread = EditorThread(self, parent=self)
-            
+
             def done() -> None:
                 if self.editor_thread:
                     self.editor_thread.deleteLater()
@@ -318,6 +321,42 @@ class SendmailThread(QThread):
         super().__init__(parent)
         self.panel = panel
 
+    def sign(self, msg: email.message.EmailMessage) -> email.message.EmailMessage:
+
+        RFC4880_HASH_ALGO = {'1': "MD5", '2': "SHA1", '3': "RIPEMD160",
+                             '8': "SHA256", '9': "SHA384", '10': "SHA512",
+                             '11': "SHA224"}
+
+        signed_mail = email.message.EmailMessage()
+        # Move the non Content-* headers to the new message
+        for k, v in msg.items():
+            if not k.lower().startswith('content-'):
+                signed_mail[k] = v
+                del msg[k]
+        # Attach the original message body with content headers
+        signed_mail.set_type("multipart/signed")
+        signed_mail.set_param("protocol", "application/pgp-signature")
+        signed_mail.attach(msg)
+        # Generate a copy of the text to be signed with as per rfc-3156
+        # required <CR><LF> line separator.
+        # Set max_line_length to None to avoid folding of long Content headers
+        # which would result in an invalid signature
+        gpg_policy = msg.policy.clone(max_line_length=None, linesep='\r\n')
+        to_sign = BytesIO()
+        email.generator.BytesGenerator(to_sign, policy=gpg_policy).flatten(msg)
+        to_sign.seek(0)
+        gpg = gnupg.GPG(gnupghome=settings.gnupg_home, use_agent=True)
+        sig = gpg.sign_file(to_sign, keyid=settings.gnupg_keyid, detach=True)
+        to_sign.close()
+        # Attach the signature to the new message
+        sigpart = email.message.EmailMessage()
+        sigpart['Content-Type'] = 'application/pgp-signature'
+        sigpart.set_payload(str(sig))
+        signed_mail.attach(sigpart)
+        signed_mail.set_param("micalg", 'pgp-' +
+                              RFC4880_HASH_ALGO[sig.hash_algo].lower())
+        return signed_mail
+
     def run(self) -> None:
         try:
             account = self.panel.account_name()
@@ -371,6 +410,9 @@ class SendmailThread(QThread):
                         eml.add_attachment(data, maintype=ty[0], subtype=ty[1], filename=os.path.basename(att))
                 except IOError:
                     print("Can't read attachment: " + att)
+
+            if settings.gnupg_keyid:
+                eml = self.sign(eml)
 
             cmd = settings.send_mail_command.replace('{account}', account)
             sendmail = Popen(cmd, stdin=PIPE, encoding='utf8', shell=True)

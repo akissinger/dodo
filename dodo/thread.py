@@ -188,7 +188,7 @@ class ThreadModel(QAbstractItemModel):
     def refresh(self) -> None:
         """Refresh the model by calling "notmuch show"."""
 
-        r = subprocess.run(['notmuch', 'show', '--format=json', '--include-html', self.thread_id],
+        r = subprocess.run(['notmuch', 'show', '--format=json', '--verify', '--include-html', self.thread_id],
                 stdout=subprocess.PIPE, encoding='utf8')
         self.json_str = r.stdout
         self.d = json.loads(self.json_str)
@@ -260,7 +260,7 @@ class ThreadModel(QAbstractItemModel):
 
         This is essentially an alias for :func:`num_messages`, but it also returns 0 if an index is
         given to tell Qt not to add any child items."""
-        
+
         if not index or not index.isValid(): return self.num_messages()
         else: return 0
 
@@ -379,6 +379,11 @@ class ThreadPanel(panel.Panel):
                   <td><span style="color: {settings.theme["fg_tags"]}; font-family: {settings.tag_font}; font-size: {settings.tag_font_size}">{tags}</span></td>
                 </tr>"""
 
+            if 'crypto' in m and 'signed' in m['crypto']:
+                header_html += f"""<tr>
+                  <td><b style="color: {settings.theme["fg_bright"]}">Signature:&nbsp;</b></td>
+                  <td>{m["crypto"]["signed"]["status"][0]}</td>
+                </tr>"""
             attachments = [f'[{part["filename"]}]' for part in util.message_parts(m)
                     if part.get('content-disposition') == 'attachment' and 'filename' in part]
 
@@ -435,7 +440,7 @@ class ThreadPanel(panel.Panel):
             pages: Optional[Union[float,int]]=None,
             pos: Optional[str]=None) -> None:
         """Scroll the message body
-        
+
         This operates in 3 different modes, depending on which arguments are given. Precisely one of the
         three arguments `lines`, `pages`, and `pos` should be provided.
 
@@ -514,10 +519,8 @@ class ThreadPanel(panel.Panel):
 
         m = self.model.message_at(self.current_message)
         temp_dir, _ = util.write_attachments(m)
-        
+
         if temp_dir:
             self.temp_dirs.append(temp_dir)
             cmd = settings.file_browser_command.format(dir=temp_dir)
             subprocess.Popen(cmd, shell=True)
-
-
