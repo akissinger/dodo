@@ -331,27 +331,34 @@ class SendmailThread(QThread):
                              '8': "SHA256", '9': "SHA384", '10': "SHA512",
                              '11': "SHA224"}
 
-        signed_mail = email.message.EmailMessage()
-        # Move the non Content-* headers to the new message
-        for k, v in msg.items():
+        # Generate a copy of the message with <CR><LF> line  separators as
+        # required .per rfc-3156
+        # Moreover, by working on the copy we leave the original message
+        # (msg) unaltered.
+        gpg_policy = msg.policy.clone(linesep='\r\n')
+        text_to_sign = BytesIO()
+        gen = email.generator.BytesGenerator(text_to_sign, policy=gpg_policy)
+        gen.flatten(msg)
+        text_to_sign.seek(0)
+        msg_to_sign = email.message_from_binary_file(text_to_sign, policy=gpg_policy)
+        text_to_sign.close()  # Discard the buffer
+
+        # Create a new message that will contain the original message and the
+        # pgp-signature. Move the non Content-* headers to the new message
+        signed_mail = email.message.EmailMessage(policy=gpg_policy)
+        for k, v in msg_to_sign.items():
             if not k.lower().startswith('content-'):
                 signed_mail[k] = v
-                del msg[k]
-        # Attach the original message body with content headers
+                del msg_to_sign[k]
         signed_mail.set_type("multipart/signed")
         signed_mail.set_param("protocol", "application/pgp-signature")
-        signed_mail.attach(msg)
-        # Generate a copy of the text to be signed with as per rfc-3156
-        # required <CR><LF> line separator.
-        # Set max_line_length to None to avoid folding of long Content headers
-        # which would result in an invalid signature
-        gpg_policy = msg.policy.clone(max_line_length=None, linesep='\r\n')
-        to_sign = BytesIO()
-        email.generator.BytesGenerator(to_sign, policy=gpg_policy).flatten(msg)
-        to_sign.seek(0)
+
+        # Attach the message to be signed
+        signed_mail.attach(msg_to_sign)
+
+        # Create the signature based on attached message
         gpg = gnupg.GPG(gnupghome=settings.gnupg_home, use_agent=True)
-        sig = gpg.sign_file(to_sign, keyid=settings.gnupg_keyid, detach=True)
-        to_sign.close()
+        sig = gpg.sign(str(signed_mail.get_payload(0)), keyid=settings.gnupg_keyid, detach=True)
         # Attach the signature to the new message
         sigpart = email.message.EmailMessage()
         sigpart['Content-Type'] = 'application/pgp-signature'
