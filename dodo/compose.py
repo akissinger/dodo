@@ -41,6 +41,7 @@ from . import keymap
 from . import settings
 from . import util
 
+# gnupg is only needed for pgp/mime support, do not throw when not present
 try:
     import gnupg
 except ImportError as ex:
