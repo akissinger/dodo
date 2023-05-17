@@ -17,9 +17,11 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+import subprocess
 from typing import Dict, List, Tuple, Optional, Callable, Any
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QKeyEvent
+from PyQt6 import QtCore
 
 from . import app
 from . import util
@@ -38,6 +40,46 @@ class CommandBar(QLineEdit):
         self.mode = ''
         self.history: Dict[str, Tuple[int, List[str]]] = {}
         self.callback: Optional[Callable[[str], Any]] = None
+
+        self.completer = self._get_completer()
+
+    def _get_completer(self):
+        """Prepare the completer for tags."""
+        r = subprocess.run(['notmuch', 'search', '--output=tags', '*'], stdout=subprocess.PIPE)
+        tags = r.stdout.decode('utf-8').splitlines()
+        completer = QCompleter(tags, self)
+        completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
+        completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        completer.setFilterMode(QtCore.Qt.MatchFlag.MatchContains)
+        completer.setModelSorting(QCompleter.ModelSorting.UnsortedModel)
+        completer.setWidget(self)
+        completer.activated.connect(self.handleCompletion)
+
+        self.textChanged.connect(self.handleTextChanged)
+        return completer
+
+    def handleTextChanged(self, text: str):
+        """Open suggestion dialog if a matching tag is present."""
+        prefix = text.rsplit(sep=" ", maxsplit=1)[-1]
+        if len(prefix) == 0:
+            return
+        elif prefix[0] in ["+", "-"]:
+            prefix = prefix[1:]
+        elif prefix[:4] == "tag:":
+            prefix = prefix[4:]
+        else:
+            prefix = ""
+        if len(prefix) > 0:
+            self.completer.setCompletionPrefix(prefix)
+
+            popup = self.completer.popup()
+            popup.setCurrentIndex(self.completer.completionModel().index(0, 0))
+            self.completer.complete()
+
+    def handleCompletion(self, text):
+        """Use the choosen tag."""
+        prefix = self.completer.completionPrefix()
+        self.setText(self.text()[:-len(prefix)] + text + " ")
 
     def open(self, mode: str, callback: Callable[[str], Any]) -> None:
         """Open the command bar and give it focus
@@ -84,6 +126,9 @@ class CommandBar(QLineEdit):
         history associated with the current mode, then calls :func:`close_bar` to clear
         the command and close the command bar."""
 
+        if self.completer.popup().isVisible():
+            return
+
         if self.callback:
             self.callback(self.text())
 
@@ -120,17 +165,29 @@ class CommandBar(QLineEdit):
                 self.history[self.mode] = (pos, h)
                 self.setText(h[pos])
 
-
     def keyPressEvent(self, e: QKeyEvent) -> None:
-        """Process keyboard input while the command bar is in focus
+        """Process keyboard input while the command bar is in focus.
 
         Translate the key event into a string with :func:`~dodo.util.key_string`
         and check if it is in :func:`~dodo.keymap.command_bar_keymap`. If it is,
         fire the associated function. Otherwise, pass the event on to the text
         box.
-        
+
         Note: Key chords are NOT supported in the command bar.
         """
+        if self.completer.popup().isVisible() and e.key() in [
+            QtCore.Qt.Key.Key_Enter,
+            QtCore.Qt.Key.Key_Return,
+            QtCore.Qt.Key.Key_Up,
+            QtCore.Qt.Key.Key_Down,
+            QtCore.Qt.Key.Key_Tab,
+            QtCore.Qt.Key.Key_Backtab,
+            QtCore.Qt.Key.Key_Escape,
+        ]:
+            # ingnore keymaps if the popup is shown!
+            e.ignore()
+            return
+
         k = util.key_string(e)
         if k in keymap.command_bar_keymap:
             keymap.command_bar_keymap[k][1](self)
