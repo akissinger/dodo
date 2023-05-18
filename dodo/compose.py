@@ -60,7 +60,7 @@ class ComposePanel(panel.Panel):
         self.current_account = 0
 
         self.wrap_message = settings.wrap_message
-        
+
         self.raw_message_string = f'From: {self.email_address()}\n'
         self.message_string = ''
 
@@ -181,7 +181,7 @@ class ComposePanel(panel.Panel):
         # only open one editor at a time
         if self.editor_thread is None:
             self.editor_thread = EditorThread(self, parent=self)
-            
+
             def done() -> None:
                 if self.editor_thread:
                     self.editor_thread.deleteLater()
@@ -389,7 +389,7 @@ class SendmailThread(QThread):
                 key = mailbox.Maildir(sent_dir).add(m)
                 # print(f'add: {key}')
 
-                subprocess.run(['notmuch', 'new'])
+                subprocess.run(['notmuch', 'new', '--no-hooks'])
 
                 if ((self.panel.mode == 'reply' or self.panel.mode == 'replyall') and
                         self.panel.msg and 'id' in self.panel.msg):
