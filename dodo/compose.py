@@ -66,7 +66,7 @@ class ComposePanel(panel.Panel):
         self.layout().addWidget(self.message_view)
         self.status = f'<i style="color:{settings.theme["fg"]}">draft</i>'
         self.current_account = 0
-
+        self.pgp_sign = settings.gnupg_keyid is not None
         self.wrap_message = settings.wrap_message
 
         self.raw_message_string = f'From: {self.email_address()}\n'
@@ -175,7 +175,7 @@ class ComposePanel(panel.Panel):
         </style>
         <body>
         {account_str}
-        <p>{self.status}</p>
+        <p>{self.status} {'PGP-Sign' if self.pgp_sign else ''}</p>
         <pre style="white-space: pre-wrap">{text}</pre>
         </body></html>""")
 
@@ -236,6 +236,12 @@ class ComposePanel(panel.Panel):
         copy of the text for editing."""
 
         self.wrap_message = not self.wrap_message
+        self.refresh()
+
+    def toggle_pgp_sign(self) -> None:
+        # Silently ignore when gnupg_keyid is not set
+        if not settings.gnupg_keyid: return
+        self.pgp_sign = True if self.pgp_sign is False else False
         self.refresh()
 
     def account_name(self) -> str:
@@ -423,7 +429,7 @@ class SendmailThread(QThread):
                 except IOError:
                     print("Can't read attachment: " + att)
 
-            if settings.gnupg_keyid:
+            if self.panel.pgp_sign:
                 eml = self.sign(eml)
 
             cmd = settings.send_mail_command.replace('{account}', account)

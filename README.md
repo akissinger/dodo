@@ -310,7 +310,7 @@ The thread view panel will show the signature status of pgp-signed messages as r
 
 Outgoing mail can be signed by setting dodo.settings.gnupg_keyid to the id for the key which will be used to do the signing.
 
-Currently, setting this parameter will result in all mail for all smtp accounts to be signed.
+Signing can be disabled/enabled on a per-message basis in the comopose view by pressing the 's' key (or the key is mapped to the `toggle_pgp_sign` function)
 
 You might also have to set dodo.settings.gnupg_home.
 
