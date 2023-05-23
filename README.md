@@ -28,6 +28,7 @@ If you have already used `notmuch` for email, there's not much to do here :). If
 * a sendmail-compatible SMTP client to send mail ([msmtp](https://marlam.de/msmtp/) is the default)
 * [notmuch](https://notmuchmail.org/) for email searching and tagging
 * [w3m](http://w3m.sourceforge.net/) for translating HTML messages into plaintext
+* [python-gnupg](https://pypi.org/project/python-gnupg/) for pgp/mime support (optional)
 
 All of this is pretty standard stuff, and should be installable via your package manager on Linux/Mac/etc. If you don't know how to set these things up already, see the respective websites or the "Setting up the prerequisites" section below for a quick reference.
 
@@ -302,6 +303,16 @@ Here's a `~/.notmuch-config` which is roughly like the one I use:
 
     [maildir]
     synchronize_flags=true
+
+## Initial PGP/MIME support
+
+The thread view panel will show the signature status of pgp-signed messages as reported by notmuch.
+
+Outgoing mail can be signed by setting dodo.settings.gnupg_keyid to the id for the key which will be used to do the signing.
+
+Signing can be disabled/enabled on a per-message basis in the comopose view by pressing the 's' key (or the key is mapped to the `toggle_pgp_sign` function)
+
+You might also have to set dodo.settings.gnupg_home.
 
 ## More Screenshots
 

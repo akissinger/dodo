@@ -135,6 +135,21 @@ automatically when a panel (or Dodo) is closed. Possible values are: 'always', '
 or 'ask'.
 """
 
+gnupg_home = None
+"""Directory containg GnuPG keys
+
+If set to None, GnuPG will use whatever directory is the default (consult the
+GnuPG documentation for more information on what this might be).
+"""
+
+gnupg_keyid = None
+"""The id of the key to be used for GnuPG-signing mail messages.
+
+If set to the id of a valid GnuPG private signing key, sent messages will be
+cryptographically signed according to rfc3156 using the GnuPG sotware, which
+should be installed and configured.  Requires python-gnupg
+(https://pypi.org/project/python-gnupg/)"""
+
 init_queries = [ 'tag:inbox' ]
 """List of non closable queries open at startup
 

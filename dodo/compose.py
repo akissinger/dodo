@@ -26,7 +26,9 @@ import mailbox
 import email
 import email.utils
 import email.parser
+import email.generator
 import mimetypes
+from io import BytesIO
 import subprocess
 from subprocess import PIPE, Popen, TimeoutExpired
 import tempfile
@@ -38,6 +40,12 @@ from . import panel
 from . import keymap
 from . import settings
 from . import util
+
+# gnupg is only needed for pgp/mime support, do not throw when not present
+try:
+    import gnupg
+except ImportError as ex:
+    pass
 
 class ComposePanel(panel.Panel):
     """A panel for composing messages
@@ -58,9 +66,9 @@ class ComposePanel(panel.Panel):
         self.layout().addWidget(self.message_view)
         self.status = f'<i style="color:{settings.theme["fg"]}">draft</i>'
         self.current_account = 0
-
+        self.pgp_sign = settings.gnupg_keyid is not None
         self.wrap_message = settings.wrap_message
-        
+
         self.raw_message_string = f'From: {self.email_address()}\n'
         self.message_string = ''
 
@@ -167,7 +175,7 @@ class ComposePanel(panel.Panel):
         </style>
         <body>
         {account_str}
-        <p>{self.status}</p>
+        <p>{self.status} {'PGP-Sign' if self.pgp_sign else ''}</p>
         <pre style="white-space: pre-wrap">{text}</pre>
         </body></html>""")
 
@@ -181,7 +189,7 @@ class ComposePanel(panel.Panel):
         # only open one editor at a time
         if self.editor_thread is None:
             self.editor_thread = EditorThread(self, parent=self)
-            
+
             def done() -> None:
                 if self.editor_thread:
                     self.editor_thread.deleteLater()
@@ -228,6 +236,12 @@ class ComposePanel(panel.Panel):
         copy of the text for editing."""
 
         self.wrap_message = not self.wrap_message
+        self.refresh()
+
+    def toggle_pgp_sign(self) -> None:
+        # Silently ignore when gnupg_keyid is not set
+        if not settings.gnupg_keyid: return
+        self.pgp_sign = True if self.pgp_sign is False else False
         self.refresh()
 
     def account_name(self) -> str:
@@ -318,6 +332,49 @@ class SendmailThread(QThread):
         super().__init__(parent)
         self.panel = panel
 
+    def sign(self, msg: email.message.EmailMessage) -> email.message.EmailMessage:
+
+        RFC4880_HASH_ALGO = {'1': "MD5", '2': "SHA1", '3': "RIPEMD160",
+                             '8': "SHA256", '9': "SHA384", '10': "SHA512",
+                             '11': "SHA224"}
+
+        # Generate a copy of the message with <CR><LF> line  separators as
+        # required .per rfc-3156
+        # Moreover, by working on the copy we leave the original message
+        # (msg) unaltered.
+        gpg_policy = msg.policy.clone(linesep='\r\n')
+        text_to_sign = BytesIO()
+        gen = email.generator.BytesGenerator(text_to_sign, policy=gpg_policy)
+        gen.flatten(msg)
+        text_to_sign.seek(0)
+        msg_to_sign = email.message_from_binary_file(text_to_sign, policy=gpg_policy)
+        text_to_sign.close()  # Discard the buffer
+
+        # Create a new message that will contain the original message and the
+        # pgp-signature. Move the non Content-* headers to the new message
+        signed_mail = email.message.EmailMessage(policy=gpg_policy)
+        for k, v in msg_to_sign.items():
+            if not k.lower().startswith('content-'):
+                signed_mail[k] = v
+                del msg_to_sign[k]
+        signed_mail.set_type("multipart/signed")
+        signed_mail.set_param("protocol", "application/pgp-signature")
+
+        # Attach the message to be signed
+        signed_mail.attach(msg_to_sign)
+
+        # Create the signature based on attached message
+        gpg = gnupg.GPG(gnupghome=settings.gnupg_home, use_agent=True)
+        sig = gpg.sign(str(signed_mail.get_payload(0)), keyid=settings.gnupg_keyid, detach=True)
+        # Attach the signature to the new message
+        sigpart = email.message.EmailMessage()
+        sigpart['Content-Type'] = 'application/pgp-signature'
+        sigpart.set_payload(str(sig))
+        signed_mail.attach(sigpart)
+        signed_mail.set_param("micalg", 'pgp-' +
+                              RFC4880_HASH_ALGO[sig.hash_algo].lower())
+        return signed_mail
+
     def run(self) -> None:
         try:
             account = self.panel.account_name()
@@ -371,6 +428,9 @@ class SendmailThread(QThread):
                         eml.add_attachment(data, maintype=ty[0], subtype=ty[1], filename=os.path.basename(att))
                 except IOError:
                     print("Can't read attachment: " + att)
+
+            if self.panel.pgp_sign:
+                eml = self.sign(eml)
 
             cmd = settings.send_mail_command.replace('{account}', account)
             sendmail = Popen(cmd, stdin=PIPE, encoding='utf8', shell=True)
