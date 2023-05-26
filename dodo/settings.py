@@ -269,3 +269,51 @@ Placeholders may be included in curly brackets for any color named in the curren
 well as {message_font} and {message_font_size}. Literal curly braces should be doubled, i.e.
 '{' should be '{{' and '}' should be '}}'.
 """
+
+message2html_filters = []
+"""A list of functions to extract text from a mail message JSON.
+
+Every item in this list should be a function, which either returns a HTML string
+(which gets formatted inside a ``<pre>`` tag), or returns ``None``. The first
+function to return a non-``None`` value is used to render the message. If all functions
+return ``None``, the default rendering is used.
+
+The default rendering runs the following functions in order, which might also be useful
+when writing your own filters:
+
+- :func:`~dodo.util.body_text` (to get a body string from the JSON)
+- :func:`~dodo.util.simple_escape` (to make the string HTML-safe)
+- :func:`~dodo.util.colorize_text` (to colorize quoted text)
+- :func:`~dodo.util.linkify` (to detect URLs)
+
+Example configuration using this feature to highlight markdown syntax:
+
+.. code-block:: python
+
+  import pygments.formatters
+  from dodo import util
+
+  def render_github(msg):
+      # Double imports needed due to how dodo runs config.py
+      import pygments.lexers
+      import pygments.formatters
+
+      # If you use some sort of auto-tagging, you might want to match on
+      # tags instead of headers.
+      if "headers" not in msg or "From" not in msg["headers"]:
+          return None
+      if not msg["headers"]["From"].endswith("<notifications@github.com>"):
+          return None
+
+      text = util.body_text(msg)
+      lexer = pygments.lexers.MarkdownLexer()
+      formatter = pygments.formatters.HtmlFormatter(nowrap=True)
+      highlighted = pygments.highlight(text, lexer, formatter)
+      return util.linkify(highlighted)
+
+  dodo.settings.message2html_filters = [render_github]
+
+  # Available styles: https://pygments.org/styles/
+  pygments_css = pygments.formatters.HtmlFormatter(style="gruvbox-dark").get_style_defs()
+  dodo.settings.message_css += pygments_css.replace("{", "{{").replace("}", "}}")
+"""
