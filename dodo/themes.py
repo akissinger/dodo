@@ -89,6 +89,51 @@ cat_macchiato_p = {
   'crust':      '#181926',
 }
 
+gruvbox_p = {
+  'dark0_hard':     '#1d2021',
+  'dark0':          '#282828',
+  'dark0_soft':     '#32302f',
+  'dark1':          '#3c3836',
+  'dark2':          '#504945',
+  'dark3':          '#665c54',
+  'dark4':          '#7c6f64',
+
+  'gray_245':       '#928374',
+  'gray_244':       '#928374',
+
+  'light0_hard':    '#f9f5d7',
+  'light0':         '#fbf1c7',
+  'light0_soft':    '#f2e5bc',
+  'light1':         '#ebdbb2',
+  'light2':         '#d5c4a1',
+  'light3':         '#bdae93',
+  'light4':         '#a89984',
+
+  'bright_red':     '#fb4934',
+  'bright_green':   '#b8bb26',
+  'bright_yellow':  '#fabd2f',
+  'bright_blue':    '#83a598',
+  'bright_purple':  '#d3869b',
+  'bright_aqua':    '#8ec07c',
+  'bright_orange':  '#fe8019',
+
+  'neutral_red':    '#cc241d',
+  'neutral_green':  '#98971a',
+  'neutral_yellow': '#d79921',
+  'neutral_blue':   '#458588',
+  'neutral_purple': '#b16286',
+  'neutral_aqua':   '#689d6a',
+  'neutral_orange': '#d65d0e',
+
+  'faded_red':      '#9d0006',
+  'faded_green':    '#79740e',
+  'faded_yellow':   '#b57614',
+  'faded_blue':     '#076678',
+  'faded_purple':   '#8f3f71',
+  'faded_aqua':     '#427b58',
+  'faded_orange':   '#af3a03',
+}
+
 catppuccin_macchiato = {
   'bg': cat_macchiato_p['base'],
   'fg': cat_macchiato_p['text'],
@@ -188,6 +233,79 @@ nord = {
 
 .. _Nord: https://www.nordtheme.com/
 """
+
+gruvbox_light = {
+  'bg': gruvbox_p['light0'],
+  'fg': gruvbox_p['dark1'],
+  'fg_bright': gruvbox_p['dark0'],
+  'fg_dim': gruvbox_p['dark2'],
+  'fg_good': gruvbox_p['neutral_green'],
+  'fg_bad': gruvbox_p['neutral_red'],
+  'bg_alt': gruvbox_p['light1'],
+  'bg_button': gruvbox_p['light1'],
+  'fg_button': gruvbox_p['dark2'],
+  'fg_link': gruvbox_p['neutral_purple'],
+  'bg_highlight': gruvbox_p['light0'],
+  'fg_highlight': gruvbox_p['neutral_yellow'],
+  'fg_subject': gruvbox_p['dark3'],
+  'fg_subject_unread': gruvbox_p['neutral_green'],
+  'fg_subject_flagged': gruvbox_p['neutral_orange'],
+  'fg_from': gruvbox_p['neutral_blue'],
+  'fg_date': gruvbox_p['neutral_aqua'],
+  'fg_tags': gruvbox_p['neutral_purple'],
+}
+"""Theme based on the `Gruvbox`_ palette (light background)
+
+.. _Gruvbox: https://github.com/morhetz/gruvbox
+"""
+
+gruvbox_light_hard = gruvbox_light.copy()
+"""Theme based on the `Gruvbox`_ palette (light background, hard contrast)
+
+.. _Gruvbox: https://github.com/morhetz/gruvbox
+"""
+
+gruvbox_light_soft = gruvbox_light.copy()
+"""Theme based on the `Gruvbox`_ palette (light background, soft contrast)
+
+.. _Gruvbox: https://github.com/morhetz/gruvbox
+"""
+
+gruvbox_light_hard['bg'] = gruvbox_p['light0_hard']
+gruvbox_light_soft['bg'] = gruvbox_p['light0_soft']
+
+gruvbox_dark = gruvbox_light.copy()
+"""Theme based on the `Gruvbox`_ palette (dark background)
+
+.. _Gruvbox: https://github.com/morhetz/gruvbox
+"""
+gruvbox_dark.update({
+  'bg': gruvbox_p['dark0'],
+  'fg': gruvbox_p['light1'],
+  'fg_bright': gruvbox_p['light0'],
+  'fg_dim': gruvbox_p['light2'],
+  'bg_alt': gruvbox_p['dark1'],
+  'bg_button': gruvbox_p['dark1'],
+  'fg_button': gruvbox_p['light2'],
+  'bg_highlight': gruvbox_p['dark0'],
+  'fg_subject': gruvbox_p['light3'],
+})
+
+gruvbox_dark_hard = gruvbox_dark.copy()
+"""Theme based on the `Gruvbox`_ palette (dark background, hard contrast)
+
+.. _Gruvbox: https://github.com/morhetz/gruvbox
+"""
+
+gruvbox_dark_soft = gruvbox_dark.copy()
+"""Theme based on the `Gruvbox`_ palette (dark background, soft contrast)
+
+.. _Gruvbox: https://github.com/morhetz/gruvbox
+"""
+
+gruvbox_dark_hard['bg'] = gruvbox_p['dark0_hard']
+gruvbox_dark_soft['bg'] = gruvbox_p['dark0_soft']
+
 
 def apply_theme(theme: dict) -> None:
     """"Apply the given theme to GUI components

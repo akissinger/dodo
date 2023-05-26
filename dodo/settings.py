@@ -178,8 +178,8 @@ theme = themes.nord
 """The GUI theme
 
 A theme is a dictionary mapping a dozen or so named colors to HEX values.
-Several themes are defined in `dodo.themes`, based on the popular Nord
-and Solarized color palettes.
+Several themes are defined in `dodo.themes`, based on the popular Nord,
+Solarized and Gruvbox color palettes.
 """
 
 search_font = 'DejaVu Sans Mono'
