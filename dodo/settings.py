@@ -194,6 +194,13 @@ the web browser will request before opening. This is an extra measure against ph
 or emails opening your web browser without your permission.
 """
 
+html_confirm_open_links_trusted_hosts = []
+"""A list of trusted hosts for HTML links.
+
+If a link is to a host in this list, it will be opened without confirmation, even if
+:func:`~dodo.settings.html_confirm_open_links` is True.
+"""
+
 # visual
 theme = themes.nord
 """The GUI theme
