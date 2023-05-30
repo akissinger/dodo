@@ -338,3 +338,26 @@ Example configuration using this feature to highlight markdown syntax:
   pygments_css = pygments.formatters.HtmlFormatter(style="gruvbox-dark").get_style_defs()
   dodo.settings.message_css += pygments_css.replace("{", "{{").replace("}", "}}")
 """
+
+search_color_overrides = {}
+"""A dictionary mapping tags to color dictionaries.
+
+The color dictionaries map columns to override colors.
+The available columns are:
+
+- date
+- from
+- subject
+- tags
+
+For example, to show a red subject for messages tagged 'urgent',
+using the built-in Gruvbox palette:
+
+.. code-block:: python
+
+  dodo.settings.search_color_overrides = {
+      'urgent': {
+          'subject': dodo.themes.gruvbox_p['neutral_red'],
+      }
+  }
+"""
