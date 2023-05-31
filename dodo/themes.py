@@ -283,7 +283,7 @@ gruvbox_dark.update({
   'bg': gruvbox_p['dark0'],
   'fg': gruvbox_p['light1'],
   'fg_bright': gruvbox_p['light0'],
-  'fg_dim': gruvbox_p['light2'],
+  'fg_dim': gruvbox_p['light4'],
   'bg_alt': gruvbox_p['dark1'],
   'bg_button': gruvbox_p['dark1'],
   'fg_button': gruvbox_p['light2'],
