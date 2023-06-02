@@ -666,6 +666,12 @@ class ThreadPanel(panel.Panel):
                   <td><b style="color: {settings.theme["fg_bright"]}">Decryption:&nbsp;</b></td>
                   <td>{m['crypto']['decrypted']['status']}"""
                 header_html += "</td></tr>"
+
+            # Show message id
+            header_html += f"""<tr>
+              <td><b style="color: {settings.theme["fg_bright"]}">Id:&nbsp;</b></td>
+              <td>{util.simple_escape(m["id"])}</td>
+            </tr>"""
             header_html += '</table>'
             self.message_info.setHtml(header_html)
 
