@@ -325,7 +325,7 @@ def apply_theme(theme: dict) -> None:
     palette.setColor(QPalette.ColorRole.WindowText, QColor(theme['fg']))
     palette.setColor(QPalette.ColorRole.Base, QColor(theme['bg']))
     palette.setColor(QPalette.ColorRole.AlternateBase, QColor(theme['bg_alt']))
-    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(theme['fg']))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(theme['bg']))
     palette.setColor(QPalette.ColorRole.ToolTipText, QColor(theme['fg']))
     palette.setColor(QPalette.ColorRole.Text, QColor(theme['fg']))
     palette.setColor(QPalette.ColorRole.Button, QColor(theme['bg_button']))
