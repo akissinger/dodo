@@ -24,6 +24,7 @@ from PyQt6.QtWidgets import QTreeView, QWidget
 from PyQt6.QtGui import QFont, QColor
 import subprocess
 import json
+import shlex
 
 from . import app
 from . import settings
@@ -95,7 +96,13 @@ class SearchModel(QAbstractItemModel):
                 tag_icons = []
                 for t in thread_d['tags']:
                     # don't bother showing TAG if it is in settings.hide_tags or the query is specifically 'tag:TAG'
-                    if t not in settings.hide_tags and self.q != f'tag:"{t}"':
+                    tag_in_q = False
+                    for q_part in shlex.split(self.q):
+                        # Example: shlex.split('asdf tag:blah AND tag:"blah blah"') => ['asdf', 'tag:blah', 'AND', 'tag:blah blah']
+                        if q_part.startswith('tag:') and t == q_part.lstrip('tag:'):
+                            tag_in_q = True
+                            break
+                    if t not in settings.hide_tags and not tag_in_q:
                         tag_icons.append(settings.tag_icons[t] if t in settings.tag_icons else f'[{t}]')
                 return ' '.join(tag_icons)
         elif role == Qt.ItemDataRole.FontRole:

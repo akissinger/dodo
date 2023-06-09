@@ -40,21 +40,26 @@ class TagModel(QAbstractItemModel):
         super().__init__()
         self.refresh()
 
-    def refresh(self) -> None:
+    def refresh(self, filter_tags: List[str]=None) -> None:
         """Refresh the model by (re-) running "notmuch search"."""
         self.beginResetModel()
-        r = subprocess.run(['notmuch', 'search', '--output=tags', '*'],
-                stdout=subprocess.PIPE)
+        tag_query = ' AND '.join([f'tag:"{tag}"' for tag in filter_tags]) if filter_tags else ''
+        search_args = [tag_query] if tag_query else ['*']
+        cmd = ['notmuch', 'search', '--output=tags'] + search_args
+        r = subprocess.run(cmd, stdout=subprocess.PIPE)
         tag_str = r.stdout.decode('utf-8')
 
         self.d: List[Tuple[str,str,str]] = []
 
         for t in tag_str.splitlines():
-            r1 = subprocess.run(['notmuch', 'count', '--output=threads', '--', f'tag:"{t}"'],
-                    stdout=subprocess.PIPE)
+            if filter_tags and t in filter_tags:
+                continue
+            extra_query = (' AND ' + tag_query) if tag_query else ''
+            cmd = ['notmuch', 'count', '--output=threads', '--', f'tag:"{t}"' + extra_query]
+            r1 = subprocess.run(cmd, stdout=subprocess.PIPE)
             c = r1.stdout.decode('utf-8').strip()
-            r1 = subprocess.run(['notmuch', 'count', '--output=threads', '--', f'tag:"{t}" AND tag:unread'],
-                    stdout=subprocess.PIPE)
+            cmd = ['notmuch', 'count', '--output=threads', '--', f'tag:"{t}" AND tag:unread' + extra_query]
+            r1 = subprocess.run(cmd, stdout=subprocess.PIPE)
             cu = r1.stdout.decode('utf-8').strip()
             self.d.append((t, cu, c))
 
@@ -135,7 +140,7 @@ class TagModel(QAbstractItemModel):
 class TagPanel(panel.Panel):
     """A panel showing all tags"""
 
-    def __init__(self, a: app.Dodo, keep_open: bool=False, parent: Optional[QWidget]=None):
+    def __init__(self, a: app.Dodo, keep_open: bool=False, filter_tags: List[str]=None, parent: Optional[QWidget]=None):
         super().__init__(a, keep_open, parent)
         self.set_keymap(keymap.tag_keymap)
         self.tree = QTreeView()
@@ -153,23 +158,43 @@ class TagPanel(panel.Panel):
         if self.tree.model().rowCount() > 0:
             self.tree.setCurrentIndex(self.tree.model().index(0,0))
 
+        self.filter_tags = filter_tags or []
+        self.last_tag_row = []
+        self.try_narrowing = False
+
     def refresh(self) -> None:
         """Refresh the search listing and restore the selection, if possible."""
 
         current = self.tree.currentIndex()
-        self.model.refresh()
+        self.model.refresh(self.filter_tags)
         
+        if self.try_narrowing:
+            self.try_narrowing = False
+            # If we're narrowing and the result is zero tags, don't do the narrow and revert to previous state
+            if self.model.num_tags() == 0:
+                last_tag = self.filter_tags.pop()
+                last_row = self.last_tag_row.pop()
+                self.model.refresh(self.filter_tags)
+                self.select_tag_or_nearby_row(last_tag, last_row)
+
+                # also may be sensible to open the search after narrowing as far as possible
+                self.search_current_tag()
+                return
+
         if current.row() >= self.model.num_tags():
             self.last_tag()
         else:
             self.tree.setCurrentIndex(current)
 
+        self.app.refresh_title()
         super().refresh()
 
     def title(self) -> str:
-        """Return constant 'tags'"""
-
-        return 'tags'
+        """Return constant 'tags' and the list of narrowed tags"""
+        t = 'tags'
+        for tag in self.filter_tags:
+            t += ' > ' + tag
+        return t
 
     def next_tag(self) -> None:
         """Select the next tag
@@ -207,12 +232,62 @@ class TagPanel(panel.Panel):
         """Open a new search panel for the selected tag"""
 
         tag = self.model.tag(self.tree.currentIndex())
-        if tag:
-            self.app.open_search(f'tag:"{tag}"')
+        tags = [tag] + self.filter_tags
+        tag_query = ' AND '.join([f'tag:"{tag}"' for tag in tags])
+        if tags:
+            self.app.open_search(tag_query)
     
+    def search_current_view(self) -> None:
+        """Opens a new search panel for the current narrowed view, not including current selection"""
+        tags = self.filter_tags
+        tag_query = ' AND '.join([f'tag:"{tag}"' for tag in tags])
+        if tags:
+            self.app.open_search(tag_query)
+        else:
+            self.app.open_search("*")
 
+    def narrow_current_tag(self) -> None:
+        """Refresh the view narrowing to the selected tag"""
 
+        ix = self.tree.currentIndex()
+        tag = self.model.tag(ix)
+        if tag:
+            self.filter_tags.append(tag)
+            self.last_tag_row.append(ix.row())
+            self.try_narrowing = True
+            self.refresh()
+    
+    def open_current_tag(self) -> None:
+        """Open a new tag panel narrowing to the selected tag"""
+        ix = self.tree.currentIndex()
+        tag = self.model.tag(ix)
+        if tag:
+            self.app.open_tags_narrowed(filter_tags=[tag] + self.filter_tags)
+    
+    def undo_narrow_tag(self) -> None:
+        if self.filter_tags:
+            last_tag = self.filter_tags.pop()
+            last_row = self.last_tag_row.pop()
+            self.refresh()
+            self.select_tag_or_nearby_row(last_tag, last_row)
 
+    def select_tag_or_nearby_row(self, last_tag, last_row):
+        # select row if it matches the tag
+        row = min((last_row, self.model.num_tags() - 1))
+        ix = self.tree.model().index(row, 0)
+        if self.model.tag(ix) == last_tag:
+            self.tree.setCurrentIndex(ix)
+            return
 
-
+        # else index changed so find the matching tag
+        for row in range(self.model.num_tags()):
+            ix = self.tree.model().index(row, 0)
+            if self.model.tag(ix) == last_tag:
+                self.tree.setCurrentIndex(ix)
+                return
+        
+        # else go back to the nearest index
+        row = min((last_row, self.model.num_tags() - 1))
+        ix = self.tree.model().index(row, 0)
+        self.tree.setCurrentIndex(ix)
 

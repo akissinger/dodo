@@ -220,6 +220,10 @@ class Dodo(QApplication):
 
         p = tag.TagPanel(self, keep_open)
         self.add_panel(p)
+    
+    def open_tags_narrowed(self, filter_tags) -> None:
+        p = tag.TagPanel(self, filter_tags=filter_tags)
+        self.add_panel(p)
 
     def search_bar(self) -> None:
         """Open command bar for searching"""
@@ -278,6 +282,13 @@ class Dodo(QApplication):
 
         w = self.tabs.currentWidget()
         if w and isinstance(w, panel.Panel): w.refresh()
+
+    def refresh_title(self) -> None:
+        """Refresh the title of the current panel"""
+        i = self.tabs.currentIndex()
+        w = self.tabs.widget(i)
+        if isinstance(w, panel.Panel):
+            self.tabs.setTabText(i, w.title())
 
     def prompt_quit(self) -> None:
         """A 'soft' quit function, which gives each open tab the opportunity to prompt

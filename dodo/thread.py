@@ -31,7 +31,6 @@ import html
 import email
 import email.message
 import tempfile
-import shlex
 
 from . import app
 from . import settings

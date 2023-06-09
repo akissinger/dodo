@@ -30,6 +30,7 @@ import email.header
 import textwrap
 from bleach.sanitizer import Cleaner
 from bleach.linkifier import Linker
+import shlex
 
 from . import settings
 

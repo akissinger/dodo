@@ -72,7 +72,11 @@ tag_keymap = {
   'G':       ('last tag', lambda p: p.last_tag()),
   'C-d':     ('down 20', lambda p: [p.next_tag() for i in range(20)]),
   'C-u':     ('up 20', lambda p: [p.previous_tag() for i in range(20)]),
-  '<enter>': ('search tag', lambda p: p.search_current_tag()),
+  '<enter>': ('search with selected tag', lambda p: p.search_current_tag()),
+  '<space>': ('search without selected tag', lambda p: p.search_current_view()),
+  'N':       ('narrow to tag in new panel', lambda p: p.open_current_tag()),
+  'n':       ('narrow to tag', lambda p: p.narrow_current_tag()),
+  'b':       ('undo last narrow to tag', lambda p: p.undo_narrow_tag()),
 }
 """The local keymap for the tag panel
 
