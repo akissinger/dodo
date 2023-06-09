@@ -230,8 +230,8 @@ class Dodo(QApplication):
         def callback(tag_expr: str) -> None:
             w = self.tabs.currentWidget()
             if w and isinstance(w, panel.Panel):
-                if isinstance(w, search.SearchPanel): w.tag_thread(tag_expr, mode)
-                elif isinstance(w, thread.ThreadPanel): w.tag_message(tag_expr)
+                if isinstance(w, search.SearchPanel): w.tag_thread(tag_expr=tag_expr, mode=mode)
+                elif isinstance(w, thread.ThreadPanel): w.tag_message(tag_expr=tag_expr)
                 w.refresh()
         self.command_bar.open(mode, callback)
 

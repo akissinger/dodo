@@ -217,7 +217,7 @@ def snooze(days, mode='tag'):
     import datetime
     d = datetime.date.today() + datetime.timedelta(days=days)
     def f(search):
-        search.tag_thread(f'-inbox -unread +zzz-{d}', mode)
+        search.tag_thread(tags_remove=['inbox', 'unread'], tags_add=[f'zzz-{d}'], mode=mode)
     return f
 
 dodo.keymap.search_keymap['z z'] = ("snooze for 1 day", snooze(days=1))
