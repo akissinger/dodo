@@ -78,6 +78,27 @@ class MessagePage(QWebEnginePage):
     def __init__(self, a: app.Dodo, profile: QWebEngineProfile, parent: Optional[QObject]=None):
         super().__init__(profile, parent)
         self.app = a
+        self.newWindowRequested.connect(self.on_new_window_requested)
+
+    def on_new_window_requested(self, req: QWebEngineNewWindowRequest) -> None:
+        self._handle_link(req.requestedUrl())
+
+    def _handle_link(self, url: QUrl) -> None:
+        if url.scheme() == 'mailto':
+            query = QUrlQuery(url)
+            msg = {'headers':{'To': url.path(), 'Subject': query.queryItemValue('subject')}}
+            self.app.open_compose(mode='mailto', msg=msg)
+        else:
+            if (not settings.html_confirm_open_links or
+                url.host() in settings.html_confirm_open_links_trusted_hosts or
+                QMessageBox.question(None, 'Open link',
+                    f'Open the following URL in browser?\n\n  {url.toString()}') == QMessageBox.StandardButton.Yes):
+                if settings.web_browser_command == '':
+                    QDesktopServices.openUrl(url)
+                else:
+                    subprocess.Popen([settings.web_browser_command, url.toString()],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
 
     def acceptNavigationRequest(self, url: QUrl, ty: QWebEnginePage.NavigationType, isMainFrame: bool) -> bool:
         # if the protocol is 'message' or 'cid', let the request through
@@ -85,21 +106,7 @@ class MessagePage(QWebEnginePage):
             return True
         else:
             if ty == QWebEnginePage.NavigationType.NavigationTypeLinkClicked:
-                if url.scheme() == 'mailto':
-                    query = QUrlQuery(url)
-                    msg = {'headers':{'To': url.path(), 'Subject': query.queryItemValue('subject')}}
-                    self.app.open_compose(mode='mailto', msg=msg)
-                else:
-                    if (not settings.html_confirm_open_links or
-                        url.host() in settings.html_confirm_open_links_trusted_hosts or
-                        QMessageBox.question(None, 'Open link',
-                            f'Open the following URL in browser?\n\n  {url.toString()}') == QMessageBox.StandardButton.Yes):
-                        if settings.web_browser_command == '':
-                            QDesktopServices.openUrl(url)
-                        else:
-                            subprocess.Popen([settings.web_browser_command, url.toString()],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
+                self._handle_link(url)
                 return False
             if ty == QWebEnginePage.NavigationType.NavigationTypeRedirect:
                 # never let a message do a <meta> redirect
