@@ -224,6 +224,15 @@ message_font_size = 12
 search_view_padding = 1
 """A bit of spacing around each line in the search panel"""
 
+search_title_format = "{query} [{num_threads}]"
+"""A Python format string for the tab title of search panels
+
+The following placeholders can be used:
+
+- {query}: the current search query
+- {num_threads}: the number of threads returned by the search
+"""
+
 tag_icons = {
   'inbox': '',
   'unread': '',
