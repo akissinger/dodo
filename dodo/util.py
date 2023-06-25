@@ -351,7 +351,7 @@ def add_header_line(s: str, h: str) -> str:
     blank line, in the provided string."""
 
     (headers, body) = separate_headers(s)
-    return headers + h + '\n' + body
+    return headers + h + '\n\n' + body
 
 def replace_header(s: str, h: str, new_value: str) -> str:
     """Replace a single header without doing full message parsing
