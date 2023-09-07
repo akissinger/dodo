@@ -420,7 +420,7 @@ class ThreadPanel(panel.Panel):
             m = self.model.message_at(self.current_message)
             if 'unread' in m['tags']:
                 # this might change the filename, so we should refresh the model
-                self.tag_message('-unread')
+                self.tag_message(tags_remove=['unread'])
                 self.refresh()
                 m = self.model.message_at(self.current_message)
 
@@ -476,22 +476,24 @@ class ThreadPanel(panel.Panel):
         m = self.model.message_at(self.current_message)
         if m:
             if tag in m['tags']:
-                tag_expr = '-' + tag
+                self.tag_message(tags_remove=[tag])
             else:
-                tag_expr = '+' + tag
-            self.tag_message(tag_expr)
+                self.tag_message(tags_add=[tag])
 
-    def tag_message(self, tag_expr: str) -> None:
-        """Apply the given tag expression to the current message
+    def tag_message(self, tag_expr: str=None, tags_add: list=None, tags_remove: list=None) -> None:
+        """Apply the given tag expression or lists of tags to add or remove to the selected thread
 
         A tag expression is a string consisting of one more statements of the form "+TAG"
-        or "-TAG" to add or remove TAG, respectively, separated by whitespace."""
+        or "-TAG" to add or remove TAG, respectively, separated by whitespace.
+        
+        Tags containing spaces or special characters must be double quoted within the tag expression.
+        Alternatively, use the lists tags_add and tags_remove with the unquoted values.
+        Programatic uses of tags should always use the tags_add and tags_remove lists."""
 
         m = self.model.message_at(self.current_message)
         if m:
-            if not ('+' in tag_expr or '-' in tag_expr):
-                tag_expr = '+' + tag_expr
-            r = subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'id:' + m['id']],
+            tag_args = util.format_tag_args(tag_expr, tags_add, tags_remove)
+            r = subprocess.run(['notmuch', 'tag'] + tag_args + ['--', 'id:' + m['id']],
                     stdout=subprocess.PIPE)
             self.app.refresh_panels()
 

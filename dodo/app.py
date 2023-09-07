@@ -223,6 +223,10 @@ class Dodo(QApplication):
 
         p = tag.TagPanel(self, keep_open)
         self.add_panel(p)
+    
+    def open_tags_narrowed(self, filter_tags) -> None:
+        p = tag.TagPanel(self, filter_tags=filter_tags)
+        self.add_panel(p)
 
     def search_bar(self) -> None:
         """Open command bar for searching"""
@@ -233,8 +237,8 @@ class Dodo(QApplication):
         def callback(tag_expr: str) -> None:
             w = self.tabs.currentWidget()
             if w and isinstance(w, panel.Panel):
-                if isinstance(w, search.SearchPanel): w.tag_thread(tag_expr, mode)
-                elif isinstance(w, thread.ThreadPanel): w.tag_message(tag_expr)
+                if isinstance(w, search.SearchPanel): w.tag_thread(tag_expr=tag_expr, mode=mode)
+                elif isinstance(w, thread.ThreadPanel): w.tag_message(tag_expr=tag_expr)
                 w.refresh()
         self.command_bar.open(mode, callback)
 
@@ -281,6 +285,13 @@ class Dodo(QApplication):
 
         w = self.tabs.currentWidget()
         if w and isinstance(w, panel.Panel): w.refresh()
+
+    def refresh_title(self) -> None:
+        """Refresh the title of the current panel"""
+        i = self.tabs.currentIndex()
+        w = self.tabs.widget(i)
+        if isinstance(w, panel.Panel):
+            self.tabs.setTabText(i, w.title())
 
     def prompt_quit(self) -> None:
         """A 'soft' quit function, which gives each open tab the opportunity to prompt

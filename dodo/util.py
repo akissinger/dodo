@@ -30,6 +30,7 @@ import email.header
 import textwrap
 from bleach.sanitizer import Cleaner
 from bleach.linkifier import Linker
+import shlex
 
 from . import settings
 
@@ -515,3 +516,24 @@ def key_string(e: QKeyEvent) -> str:
 
     # print(cmd)
     return cmd
+
+def format_tag_args(tag_expr: str=None, tags_add: list=None, tags_remove: list=None) -> list:
+    tag_args = []
+    if tag_expr:
+        # This is something typed by the user in the search or thread panel
+        # assume that they use whitepace and quotes correctly
+        for tag in shlex.split(tag_expr):
+            if tag[0] not in ['+', '-']:
+                tag = '+' + tag
+            if ' ' in tag:
+                # For example: shlex.split('+asdf +"asdf asdf"') => ['+asdf', '+asdf asdf']
+                # shelx.split removed quotes, so add them back
+                tag = tag[0] + f'"{tag[1:]}"'
+            tag_args.append(tag)
+    if tags_add:
+        for tag in tags_add:
+            tag_args.append(f'+"{tag}"')
+    if tags_remove:
+        for tag in tags_remove:
+            tag_args.append(f'-"{tag}"')
+    return tag_args
