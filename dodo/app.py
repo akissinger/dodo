@@ -116,6 +116,9 @@ class Dodo(QApplication):
         self.main_window.activateWindow()
         # self.main_window.setWindowState(self.main_window.windowState() ^ Qt.WindowActive)
 
+    def message(self, title, body) -> None:
+        QMessageBox.warning(self.main_window, title, body)
+
     def add_panel(self, p: panel.Panel, focus: bool=True) -> None:
         """Add a panel to the tab view
 

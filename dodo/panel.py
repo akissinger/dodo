@@ -49,6 +49,7 @@ class Panel(QWidget):
         super().__init__(parent)
         self.app = a
         self.keep_open = keep_open
+        self.is_open = True
 
         self.keymap: Optional[dict] = None
         self.setLayout(QVBoxLayout())
@@ -117,6 +118,7 @@ class Panel(QWidget):
                 if QMessageBox.question(self, 'Remove temp dirs', q) == QMessageBox.StandardButton.Yes:
                     for d in self.temp_dirs: shutil.rmtree(d)
 
+        self.is_open = False
         return True
 
     def keyPressEvent(self, e: QKeyEvent) -> None:

@@ -211,6 +211,10 @@ class ComposePanel(panel.Panel):
 
             def done() -> None:
                 if self.editor_thread:
+                    if not self.is_open:
+                        self.app.message('Compose panel closed',
+                                         'Compose panel closed while editing, email text saved in:\n    - {}'.format(
+                              self.editor_thread.file))
                     self.editor_thread.deleteLater()
                     self.editor_thread = None
                 self.refresh()
@@ -328,9 +332,11 @@ class EditorThread(QThread):
     def __init__(self, panel: ComposePanel, parent: Optional[QObject]=None):
         super().__init__(parent)
         self.panel = panel
+        self.file = ''
 
     def run(self) -> None:
         fd, file = tempfile.mkstemp('.eml')
+        self.file = file
         with os.fdopen(fd, 'w') as f:
             f.write(self.panel.raw_message_string)
 
@@ -340,7 +346,10 @@ class EditorThread(QThread):
         with open(file, 'r') as f1:
             self.panel.raw_message_string = f1.read()
 
-        os.remove(file)
+        # only remove the temp file if the panel is still open, otherwise
+        # email contents will be lost
+        if self.panel.is_open:
+            os.remove(file)
 
 class SendmailThread(QThread):
     """A QThread used for editing mail with the external editor
