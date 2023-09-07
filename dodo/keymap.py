@@ -52,7 +52,7 @@ search_keymap = {
   'C-d':     ('down 20', lambda p: [p.next_thread() for i in range(20)]),
   'C-u':     ('up 20', lambda p: [p.previous_thread() for i in range(20)]),
   '<enter>': ('open thread', lambda p: p.open_current_thread()),
-  'a':       ('tag -inbox -unread', lambda p: p.tag_thread('-inbox -unread')),
+  'a':       ('tag -inbox -unread', lambda p: p.tag_thread(tags_remove=['inbox', 'unread'])),
   'u':       ('toggle unread', lambda p: p.toggle_thread_tag('unread')),
   'f':       ('toggle flagged', lambda p: p.toggle_thread_tag('flagged')),
   '<space>': ('toggle marked', lambda p: [p.toggle_thread_tag('marked'), p.next_thread()]),

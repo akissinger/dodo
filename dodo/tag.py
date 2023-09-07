@@ -50,10 +50,10 @@ class TagModel(QAbstractItemModel):
         self.d: List[Tuple[str,str,str]] = []
 
         for t in tag_str.splitlines():
-            r1 = subprocess.run(['notmuch', 'count', '--output=threads', '--', 'tag:'+t],
+            r1 = subprocess.run(['notmuch', 'count', '--output=threads', '--', f'tag:"{t}"'],
                     stdout=subprocess.PIPE)
             c = r1.stdout.decode('utf-8').strip()
-            r1 = subprocess.run(['notmuch', 'count', '--output=threads', '--', f'tag:{t} AND tag:unread'],
+            r1 = subprocess.run(['notmuch', 'count', '--output=threads', '--', f'tag:"{t}" AND tag:unread'],
                     stdout=subprocess.PIPE)
             cu = r1.stdout.decode('utf-8').strip()
             self.d.append((t, cu, c))
@@ -208,7 +208,7 @@ class TagPanel(panel.Panel):
 
         tag = self.model.tag(self.tree.currentIndex())
         if tag:
-            self.app.open_search('tag:' + tag)
+            self.app.open_search(f'tag:"{tag}"')
     
 
 

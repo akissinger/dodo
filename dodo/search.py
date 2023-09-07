@@ -27,6 +27,7 @@ import json
 
 from . import app
 from . import settings
+from . import util
 from . import keymap
 from . import thread
 from . import panel
@@ -94,7 +95,7 @@ class SearchModel(QAbstractItemModel):
                 tag_icons = []
                 for t in thread_d['tags']:
                     # don't bother showing TAG if it is in settings.hide_tags or the query is specifically 'tag:TAG'
-                    if t not in settings.hide_tags and self.q != 'tag:' + t:
+                    if t not in settings.hide_tags and self.q != f'tag:"{t}"':
                         tag_icons.append(settings.tag_icons[t] if t in settings.tag_icons else f'[{t}]')
                 return ' '.join(tag_icons)
         elif role == Qt.ItemDataRole.FontRole:
@@ -257,27 +258,28 @@ class SearchPanel(panel.Panel):
         thread = self.model.thread_json(self.tree.currentIndex())
         if thread:
             if tag in thread['tags']:
-                tag_expr = '-' + tag
+                self.tag_thread(tags_remove=[tag])
             else:
-                tag_expr = '+' + tag
-            self.tag_thread(tag_expr)
+                self.tag_thread(tags_add=[tag])
 
-
-    def tag_thread(self, tag_expr: str, mode: Literal['tag', 'tag marked']='tag') -> None:
-        """Apply the given tag expression to the selected thread
+    def tag_thread(self, tag_expr: str=None, tags_add: list=None, tags_remove: list=None, mode: Literal['tag', 'tag marked']='tag') -> None:
+        """Apply the given tag expression or lists of tags to add or remove to the selected thread
 
         A tag expression is a string consisting of one more statements of the form "+TAG"
-        or "-TAG" to add or remove TAG, respectively, separated by whitespace."""
+        or "-TAG" to add or remove TAG, respectively, separated by whitespace.
+        
+        Tags containing spaces or special characters must be double quoted within the tag expression.
+        Alternatively, use the lists tags_add and tags_remove with the unquoted values.
+        Programatic uses of tags should always use the tags_add and tags_remove lists."""
 
-        if not ('+' in tag_expr or '-' in tag_expr):
-            tag_expr = '+' + tag_expr
+        tag_args = util.format_tag_args(tag_expr, tags_add, tags_remove)
         
         if mode == 'tag':
             thread_id = self.model.thread_id(self.tree.currentIndex())
             if thread_id:
-                subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'thread:' + thread_id])
+                subprocess.run(['notmuch', 'tag'] + tag_args + ['--', 'thread:' + thread_id])
         elif mode == 'tag marked':
-            subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['-marked','--', f'tag:marked AND ({self.q})'])
+            subprocess.run(['notmuch', 'tag'] + tag_args + ['-marked','--', f'tag:marked AND ({self.q})'])
 
         self.app.refresh_panels()
 
