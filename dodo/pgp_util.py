@@ -28,6 +28,8 @@ try:
 except ImportError as ex:
     pass
 
+Gpg = gnupg.GPG(gnupghome=settings.gnupg_home, use_agent=True)
+
 def copy_message(msg):
     gpg_policy = msg.policy.clone(linesep='\r\n',utf8=True)
     text_to_sign = BytesIO()
@@ -68,8 +70,7 @@ def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     signed_mail.attach(msg_to_sign)
 
     # Create the signature based on attached message
-    gpg = gnupg.GPG(gnupghome=settings.gnupg_home, use_agent=True)
-    sig = gpg.sign(str(signed_mail.get_payload(0)), keyid=settings.gnupg_keyid, detach=True)
+    sig = Gpg.sign(str(signed_mail.get_payload(0)), keyid=settings.gnupg_keyid, detach=True)
 
     # Attach the signature to the new message
     sigpart = email.message.EmailMessage()
@@ -81,17 +82,15 @@ def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     return signed_mail
 
 def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
-    recipients: List[str] = []
+    # Always also encrypt with the key corresponding to the From address in order to
+    # be able to decrypt the mail that has been sent.
     email_sep = re.compile('\s*,\s*')
-    if 'To' in msg.keys():
-        recipients += email_sep.split(msg['To'])
-    if 'Cc' in msg.keys():
-        recipients += email_sep.split(msg['Cc'])
-    gpg = gnupg.GPG(gnupghome=settings.gnupg_home, use_agent=True)
-    recipients_keys = [ x['fingerprint'] for x in gpg.list_keys()
-                       if any( re.search(util.strip_email_address(mail), y)
+    recipients = [ addr for key,val in msg.items() if key in ['To', 'From', 'Cc']
+                               for addr in email_sep.split(val) ]
+    recipients_keys = [ x['fingerprint'] for x in Gpg.list_keys()
+                       if any( re.search(util.strip_email_address(addr), y)
                               for y in x['uids']
-                              for mail in recipients) ]
+                              for addr in recipients) ]
     # Generate a copy of the message, by working on the copy we leave
     #the original message (msg) unaltered.
     msg_to_encrypt = copy_message(msg)
@@ -109,7 +108,7 @@ def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     encrypted_mail.attach(control_part)
 
     # Encrypt the parts of the original message (with non-content headers removed)
-    encrypted_contents = str(gpg.encrypt(msg_to_encrypt.as_string(), recipients_keys,
+    encrypted_contents = str(Gpg.encrypt(msg_to_encrypt.as_string(), recipients_keys,
                           extra_args=['--emit-version']))
 
     # Attach the encrypted parts to the new message
