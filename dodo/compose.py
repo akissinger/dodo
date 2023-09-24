@@ -66,6 +66,7 @@ class ComposePanel(panel.Panel):
         self.status = f'<i style="color:{settings.theme["fg"]}">draft</i>'
         self.current_account = 0
         self.pgp_sign = settings.gnupg_keyid is not None
+        self.pgp_encrypt = False
         self.wrap_message = settings.wrap_message
 
         self.raw_message_string = f'From: {self.email_address()}\n'
@@ -196,7 +197,7 @@ class ComposePanel(panel.Panel):
         </style>
         <body>
         {account_str}
-        <p>{self.status} {'PGP-Sign' if self.pgp_sign else ''}</p>
+        <p>{self.status}   {'<i style="color:{settings.theme["fg"]}">PGPSign</i>' if self.pgp_sign else ''}   {'<i style="color:{settings.theme["fg"]}">PGPEncrypt</i>' if self.pgp_encrypt else ''}</p>
         <pre style="white-space: pre-wrap">{text}</pre>
         </body></html>""")
 
@@ -267,6 +268,12 @@ class ComposePanel(panel.Panel):
         # Silently ignore when gnupg_keyid is not set
         if not settings.gnupg_keyid: return
         self.pgp_sign = True if self.pgp_sign is False else False
+        self.refresh()
+
+    def toggle_pgp_encrypt(self) -> None:
+        # Silently ignore when gnupg_keyid is not set
+        #if not settings.gnupg_home: return
+        self.pgp_encrypt = True if self.pgp_encrypt is False else False
         self.refresh()
 
     def account_name(self) -> str:
@@ -408,6 +415,56 @@ class SendmailThread(QThread):
                               RFC4880_HASH_ALGO[sig.hash_algo].lower())
         return signed_mail
 
+    def encrypt(self, msg: email.message.EmailMessage) -> email.message.EmailMessage:
+
+        recipients: List[str] = []
+        email_sep = re.compile('\s*,\s*')
+        if 'To' in msg.keys():
+            recipients += email_sep.split(msg['To'])
+        if 'Cc' in msg.keys():
+            recipients += email_sep.split(msg['Cc'])
+        # Encrypt the parts of the original message (with non-content headers removed)
+        gpg = gnupg.GPG(gnupghome=settings.gnupg_home, use_agent=True)
+        recipients_keys = [ x['fingerprint'] for x in gpg.list_keys() if any( re.search(util.strip_email_address(mail), y) for y in x['uids'] for mail in recipients) ]
+        print(recipients)
+        print(recipients_keys)
+
+        # Generate a copy of the message, by working on the copy we leave
+        #the original message (msg) unaltered.
+        gpg_policy = msg.policy.clone(linesep='\r\n',utf8=True)
+        text_to_sign = BytesIO()
+        gen = email.generator.BytesGenerator(text_to_sign,policy=gpg_policy)
+        gen.flatten(msg)
+        text_to_sign.seek(0)
+        msg_to_sign = email.message_from_binary_file(text_to_sign,policy=gpg_policy)
+        text_to_sign.close()  # Discard the buffer
+
+        # Create a new message that will contain the original message and the
+        # pgp-signature. Move the non Content-* headers to the new message
+        encrypted_mail = email.message.EmailMessage(policy=gpg_policy)
+        for k, v in msg_to_sign.items():
+            if not k.lower().startswith('content-'):
+                encrypted_mail[k] = v
+                del msg_to_sign[k]
+        encrypted_mail.set_type("multipart/encrypted")
+        encrypted_mail.set_param("protocol", "application/pgp-encrypted")
+
+        # Add control part
+        control_part = email.message.EmailMessage()
+        control_part.set_content(b'Version:1', 'application', 'pgp-encrypted',
+                                 disposition='PGP/MIME version information',cte='7bit')
+        encrypted_mail.attach(control_part)
+
+        sig = str(gpg.encrypt(msg_to_sign.as_string(), recipients_keys,
+                              extra_args=['--emit-version']))
+
+        # Attach the encrypted parts to the new message
+        pgppart = email.message.EmailMessage()
+        pgppart.set_content(sig.encode(),'application', 'octet-stream',
+                            disposition='inline', cte='7bit')
+        encrypted_mail.attach(pgppart)
+        return encrypted_mail
+
     def run(self) -> None:
         try:
             account = self.panel.account_name()
@@ -462,6 +519,9 @@ class SendmailThread(QThread):
                 except IOError:
                     print("Can't read attachment: " + att)
 
+            if self.panel.pgp_encrypt:
+                eml = self.encrypt(eml)
+
             if self.panel.pgp_sign:
                 eml = self.sign(eml)
 
@@ -498,3 +558,5 @@ class SendmailThread(QThread):
                 self.panel.status = f'<i style="color:{settings.theme["fg_bad"]}">error</i>'
         except TimeoutExpired:
             self.panel.status = f'<i style="color:{settings.theme["fg_bad"]}">timed out</i>'
+        except Exception:
+            self.panel.status = f'<i style="color:{settings.theme["fg_bad"]}">exception</i>'
