@@ -26,6 +26,7 @@ import mailbox
 import email
 import email.utils
 import email.parser
+import email.generator
 import email.policy
 import mimetypes
 import subprocess
