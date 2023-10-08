@@ -413,21 +413,26 @@ class ThreadPanel(panel.Panel):
                   <td><span style="color: {settings.theme["fg_tags"]}">{' '.join(attachments)}</span></td>
                 </tr>"""
 
-            # pgp-Signature Status
-            for body in m['body']:
-                if 'sigstatus' in body:
-                    for sig in body['sigstatus']:
-                        header_html += f"""<tr>
-                          <td><b style="color: {settings.theme["fg_bright"]}">Pgp-signed:&nbsp;</b></td>
-                          <td>{sig['status']}: """
-                        if sig['status'] == 'error':
-                            header_html += f"{' '.join(sig['errors'].keys())} (keyid={sig['keyid']})"
-                        elif sig['status'] == 'good':
-                            header_html += f"{sig['userid']} ({sig['fingerprint']})"
-                        elif sig['status'] == 'bad':
-                            header_html += f"keyid={sig['keyid']}"
-                        header_html += "</td></tr>"
+            # Show pgp-Signature Status
+            if 'signed' in m['crypto']:
+                for sig in m['crypto']['signed']['status']:
+                    header_html += f"""<tr>
+                      <td><b style="color: {settings.theme["fg_bright"]}">Pgp-signed:&nbsp;</b></td>
+                      <td>{sig['status']}: """
+                    if sig['status'] == 'error':
+                        header_html += f"{' '.join(sig['errors'].keys())} (keyid={sig['keyid']})"
+                    elif sig['status'] == 'good':
+                        header_html += f"{sig.get('userid')} ({sig['fingerprint']})"
+                    elif sig['status'] == 'bad':
+                        header_html += f"keyid={sig['keyid']}"
+                    header_html += "</td></tr>"
 
+            # Show Decryption status
+            if 'decrypted' in m['crypto']:
+                header_html += f"""<tr>
+                  <td><b style="color: {settings.theme["fg_bright"]}">Decryption:&nbsp;</b></td>
+                  <td>{m['crypto']['decrypted']['status']}"""
+                header_html += "</td></tr>"
             header_html += '</table>'
             self.message_info.setHtml(header_html)
 
