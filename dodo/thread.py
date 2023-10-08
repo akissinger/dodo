@@ -188,7 +188,7 @@ class ThreadModel(QAbstractItemModel):
     def refresh(self) -> None:
         """Refresh the model by calling "notmuch show"."""
 
-        r = subprocess.run(['notmuch', 'show', '--format=json', '--verify', '--include-html', self.thread_id],
+        r = subprocess.run(['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', self.thread_id],
                 stdout=subprocess.PIPE, encoding='utf8')
         self.json_str = r.stdout
         self.d = json.loads(self.json_str)
