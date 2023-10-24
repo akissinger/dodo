@@ -26,9 +26,8 @@ import mailbox
 import email
 import email.utils
 import email.parser
-import email.generator
+import email.policy
 import mimetypes
-from io import BytesIO
 import subprocess
 from subprocess import PIPE, Popen, TimeoutExpired
 import tempfile
@@ -366,22 +365,24 @@ class SendmailThread(QThread):
                              '8': "SHA256", '9': "SHA384", '10': "SHA512",
                              '11': "SHA224"}
 
-        # Generate a copy of the message with <CR><LF> line  separators as
-        # required .per rfc-3156
+        # Generate a 7-bit clean copy of the message with <CR><LF> line separators as
+        # required per rfc-3156
         # Moreover, by working on the copy we leave the original message
         # (msg) unaltered.
-        gpg_policy = msg.policy.clone(linesep='\r\n')
-        text_to_sign = BytesIO()
-        gen = email.generator.BytesGenerator(text_to_sign, policy=gpg_policy)
-        gen.flatten(msg)
-        text_to_sign.seek(0)
-        msg_to_sign = email.message_from_binary_file(text_to_sign, policy=gpg_policy)
-        text_to_sign.close()  # Discard the buffer
+        gpg_policy = msg.policy.clone(linesep='\r\n',utf8=False)
+        msg_to_sign = email.message_from_string(msg.as_string(),policy=gpg_policy)
+        # Create a new mail that will contain the original message and its signature
+        signed_mail = email.message.EmailMessage(policy=msg.policy.clone(linesep='\r\n'))
+        # copy the non Content-* headers to the new mail and remove them form the
+        # message that will be signed
+        for k, v in msg.items():
+            if not k.lower().startswith('content-'):
+                signed_mail[k] = v
 
         # Create a new message that will contain the original message and the
         # pgp-signature. Move the non Content-* headers to the new message
         signed_mail = email.message.EmailMessage(policy=gpg_policy)
-        for k, v in msg_to_sign.items():
+        for k, v in msg.items():
             if not k.lower().startswith('content-'):
                 signed_mail[k] = v
                 del msg_to_sign[k]
@@ -391,13 +392,14 @@ class SendmailThread(QThread):
         # Attach the message to be signed
         signed_mail.attach(msg_to_sign)
 
-        # Create the signature based on attached message
+        # Create the signature
         gpg = gnupg.GPG(gnupghome=settings.gnupg_home, use_agent=True)
-        sig = gpg.sign(str(signed_mail.get_payload(0)), keyid=settings.gnupg_keyid, detach=True)
-        # Attach the signature to the new message
+        sig = gpg.sign(msg_to_sign.as_string(), keyid=settings.gnupg_keyid, detach=True)
+        # Attach the ASCII representation (as per rfc) of the signature, note that
+        # set_content with contaent-type other then text requires a bytes object
         sigpart = email.message.EmailMessage()
-        sigpart['Content-Type'] = 'application/pgp-signature'
-        sigpart.set_payload(str(sig))
+        sigpart.set_content(str(sig).encode(), 'application', 'pgp-signature',
+                            filename='signature.asc', cte='7bit')
         signed_mail.attach(sigpart)
         signed_mail.set_param("micalg", 'pgp-' +
                               RFC4880_HASH_ALGO[sig.hash_algo].lower())
@@ -407,7 +409,7 @@ class SendmailThread(QThread):
         try:
             account = self.panel.account_name()
             m = email.message_from_string(self.panel.message_string)
-            eml = email.message.EmailMessage()
+            eml = email.message.EmailMessage(policy=email.policy.EmailPolicy(utf8=True))
             attachments: List[str] = m.get_all('A', [])
 
             # n.b. this kills duplicate headers. May want to revisit this if it causes problems.
@@ -475,7 +477,7 @@ class SendmailThread(QThread):
                 # None means we should discard the email, presumably because it's already
                 # handled by whatever mechanism sends it in the first place
                 if sent_dir is not None:
-                    m = mailbox.MaildirMessage(str(eml))
+                    m = mailbox.MaildirMessage(eml.as_bytes())
                     m.set_flags('S')
                     key = mailbox.Maildir(sent_dir).add(m)
                     # print(f'add: {key}')
