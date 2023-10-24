@@ -470,14 +470,17 @@ class SendmailThread(QThread):
             sendmail.wait(30)
             if sendmail.returncode == 0:
                 # save to sent folder
-                m = mailbox.MaildirMessage(eml.as_bytes())
-                m.set_flags('S')
                 if isinstance(settings.sent_dir, dict):
                     sent_dir = settings.sent_dir[account]
                 else:
                     sent_dir = settings.sent_dir
-                key = mailbox.Maildir(sent_dir).add(m)
-                # print(f'add: {key}')
+                # None means we should discard the email, presumably because it's already
+                # handled by whatever mechanism sends it in the first place
+                if sent_dir is not None:
+                    m = mailbox.MaildirMessage(eml.as_bytes())
+                    m.set_flags('S')
+                    key = mailbox.Maildir(sent_dir).add(m)
+                    # print(f'add: {key}')
 
                 subprocess.run(['notmuch', 'new', '--no-hooks'])
 

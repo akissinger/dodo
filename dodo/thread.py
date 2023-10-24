@@ -25,6 +25,8 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtWebEngineCore import *
 from PyQt6.QtWebEngineWidgets import *
 
+import sys
+import traceback
 import subprocess
 import json
 import html
@@ -114,9 +116,22 @@ class MessageHandler(QWebEngineUrlSchemeHandler):
                 html = util.body_html(self.message_json)
                 if html: buf.write(html.encode('utf-8'))
             else:
-                text = util.simple_escape(util.body_text(self.message_json))
-                text = util.colorize_text(text)
-                text = util.linkify(text)
+                for filt in settings.message2html_filters:
+                    try:
+                        text = filt(self.message_json)
+                    except Exception:
+                        print(
+                            f"Error in message2html filter {filt.__name__}, ignoring:",
+                            file=sys.stderr
+                        )
+                        traceback.print_exc(file=sys.stderr)
+                        continue
+                    if text is not None:
+                        break
+                else:
+                    text = util.simple_escape(util.body_text(self.message_json))
+                    text = util.colorize_text(text)
+                    text = util.linkify(text)
 
                 if text:
                     buf.write(f"""
