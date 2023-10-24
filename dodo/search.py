@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import Optional, Any, overload, Literal
 
 from PyQt6.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject
-from PyQt6.QtWidgets import QTreeView, QWidget
+from PyQt6.QtWidgets import QTreeView, QWidget, QAbstractSlider
 from PyQt6.QtGui import QFont, QColor
 import subprocess
 import json
@@ -243,6 +243,30 @@ class SearchPanel(panel.Panel):
         ix = self.model.index(self.tree.model().rowCount()-1, 0)
         if self.model.checkIndex(ix):
             self.tree.setCurrentIndex(ix)
+
+    def prev_page(self) -> None:
+        """Scroll up a page in the search"""
+        bar = self.tree.verticalScrollBar()
+        if bar.value() == bar.minimum():
+            self.first_thread()
+            return
+
+        # Scroll up a page and keep selection at the bottommost thread
+        bar.triggerAction(QAbstractSlider.SliderAction.SliderPageStepSub)
+        pos = self.tree.rect().bottomLeft()
+        self.tree.setCurrentIndex(self.tree.indexAt(pos))
+
+    def next_page(self) -> None:
+        """Scroll down a page in the search"""
+        bar = self.tree.verticalScrollBar()
+        if bar.value() == bar.maximum():
+            self.last_thread()
+            return
+
+        # Scroll down a page and keep selection at the topmost thread
+        bar.triggerAction(QAbstractSlider.SliderAction.SliderPageStepAdd)
+        pos = self.tree.rect().topLeft()
+        self.tree.setCurrentIndex(self.tree.indexAt(pos))
 
     def open_current_thread(self) -> None:
         """Open the selected thread"""
