@@ -53,6 +53,10 @@ This will usually be a subdirectory of the Maildir sync'ed with
 :func:`~dodo.settings.sync_mail_command`. This setting can be given either
 as a string to use one global sent directory, or as a dictionary mapping
 account names in :func:`~dodo.settings.smtp_accounts` to their own sent dirs.
+
+A value of None, either standalone or as one of the dict value, can be used to
+indicate the email should be discarded. This can be useful if the sendmail
+command already has a mechanism for that feature.
 """
 
 editor_command = "xterm -e vim '{file}'"
