@@ -428,7 +428,10 @@ class ThreadPanel(panel.Panel):
         If an index is provided, switch the current message to that index, otherwise refresh
         the view of the current message.
         """
-        if i != -1: self.current_message = i
+        if i == self.current_message:
+            return
+        elif i != -1:
+            self.current_message = i
 
         if self.current_message >= 0 and self.current_message < self.model.num_messages():
             self.refresh()
@@ -447,6 +450,7 @@ class ThreadPanel(panel.Panel):
                 self.message_view.page().setUrl(QUrl('message:html'))
             else:
                 self.message_view.page().setUrl(QUrl('message:plain'))
+            self.scroll_message(pos = 'top')
 
 
     def next_message(self) -> None:
