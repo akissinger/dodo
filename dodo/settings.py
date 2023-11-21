@@ -161,6 +161,14 @@ You can save query with `notmuch config set query:inbox "tag:inbox and not
 tag:trash"` and use `query:inbox` as a search term.
 """
 
+no_hooks_on_send = True
+"""disable/enable calling notmuch hooks when sending email
+
+When True, 'notmuch new' is called with --no-hooks when a message is sent. One
+may not wanting to wait for the hooks on each sent email, for example when
+calling mbsync on their notmuch hooks. Other users may set this to False, for
+example when notmuch hooks are used to archive sent mail."""
+
 # security
 html_block_remote_requests = True
 """Block remote requests for HTML messages
