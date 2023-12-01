@@ -465,7 +465,7 @@ class SendmailThread(QThread):
             cmd = settings.send_mail_command.replace('{account}', account)
             sendmail = Popen(cmd, stdin=PIPE, encoding='utf8', shell=True)
             if sendmail.stdin:
-                sendmail.stdin.write(str(eml))
+                sendmail.stdin.write(eml.as_string())
                 sendmail.stdin.close()
             sendmail.wait(30)
             if sendmail.returncode == 0:
