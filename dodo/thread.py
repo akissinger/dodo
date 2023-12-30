@@ -29,7 +29,7 @@ import sys
 import traceback
 import subprocess
 import json
-import html
+import re
 import email
 import email.message
 import tempfile
@@ -114,6 +114,8 @@ class MessageHandler(QWebEngineUrlSchemeHandler):
             buf.open(QIODevice.OpenModeFlag.WriteOnly)
             if mode == 'html':
                 html = util.body_html(self.message_json)
+                html = re.sub(r'(<meta(?!\s*(?:name|value)\s*=)[^>]*?charset\s*=[\s"\']*)([^\s"\'/>]*)',
+                              r'\1utf-8', html, flags=re.M)
                 if html: buf.write(html.encode('utf-8'))
             else:
                 for filt in settings.message2html_filters:
