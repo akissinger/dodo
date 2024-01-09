@@ -191,6 +191,9 @@ class SearchPanel(panel.Panel):
 
         super().refresh()
 
+        self.tree.setColumnWidth(1, 150)
+        self.tree.setColumnWidth(2, 900)
+
     def title(self) -> str:
         """Give the query as the tab title"""
 
