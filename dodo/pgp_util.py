@@ -24,10 +24,11 @@ from . import settings
 # gnupg is only needed for pgp/mime support, do not throw when not present
 try:
     import gnupg
-except ImportError as ex:
+except ImportError:
     pass
 
 Gpg = gnupg.GPG(gnupghome=settings.gnupg_home, use_agent=True)
+
 
 def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     RFC4880_HASH_ALGO = {'1': "MD5", '2': "SHA1", '3': "RIPEMD160",
@@ -38,8 +39,8 @@ def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     # required per rfc-3156
     # Moreover, by working on the copy we leave the original message
     # (msg) unaltered.
-    gpg_policy = msg.policy.clone(linesep='\r\n',utf8=False)
-    msg_to_sign = email.message_from_string(msg.as_string(),policy=gpg_policy)
+    gpg_policy = msg.policy.clone(linesep='\r\n', utf8=False)
+    msg_to_sign = email.message_from_string(msg.as_string(), policy=gpg_policy)
     # Create a new mail that will contain the original message and its signature
     signed_mail = email.message.EmailMessage(policy=msg.policy.clone(linesep='\r\n'))
     # copy the non Content-* headers to the new mail and remove them form the
@@ -61,24 +62,24 @@ def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     sigpart.set_content(str(sig).encode(), 'application', 'pgp-signature',
                         filename='signature.asc', cte='7bit')
     signed_mail.attach(sigpart)
-    signed_mail.set_param("micalg", 'pgp-' +
-                          RFC4880_HASH_ALGO[sig.hash_algo].lower())
+    signed_mail.set_param("micalg", 'pgp-' + RFC4880_HASH_ALGO[sig.hash_algo].lower())
     return signed_mail
+
 
 def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     # Always also encrypt with the key corresponding to the From address in order to
     # be able to decrypt the mail that has been sent.
     recipients = [
-            addr[1] for addr in email.utils.getaddresses([
-                val for key,val in msg.items() if key in ['From', 'To', 'Cc']
-                ])
-            ]
-    recipients_keys = [ k['fingerprint'] for k in Gpg.list_keys()
-                       if any( re.search(addr, u) for u in k['uids']
-                              for addr in recipients) ]
+        addr[1] for addr in email.utils.getaddresses([
+            val for key, val in msg.items() if key in ['From', 'To', 'Cc']
+        ])
+    ]
+    recipients_keys = [k['fingerprint'] for k in Gpg.list_keys()
+                       if any(re.search(addr, u) for u in k['uids']
+                              for addr in recipients)]
     # Generate a copy of the message, by working on the copy we leave
     # the original message (msg) unaltered.
-    msg_to_encrypt = email.message_from_bytes(msg.as_bytes(),policy=msg.policy.clone())
+    msg_to_encrypt = email.message_from_bytes(msg.as_bytes(), policy=msg.policy.clone())
     # Create a new message that will contain the control part and the encrypted
     # message. Copy the non Content-* headers and remove them form the
     # message that will be encrypted
@@ -93,7 +94,7 @@ def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     # Create and add control part
     control_part = email.message.EmailMessage()
     control_part.set_content(b'Version:1', 'application', 'pgp-encrypted',
-                             disposition='PGP/MIME version information',cte='7bit')
+                             disposition='PGP/MIME version information', cte='7bit')
     encrypted_mail.attach(control_part)
 
     # Encrypt the parts of the original message (with non-content headers removed)
@@ -103,7 +104,7 @@ def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     # attach the ASCII representation of the encrypted test, note that
     # set_content with contaent-type other then text requires a bytes object
     pgp_encrypted_part = email.message.EmailMessage()
-    pgp_encrypted_part.set_content(str(encrypted_contents).encode(),'application',
+    pgp_encrypted_part.set_content(str(encrypted_contents).encode(), 'application',
                                    'octet-stream', disposition='inline',
                                    filename='encrypred.asc', cte='7bit')
     encrypted_mail.attach(pgp_encrypted_part)
