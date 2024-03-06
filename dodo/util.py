@@ -177,7 +177,7 @@ def find_content(m: dict, content_type: str) -> List[str]:
     part with the given content-type."""
 
     return [part['content'] for part in message_parts(m)
-              if 'content' in part and part.get('content-type') == content_type]
+              if 'content' in part and part.get('content-type', '').casefold() == content_type.casefold()]
 
 def body_text(m: dict) -> str:
     """Get the body text of a message
