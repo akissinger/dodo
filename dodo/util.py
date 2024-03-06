@@ -27,6 +27,7 @@ import tempfile
 import subprocess
 import email
 import email.header
+import email.utils
 import textwrap
 from bleach.sanitizer import Cleaner
 from bleach.linkifier import Linker
@@ -217,7 +218,10 @@ def quote_body_text(m: dict) -> str:
 
     text = body_text(m)
     if not text: return ''
-    return ''.join([f'> {ln}\n' for ln in text.splitlines()])
+    name, addr = email.utils.parseaddr(m['headers']['From'])
+    date = email.utils.parsedate_to_datetime(m['headers']['Date'])
+    prefix = f'On {date.strftime("%c")}, {name if name else addr} wrote:\n'
+    return ''.join([prefix] + [f'> {ln}\n' for ln in text.splitlines()])
 
 def write_attachments(m: dict) -> Tuple[str, List[str]]:
     """Write attachments out into temp directory and open with `settings.file_browser_command`
