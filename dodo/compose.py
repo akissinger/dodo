@@ -75,7 +75,9 @@ class ComposePanel(panel.Panel):
             senders: List[str] = []
             recipients: List[str] = []
             email_sep = re.compile('\s*,\s*')
-            if 'From' in msg['headers']:
+            if 'Reply-To' in msg['headers']:
+                senders.append(msg['headers']['Reply-To'])
+            elif 'From' in msg['headers']:
                 senders.append(msg["headers"]["From"])
             if 'To' in msg['headers']:
                 recipients += email_sep.split(msg['headers']['To'])
