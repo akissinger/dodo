@@ -19,7 +19,7 @@
 from __future__ import annotations
 from typing import Optional, Any, overload, Literal
 
-from PyQt6.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject
+from PyQt6.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject, QSettings
 from PyQt6.QtWidgets import QTreeView, QWidget, QAbstractSlider
 from PyQt6.QtGui import QFont, QColor
 import subprocess
@@ -164,25 +164,36 @@ class SearchPanel(panel.Panel):
         super().__init__(a, keep_open, parent)
         self.set_keymap(keymap.search_keymap)
         self.q = q
+        self.conf = QSettings("dodo", "dodo")
         self.tree = QTreeView()
         self.tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setStyleSheet(f'QTreeView::item {{ padding: {settings.search_view_padding}px }}')
         self.model = SearchModel(q)
         self.tree.setModel(self.model)
         self.layout().addWidget(self.tree)
-        # TODO fix for custom columns
-        self.tree.resizeColumnToContents(0)
-        self.tree.setColumnWidth(1, 150)
-        self.tree.setColumnWidth(2, 900)
         self.tree.doubleClicked.connect(self.open_current_thread)
         if self.tree.model().rowCount() > 0:
             self.tree.setCurrentIndex(self.tree.model().index(0,0))
+        self.restore_tree_geometry()
+
+    def before_close(self) -> bool:
+        self.save_tree_geometry()
+        return super().before_close()
+
+    def restore_tree_geometry(self):
+        tree_geometry = self.conf.value("search_tree_geometry")
+        if tree_geometry:
+            self.tree.header().restoreState(tree_geometry)
+
+    def save_tree_geometry(self):
+        self.conf.setValue("search_tree_geometry", self.tree.header().saveState())
 
     def refresh(self) -> None:
         """Refresh the search listing and restore the selection, if possible."""
 
         current = self.tree.currentIndex()
         self.model.refresh()
+        self.restore_tree_geometry()
         
         if current.row() >= self.model.num_threads():
             self.last_thread()
