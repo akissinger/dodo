@@ -186,6 +186,11 @@ class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
         if not content_type:
             request.fail(QWebEngineUrlRequestJob.Error.UrlNotFound)
 
+class RemoteBlockingUrlRequestInterceptor(QWebEngineUrlRequestInterceptor):
+    def interceptRequest(self, info):
+        if info.requestUrl().scheme() not in app.LOCAL_PROTOCOLS:
+            info.block(settings.html_block_remote_requests)
+
 class ThreadModel(QAbstractItemModel):
     """A model containing a thread, its messages, and some metadata
 
@@ -324,6 +329,10 @@ class ThreadPanel(panel.Panel):
         self.message_profile.installUrlSchemeHandler(b'message', self.message_handler)
         self.message_profile.settings().setAttribute(
                 QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
+
+        # The interceptor must not be garbage collected, so keep a reference
+        self.url_interceptor = RemoteBlockingUrlRequestInterceptor()
+        self.message_profile.setUrlRequestInterceptor(self.url_interceptor)
 
         self.message_view = QWebEngineView(self)
         page = MessagePage(self.app, self.message_profile, self.message_view)
