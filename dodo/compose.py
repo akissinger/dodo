@@ -485,7 +485,10 @@ class SendmailThread(QThread):
                     key = mailbox.Maildir(sent_dir).add(m)
                     # print(f'add: {key}')
 
-                subprocess.run(['notmuch', 'new', '--no-hooks'])
+                notmuch_command = [ 'notmuch', 'new' ]
+                if settings.no_hooks_on_send:
+                    notmuch_command.append( '--no-hooks' )
+                subprocess.run(notmuch_command)
 
                 if ((self.panel.mode == 'reply' or self.panel.mode == 'replyall') and
                         self.panel.msg and 'id' in self.panel.msg):
