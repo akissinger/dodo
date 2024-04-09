@@ -74,8 +74,11 @@ class ComposePanel(panel.Panel):
         if msg:
             senders: List[str] = []
             recipients: List[str] = []
+
             email_sep = re.compile(r'\s*,\s*')
-            if 'From' in msg['headers']:
+            if 'Reply-To' in msg['headers']:
+                senders.append(msg['headers']['Reply-To'])
+            elif 'From' in msg['headers']:
                 senders.append(msg["headers"]["From"])
             if 'To' in msg['headers']:
                 recipients += email_sep.split(msg['headers']['To'])
@@ -409,7 +412,7 @@ class SendmailThread(QThread):
         try:
             account = self.panel.account_name()
             m = email.message_from_string(self.panel.message_string)
-            eml = email.message.EmailMessage(policy=email.policy.EmailPolicy(utf8=True))
+            eml = email.message.EmailMessage(policy=email.policy.EmailPolicy(utf8=False))
             attachments: List[str] = m.get_all('A', [])
 
             # n.b. this kills duplicate headers. May want to revisit this if it causes problems.
@@ -465,7 +468,7 @@ class SendmailThread(QThread):
             cmd = settings.send_mail_command.replace('{account}', account)
             sendmail = Popen(cmd, stdin=PIPE, encoding='utf8', shell=True)
             if sendmail.stdin:
-                sendmail.stdin.write(str(eml))
+                sendmail.stdin.write(eml.as_string())
                 sendmail.stdin.close()
             sendmail.wait(30)
             if sendmail.returncode == 0:
