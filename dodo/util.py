@@ -115,8 +115,8 @@ def colorize_text(s: str, has_headers: bool=False) -> str:
     """
 
     s1 = ""
-    quoted = re.compile('^\s*&gt;')
-    empty = re.compile('^\s*$')
+    quoted = re.compile(r'^\s*&gt;')
+    empty = re.compile(r'^\s*$')
 
     headers = has_headers
     for ln in s.splitlines():
