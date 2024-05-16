@@ -237,7 +237,7 @@ class ComposePanel(panel.Panel):
         if settings.file_picker_command == None:
             f = QFileDialog.getOpenFileName()
             if f[0]:
-                self.raw_message_string = util.add_header_line(self.raw_message_string, 'A: ' + f[0])
+                self.raw_message_string = util.add_header_line(self.raw_message_string, f'A: {f[0]}\n')
                 self.refresh()
         else:
             fd, file = tempfile.mkstemp()
@@ -250,7 +250,7 @@ class ComposePanel(panel.Panel):
 
             for att in file_list:
                 if att != '':
-                    self.raw_message_string = util.add_header_line(self.raw_message_string, 'A: ' + att)
+                    self.raw_message_string = util.add_header_line(self.raw_message_string, f'A: {att}\n')
             self.refresh()
 
 
