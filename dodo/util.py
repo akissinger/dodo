@@ -28,6 +28,7 @@ import subprocess
 import email
 import email.header
 import email.utils
+import email.policy
 import textwrap
 from bleach.sanitizer import Cleaner
 from bleach.linkifier import Linker
@@ -240,12 +241,12 @@ def write_attachments(m: dict) -> Tuple[str, List[str]]:
 
     for filename in m['filename']:
         with open(filename, 'r') as f:
-            msg = email.message_from_file(f)
+            msg = email.message_from_file(f,policy=email.policy.default)
             for part in msg.walk():
                 if part.get_content_disposition() == 'attachment':
                     p = temp_dir + '/' + decode_header(part.get_filename())
                     with open(p, 'wb') as att:
-                        att.write(part.get_payload(decode=True))
+                        att.write(part.get_content())
                     file_paths.append(p)
 
     if len(file_paths) == 0:
