@@ -24,10 +24,10 @@ from . import settings
 # gnupg is only needed for pgp/mime support, do not throw when not present
 try:
     import gnupg
-except ImportError:
+    Gpg = gnupg.GPG(gnupghome=settings.gnupg_home, use_agent=True)
+except (ImportError, NameError):
     pass
 
-Gpg = gnupg.GPG(gnupghome=settings.gnupg_home, use_agent=True)
 
 
 def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
