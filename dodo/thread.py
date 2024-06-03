@@ -452,9 +452,7 @@ class ThreadPanel(panel.Panel):
             self.refresh()
             m = self.model.message_at(self.current_message)
             if 'unread' in m['tags']:
-                # this might change the filename, so we should refresh the model
                 self.tag_message('-unread')
-                self.refresh()
                 m = self.model.message_at(self.current_message)
 
             self.message_handler.message_json = m
