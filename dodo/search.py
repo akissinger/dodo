@@ -48,6 +48,25 @@ class SearchModel(QAbstractItemModel):
                 stdout=subprocess.PIPE)
         self.json_str = r.stdout.decode('utf-8')
         self.d = json.loads(self.json_str)
+        self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
+        self.endResetModel()
+
+    def refresh_thread(self, thread: QModelIndex|str):
+        if isinstance(thread, str):
+            thread_id = thread
+            row = self.threads[thread]
+        else:
+            thread_id = self.thread_id(thread)
+            row = thread.row()
+            assert(thread_id is not None)
+
+        r = subprocess.run(['notmuch', 'search', '--format=json', f'{self.q} AND thread:{thread_id}'],
+                stdout=subprocess.PIPE)
+        contents = json.loads(r.stdout.decode('utf-8'))
+
+        self.beginResetModel()
+        self.d[row:row+1] = contents
+        self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
         self.endResetModel()
 
     def num_threads(self) -> int:
@@ -202,6 +221,17 @@ class SearchPanel(panel.Panel):
 
         super().refresh()
 
+    def update_thread(self, thread_id: str) -> None:
+        if thread_id not in self.model.threads:
+            self.dirty = True
+        else:
+            current = self.tree.currentIndex()
+            self.model.refresh_thread(thread_id)
+            if current.row() >= self.model.num_threads():
+                self.last_thread()
+            else:
+                self.tree.setCurrentIndex(current)
+
     def title(self) -> str:
         """Give the query as the tab title"""
 
@@ -311,10 +341,11 @@ class SearchPanel(panel.Panel):
             thread_id = self.model.thread_id(self.tree.currentIndex())
             if thread_id:
                 subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'thread:' + thread_id])
+                self.app.update_single_thread(thread_id)
         elif mode == 'tag marked':
             subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['-marked','--', f'tag:marked AND ({self.q})'])
+            self.app.refresh_panels()
 
-        self.app.refresh_panels()
 
 
 

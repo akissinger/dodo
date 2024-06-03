@@ -97,6 +97,9 @@ class Panel(QWidget):
     def refresh(self) -> None:
         self.dirty = False
 
+    def update_thread(self, thread_id: str) -> None:
+        self.dirty = True
+
     def before_close(self) -> bool:
         """Called before closing a panel
 
