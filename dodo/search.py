@@ -24,12 +24,15 @@ from PyQt6.QtWidgets import QTreeView, QWidget, QAbstractSlider
 from PyQt6.QtGui import QFont, QColor
 import subprocess
 import json
+import logging
 
 from . import app
 from . import settings
 from . import keymap
 from . import thread
 from . import panel
+
+logger = logging.getLogger(__name__)
 
 columns = ['date', 'from', 'subject', 'tags']
 
@@ -43,12 +46,14 @@ class SearchModel(QAbstractItemModel):
 
     def refresh(self) -> None:
         """Refresh the model by (re-) running "notmuch search"."""
+        logger.info("Beginning search refresh for '%s'", self.q)
         self.beginResetModel()
         r = subprocess.run(['notmuch', 'search', '--format=json', self.q],
                 stdout=subprocess.PIPE)
         self.json_str = r.stdout.decode('utf-8')
         self.d = json.loads(self.json_str)
         self.endResetModel()
+        logger.info("Model refreshed for '%s'", self.q)
 
     def num_threads(self) -> int:
         """The number of threads returned by the search"""

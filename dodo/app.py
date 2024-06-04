@@ -24,6 +24,7 @@ import sys
 import os
 import subprocess
 from typing import Optional, Literal
+import logging
 
 from . import search
 from . import thread
@@ -64,6 +65,8 @@ class Dodo(QApplication):
 
     def __init__(self) -> None:
         super().__init__(sys.argv)
+        if '--verbose' in sys.argv or '-v' in sys.argv:
+            logging.basicConfig(level=logging.INFO)
         self.setApplicationName('Dodo')
         self.setDesktopFileName("dodo")
 
