@@ -191,6 +191,7 @@ class SearchPanel(panel.Panel):
         self.tree.setModel(self.model)
         self.layout().addWidget(self.tree)
         self.tree.doubleClicked.connect(self.open_current_thread)
+        self.updated_threads = set()
         if self.tree.model().rowCount() > 0:
             self.tree.setCurrentIndex(self.tree.model().index(0,0))
         self.restore_tree_geometry()
@@ -207,6 +208,24 @@ class SearchPanel(panel.Panel):
     def save_tree_geometry(self):
         self.conf.setValue("search_tree_geometry", self.tree.header().saveState())
 
+    def focusInEvent(self, event: PyQt6.QWidget.QFocusEvent):
+        self.refresh_threads()
+        super().focusInEvent(event)
+
+    def refresh_threads(self):
+        # If any thread is unknown to the current search, just do a full refresh
+        if self.updated_threads.difference(self.model.threads.keys()):
+            self.dirty = True
+        else:
+            current = self.tree.currentIndex()
+            for tid in self.updated_threads:
+                self.model.refresh_thread(tid)
+            if current.row() >= self.model.num_threads():
+                self.last_thread()
+            else:
+                self.tree.setCurrentIndex(current)
+        self.updated_threads.clear()
+
     def refresh(self) -> None:
         """Refresh the search listing and restore the selection, if possible."""
 
@@ -222,15 +241,11 @@ class SearchPanel(panel.Panel):
         super().refresh()
 
     def update_thread(self, thread_id: str) -> None:
-        if thread_id not in self.model.threads:
-            self.dirty = True
-        else:
-            current = self.tree.currentIndex()
-            self.model.refresh_thread(thread_id)
-            if current.row() >= self.model.num_threads():
-                self.last_thread()
-            else:
-                self.tree.setCurrentIndex(current)
+        self.updated_threads.add(thread_id)
+        if self.hasFocus():
+            self.refresh_threads()
+            if self.dirty:
+                self.refresh()
 
     def title(self) -> str:
         """Give the query as the tab title"""
