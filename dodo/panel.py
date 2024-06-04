@@ -73,6 +73,11 @@ class Panel(QWidget):
 
         self._prefix_timer.timeout.connect(prefix_timeout)
 
+    def focusInEvent(self, event: PyQt6.QWidget.QFocusEvent):
+        super().focusInEvent(event)
+        if self.dirty:
+            self.refresh()
+
     def title(self) -> str:
         """The title shown on this panel's tab"""
 
