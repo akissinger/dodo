@@ -23,11 +23,14 @@ from PyQt6.QtGui import QFont, QKeyEvent
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import *
 import shutil
+import logging
 
 from . import app
 from . import keymap
 from . import util
 from . import settings
+
+logger = logging.getLogger(__name__)
 
 class Panel(QWidget):
     """A container widget that can handle key events and be shown on a tab
@@ -106,6 +109,7 @@ class Panel(QWidget):
         :returns: True if the panel is ready to close, or False to cancel
         """
 
+        logger.info('before_close: starting')
         if settings.remove_temp_dirs == 'always':
             for d in self.temp_dirs: shutil.rmtree(d)
         elif settings.remove_temp_dirs == 'ask':
@@ -119,6 +123,7 @@ class Panel(QWidget):
                     for d in self.temp_dirs: shutil.rmtree(d)
 
         self.is_open = False
+        logger.info('before_close: end')
         return True
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
@@ -136,6 +141,7 @@ class Panel(QWidget):
         """
 
         k = util.key_string(e)
+        logger.info('keyPressEvent: %s', k)
         if not k: return None
         # print("key: " + util.key_string(e))
         cmd = self._prefix + " " + k if self._prefix != "" else k

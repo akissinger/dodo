@@ -20,11 +20,14 @@ from __future__ import annotations
 from PyQt6.QtCore import *
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon, QCloseEvent
+import logging
 import os
 
 from . import app
 from . import commandbar
 from . import panel
+
+logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow):
     def __init__(self, a: app.Dodo):
@@ -53,6 +56,7 @@ class MainWindow(QMainWindow):
         w.layout().addWidget(self.tabs)
 
         def panel_focused(i: int) -> None:
+            logger.info('Focusing panel %d', i)
             w = self.tabs.widget(i)
             if w and isinstance(w, panel.Panel):
                 if w in self.app.panel_history:
