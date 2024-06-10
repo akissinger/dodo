@@ -113,6 +113,7 @@ compose_keymap = {
   '<enter>': ('edit message', lambda p: p.edit()),
   'S':       ('send', lambda p: p.send()),
   'a':       ('attach file', lambda p: p.attach_file()),
+  'e':       ('toggle PGP-encrypt', lambda p: p.toggle_pgp_encrypt()),
   's':       ('toggle PGP-sign', lambda p: p.toggle_pgp_sign()),
   'w':       ('toggle word wrap', lambda p: p.toggle_wrap()),
   ']':       ('next SMTP account', lambda p: p.next_account()),

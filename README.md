@@ -306,13 +306,19 @@ Here's a `~/.notmuch-config` which is roughly like the one I use:
 
 ## Initial PGP/MIME support
 
-The thread view panel will show the signature status of pgp-signed messages as reported by notmuch.
+### Signing
 
-Outgoing mail can be signed by setting dodo.settings.gnupg_keyid to the id for the key which will be used to do the signing.
+The thread view panel will show the signature status of pgp-signed messages as reported by notmuch. notmuch tags them with te automatic tag `signed`.
 
-Signing can be disabled/enabled on a per-message basis in the comopose view by pressing the 's' key (or the key is mapped to the `toggle_pgp_sign` function)
+Outgoing mail can be signed by setting dodo.settings.gnupg_keyid to the id of the key which will be used to do the signing. It can be disabled/enabled on a per-message basis in the comopose view by pressing the 's' key (or the key that is mapped to the `toggle_pgp_sign` function).
 
 You might also have to set dodo.settings.gnupg_home.
+
+### Encryption
+
+Encrypted mail has the `encrypted` automatic tag set by notmuch. The latter is also responsible for the decryption. (`--decrypt=True` option of `notmuch show`)
+
+Outging mail can be encrypted by toggling the `PGPEncrypt` flag in the compose panel (mapped to the 'e' key). It is encrypted using the public keys found in the GnuPG database of all reciepients. Recepients without a public key in the GnuPG dataabse will not be able to decrypt the message.
 
 ## More Screenshots
 
