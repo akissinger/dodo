@@ -64,7 +64,6 @@ class MainWindow(QMainWindow):
                 self.app.panel_history.append(w)
                 # print("saving " + repr(w) + " to history")
                 w.setFocus()
-                if w.dirty: w.refresh()
 
         self.tabs.currentChanged.connect(panel_focused)
         self.show()

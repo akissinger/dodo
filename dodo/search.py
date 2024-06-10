@@ -52,6 +52,25 @@ class SearchModel(QAbstractItemModel):
                 stdout=subprocess.PIPE)
         self.json_str = r.stdout.decode('utf-8')
         self.d = json.loads(self.json_str)
+        self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
+        self.endResetModel()
+
+    def refresh_thread(self, thread: QModelIndex|str):
+        if isinstance(thread, str):
+            thread_id = thread
+            row = self.threads[thread]
+        else:
+            thread_id = self.thread_id(thread)
+            row = thread.row()
+            assert(thread_id is not None)
+
+        r = subprocess.run(['notmuch', 'search', '--format=json', f'{self.q} AND thread:{thread_id}'],
+                stdout=subprocess.PIPE)
+        contents = json.loads(r.stdout.decode('utf-8'))
+
+        self.beginResetModel()
+        self.d[row:row+1] = contents
+        self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
         self.endResetModel()
         logger.info("Model refreshed for '%s'", self.q)
 
@@ -177,6 +196,7 @@ class SearchPanel(panel.Panel):
         self.tree.setModel(self.model)
         self.layout().addWidget(self.tree)
         self.tree.doubleClicked.connect(self.open_current_thread)
+        self.updated_threads = set()
         if self.tree.model().rowCount() > 0:
             self.tree.setCurrentIndex(self.tree.model().index(0,0))
         self.restore_tree_geometry()
@@ -193,6 +213,24 @@ class SearchPanel(panel.Panel):
     def save_tree_geometry(self):
         self.conf.setValue("search_tree_geometry", self.tree.header().saveState())
 
+    def focusInEvent(self, event: PyQt6.QWidget.QFocusEvent):
+        self.refresh_threads()
+        super().focusInEvent(event)
+
+    def refresh_threads(self):
+        # If any thread is unknown to the current search, just do a full refresh
+        if self.updated_threads.difference(self.model.threads.keys()):
+            self.dirty = True
+        else:
+            current = self.tree.currentIndex()
+            for tid in self.updated_threads:
+                self.model.refresh_thread(tid)
+            if current.row() >= self.model.num_threads():
+                self.last_thread()
+            else:
+                self.tree.setCurrentIndex(current)
+        self.updated_threads.clear()
+
     def refresh(self) -> None:
         """Refresh the search listing and restore the selection, if possible."""
 
@@ -206,6 +244,13 @@ class SearchPanel(panel.Panel):
             self.tree.setCurrentIndex(current)
 
         super().refresh()
+
+    def update_thread(self, thread_id: str) -> None:
+        self.updated_threads.add(thread_id)
+        if self.hasFocus():
+            self.refresh_threads()
+            if self.dirty:
+                self.refresh()
 
     def title(self) -> str:
         """Give the query as the tab title"""
@@ -316,10 +361,11 @@ class SearchPanel(panel.Panel):
             thread_id = self.model.thread_id(self.tree.currentIndex())
             if thread_id:
                 subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'thread:' + thread_id])
+                self.app.update_single_thread(thread_id)
         elif mode == 'tag marked':
             subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['-marked','--', f'tag:marked AND ({self.q})'])
+            self.app.refresh_panels()
 
-        self.app.refresh_panels()
 
 
 

@@ -438,6 +438,10 @@ class ThreadPanel(panel.Panel):
 
         super().refresh()
 
+    def update_thread(self, thread_id: str):
+        if self.model.thread_id == thread_id:
+            self.dirty = True
+
     def show_message(self, i: int=-1) -> None:
         """Show a message
 
@@ -453,9 +457,7 @@ class ThreadPanel(panel.Panel):
             self.refresh()
             m = self.model.message_at(self.current_message)
             if 'unread' in m['tags']:
-                # this might change the filename, so we should refresh the model
                 self.tag_message('-unread')
-                self.refresh()
                 m = self.model.message_at(self.current_message)
 
             self.message_handler.message_json = m
@@ -528,7 +530,7 @@ class ThreadPanel(panel.Panel):
                 tag_expr = '+' + tag_expr
             r = subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'id:' + m['id']],
                     stdout=subprocess.PIPE)
-            self.app.refresh_panels()
+            self.app.update_single_thread(self.thread_id)
 
     def toggle_html(self) -> None:
         """Toggle between HTML and plain text message view"""

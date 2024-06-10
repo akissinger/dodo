@@ -285,6 +285,15 @@ class Dodo(QApplication):
         w = self.tabs.currentWidget()
         if w and isinstance(w, panel.Panel): w.refresh()
 
+    def update_single_thread(self, thread_id: str):
+        current = self.tabs.currentWidget()
+        for i in range(self.num_panels()):
+            w = self.tabs.widget(i)
+            if isinstance(w, panel.Panel):
+                w.update_thread(thread_id)
+                if w == current and w.dirty:
+                    w.refresh()
+
     def prompt_quit(self) -> None:
         """A 'soft' quit function, which gives each open tab the opportunity to prompt
         the user and possible cancel closing."""

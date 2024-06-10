@@ -76,6 +76,11 @@ class Panel(QWidget):
 
         self._prefix_timer.timeout.connect(prefix_timeout)
 
+    def focusInEvent(self, event: PyQt6.QWidget.QFocusEvent):
+        super().focusInEvent(event)
+        if self.dirty:
+            self.refresh()
+
     def title(self) -> str:
         """The title shown on this panel's tab"""
 
@@ -99,6 +104,9 @@ class Panel(QWidget):
 
     def refresh(self) -> None:
         self.dirty = False
+
+    def update_thread(self, thread_id: str) -> None:
+        self.dirty = True
 
     def before_close(self) -> bool:
         """Called before closing a panel
