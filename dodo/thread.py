@@ -33,6 +33,7 @@ import re
 import email
 import email.message
 import tempfile
+import logging
 
 from . import app
 from . import settings
@@ -40,6 +41,7 @@ from . import util
 from . import keymap
 from . import panel
 
+logger = logging.getLogger(__name__)
 
 def flat_thread(d: dict) -> List[dict]:
     "Return the thread as a flattened list of messages, sorted by date."
@@ -214,6 +216,7 @@ class ThreadModel(QAbstractItemModel):
                 stdout=subprocess.PIPE, encoding='utf8')
         self.json_str = r.stdout
         self.d = json.loads(self.json_str)
+        logger.info("Full thread refresh")
         self.beginResetModel()
         self.message_list = flat_thread(self.d)
         self.endResetModel()
@@ -378,6 +381,11 @@ class ThreadPanel(panel.Panel):
         :func:`show_message` wihtout any arguments."""
 
         self.model.refresh()
+        self.refresh_view()
+        super().refresh()
+
+    def refresh_view(self):
+        """Refresh the UI, without refreshing the underlying content"""
         ix = self.thread_list.model().index(self.current_message, 0)
         if self.thread_list.model().checkIndex(ix):
             self.thread_list.setCurrentIndex(ix)
@@ -436,8 +444,6 @@ class ThreadPanel(panel.Panel):
             header_html += '</table>'
             self.message_info.setHtml(header_html)
 
-        super().refresh()
-
     def update_thread(self, thread_id: str):
         if self.model.thread_id == thread_id:
             self.dirty = True
@@ -454,7 +460,7 @@ class ThreadPanel(panel.Panel):
             self.current_message = i
 
         if self.current_message >= 0 and self.current_message < self.model.num_messages():
-            self.refresh()
+            self.refresh_view()
             m = self.model.message_at(self.current_message)
             if 'unread' in m['tags']:
                 self.tag_message('-unread')
