@@ -285,12 +285,12 @@ class Dodo(QApplication):
         w = self.tabs.currentWidget()
         if w and isinstance(w, panel.Panel): w.refresh()
 
-    def update_single_thread(self, thread_id: str):
+    def update_single_thread(self, thread_id: str, msg_id: str|None=None):
         current = self.tabs.currentWidget()
         for i in range(self.num_panels()):
             w = self.tabs.widget(i)
             if isinstance(w, panel.Panel):
-                w.update_thread(thread_id)
+                w.update_thread(thread_id, msg_id=msg_id)
                 if w == current and w.dirty:
                     w.refresh()
 

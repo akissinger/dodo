@@ -245,7 +245,7 @@ class SearchPanel(panel.Panel):
 
         super().refresh()
 
-    def update_thread(self, thread_id: str) -> None:
+    def update_thread(self, thread_id: str, msg_id: str|None= None) -> None:
         self.updated_threads.add(thread_id)
         if self.hasFocus():
             self.refresh_threads()

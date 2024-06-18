@@ -105,7 +105,7 @@ class Panel(QWidget):
     def refresh(self) -> None:
         self.dirty = False
 
-    def update_thread(self, thread_id: str) -> None:
+    def update_thread(self, thread_id: str, msg_id: str|None=None) -> None:
         self.dirty = True
 
     def before_close(self) -> bool:
