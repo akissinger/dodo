@@ -522,6 +522,14 @@ class ThreadPanel(panel.Panel):
 
         self.show_message(max(self.current_message - 1, 0))
 
+    def next_unread(self) -> None:
+        """Show the next relevant unread message in the thread"""
+        for i in range(self.current_message+1, self.model.num_messages()):
+            msg = self.model.message_at(i)
+            if msg['id'] in self.model.matches and 'unread' in msg['tags']:
+                self.show_message(i)
+                break
+
     def scroll_message(self,
             lines: Optional[int]=None,
             pages: Optional[Union[float,int]]=None,

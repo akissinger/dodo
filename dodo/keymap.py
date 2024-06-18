@@ -85,6 +85,7 @@ taking :class:`~dodo.search.TagPanel` as input.
 thread_keymap = {
   'J':          ('next message', lambda p: p.next_message()),
   'K':          ('previous message', lambda p: p.previous_message()),
+  'U':          ('next matching unread message', lambda p: p.next_unread()),
   'g g':        ('top of message', lambda p: p.scroll_message(pos='top')),
   'G':          ('bottom of message', lambda p: p.scroll_message(pos='bottom')),
   '<pageup>':   ('page up', lambda p: p.scroll_message(pages=-1)),
