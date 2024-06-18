@@ -291,10 +291,14 @@ class ThreadModel(QAbstractItemModel):
                 return '(message)'
         elif role == Qt.ItemDataRole.FontRole:
             font = QFont(settings.search_font, settings.search_font_size)
+            if m['id'] not in self.matches:
+                font.setItalic(True)
             if 'tags' in m and 'unread' in m['tags']:
                 font.setBold(True)
             return font
         elif role == Qt.ItemDataRole.ForegroundRole:
+            if m['id'] not in self.matches:
+                return QColor(settings.theme['fg_subject_irrelevant'])
             if 'tags' in m and 'unread' in m['tags']:
                 return QColor(settings.theme['fg_subject_unread'])
             else:
