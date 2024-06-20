@@ -305,6 +305,14 @@ class ThreadModel(QAbstractItemModel):
 
         return self.num_messages() - 1
 
+    def next_unread(self, current: int) -> int:
+        """Show the next relevant unread message in the thread"""
+        start = current+1
+        for i,msg in enumerate(self.message_list[start:]):
+            if msg['id'] in self.matches and 'unread' in msg['tags']:
+                return i+start
+        return current
+
     def num_messages(self) -> int:
         """The number of messages in the thread"""
 
@@ -576,12 +584,7 @@ class ThreadPanel(panel.Panel):
         self.show_message(max(self.current_message - 1, 0))
 
     def next_unread(self) -> None:
-        """Show the next relevant unread message in the thread"""
-        for i in range(self.current_message+1, self.model.num_messages()):
-            msg = self.model.message_at(i)
-            if msg['id'] in self.model.matches and 'unread' in msg['tags']:
-                self.show_message(i)
-                break
+        self.show_message(self.model.next_unread(self.current_message))
 
     def scroll_message(self,
             lines: Optional[int]=None,
