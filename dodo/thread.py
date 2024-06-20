@@ -208,6 +208,8 @@ class ThreadModel(QAbstractItemModel):
     matches: set[str]
     message_list: list[dict]
 
+    messageChanged = pyqtSignal(QModelIndex)
+
     def __init__(self, thread_id: str, search_query: str) -> None:
         super().__init__()
         self.thread_id = thread_id
@@ -247,7 +249,42 @@ class ThreadModel(QAbstractItemModel):
         self.message_list[idx] = msg
         self.matches = matches
         index = self.index(idx, 0)
-        self.dataChanged.emit(idx, idx)
+        self.dataChanged.emit(index, index)
+
+    def tag_message(self, i: int, tag_expr: str) -> None:
+        """Apply the given tag expression to the current message
+        A tag expression is a string consisting of one more statements of the form "+TAG"
+        or "-TAG" to add or remove TAG, respectively, separated by whitespace."""
+
+        m = self.message_at(i)
+        if not m:
+            return
+        msg_id = m['id']
+        if not ('+' in tag_expr or '-' in tag_expr):
+            tag_expr = '+' + tag_expr
+        r = subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'id:' + msg_id],
+                stdout=subprocess.PIPE)
+        self.messageChanged.emit(self.createIndex(i, 0, None))
+
+    def toggle_message_tag(self, i: int, tag: str) -> None:
+        """Toggle the given tag on the current message"""
+
+        m = self.message_at(i)
+        assert m
+        if tag in m['tags']:
+            tag_expr = '-' + tag
+        else:
+            tag_expr = '+' + tag
+        self.tag_message(i, tag_expr)
+
+    def mark_as_read(self, i: int) -> bool:
+        "Marks a message as read. Returns False if nothing is to be done"
+        m = self.message_at(i)
+        assert m
+        if 'unread' in m['tags']:
+            self.tag_message(i, '-unread')
+            return True
+        return False
 
     def message_at(self, i: int) -> dict:
         """A JSON object describing the i-th message in the (flattened) thread"""
@@ -359,6 +396,7 @@ class ThreadPanel(panel.Panel):
         self.model.modelAboutToBeReset.connect(self._prepare_reset)
         self.model.modelReset.connect(self._do_reset)
         self.model.dataChanged.connect(lambda _a,_b: self.refresh_view())
+        self.model.messageChanged.connect(lambda idx: self.app.update_single_thread(self.thread_id, msg_id=self.model.message_at(idx.row())['id']))
 
         self.message_info = QTextBrowser()
 
@@ -436,8 +474,8 @@ class ThreadPanel(panel.Panel):
 
     def refresh_view(self):
         """Refresh the UI, without refreshing the underlying content"""
-        ix = self.thread_list.model().index(self.current_message, 0)
-        if self.thread_list.model().checkIndex(ix):
+        ix = self.model.index(self.current_message, 0)
+        if self.model.checkIndex(ix):
             self.thread_list.setCurrentIndex(ix)
 
         m = self.model.message_at(self.current_message)
@@ -513,12 +551,9 @@ class ThreadPanel(panel.Panel):
             self.current_message = i
 
         if self.current_message >= 0 and self.current_message < self.model.num_messages():
-            self.refresh_view()
+            if not self.model.mark_as_read(self.current_message):
+                self.refresh_view()
             m = self.model.message_at(self.current_message)
-            if 'unread' in m['tags']:
-                self.tag_message('-unread')
-                m = self.model.message_at(self.current_message)
-
             self.message_handler.message_json = m
 
             if self.html_mode:
@@ -575,30 +610,10 @@ class ThreadPanel(panel.Panel):
                     QWebEngineScript.ScriptWorldId.ApplicationWorld)
 
     def toggle_message_tag(self, tag: str) -> None:
-        """Toggle the given tag on the current message"""
-
-        m = self.model.message_at(self.current_message)
-        if m:
-            if tag in m['tags']:
-                tag_expr = '-' + tag
-            else:
-                tag_expr = '+' + tag
-            self.tag_message(tag_expr)
+        return self.model.toggle_message_tag(self.current_message, tag)
 
     def tag_message(self, tag_expr: str) -> None:
-        """Apply the given tag expression to the current message
-
-        A tag expression is a string consisting of one more statements of the form "+TAG"
-        or "-TAG" to add or remove TAG, respectively, separated by whitespace."""
-
-        m = self.model.message_at(self.current_message)
-        if m:
-            msg_id = m['id']
-            if not ('+' in tag_expr or '-' in tag_expr):
-                tag_expr = '+' + tag_expr
-            r = subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'id:' + msg_id],
-                    stdout=subprocess.PIPE)
-            self.app.update_single_thread(self.thread_id, msg_id=msg_id)
+        return self.model.tag_message(self.current_message, tag_expr)
 
     def toggle_html(self) -> None:
         """Toggle between HTML and plain text message view"""
