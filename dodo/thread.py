@@ -400,7 +400,7 @@ class ThreadPanel(panel.Panel):
         self.thread_list = QListView()
         self.thread_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.thread_list.setModel(self.model)
-        self.thread_list.clicked.connect(lambda ix: self.show_message(ix.row()))
+        self.thread_list.clicked.connect(self._select_index)
         self.model.modelAboutToBeReset.connect(self._prepare_reset)
         self.model.modelReset.connect(self._do_reset)
         self.model.dataChanged.connect(lambda _a,_b: self.refresh_view())
@@ -441,7 +441,16 @@ class ThreadPanel(panel.Panel):
             self._saved_msg = None
         if idx < 0:
             idx = self.model.default_message()
-        self.show_message(idx)
+        self._select_index(self.model.index(idx, 0))
+
+    def _select_index(self, index: QModelIndex):
+        if not index.isValid():
+            return
+        self.thread_list.setCurrentIndex(index)
+        self.current_message = index.row()
+        # We only refresh the view if there was no tagging
+        if not self.model.mark_as_read(index.row()):
+            self.refresh_view()
 
     def layout_panel(self):
         """Method for laying out various components in the ThreadPanel"""
@@ -482,10 +491,6 @@ class ThreadPanel(panel.Panel):
 
     def refresh_view(self):
         """Refresh the UI, without refreshing the underlying content"""
-        ix = self.model.index(self.current_message, 0)
-        if self.model.checkIndex(ix):
-            self.thread_list.setCurrentIndex(ix)
-
         m = self.model.message_at(self.current_message)
 
         if 'headers' in m and 'Subject' in m['headers']:
@@ -540,6 +545,17 @@ class ThreadPanel(panel.Panel):
             header_html += '</table>'
             self.message_info.setHtml(header_html)
 
+        self.message_handler.message_json = m
+
+        if self.html_mode:
+            if 'filename' in m and len(m['filename']) != 0:
+                self.image_handler.set_message(m['filename'][0])
+            self.message_view.page().setUrl(QUrl('message:html'))
+        else:
+            self.message_view.page().setUrl(QUrl('message:plain'))
+        self.scroll_message(pos = 'top')
+
+
     def update_thread(self, thread_id: str, msg_id: str|None=None):
         if self.model.thread_id == thread_id:
             if msg_id and self.model.find(msg_id) is not None:
@@ -547,44 +563,16 @@ class ThreadPanel(panel.Panel):
             else:
                 self.dirty = True
 
-    def show_message(self, i: int=-1) -> None:
-        """Show a message
-
-        If an index is provided, switch the current message to that index, otherwise refresh
-        the view of the current message.
-        """
-        if i == self.current_message:
-            return
-        elif i != -1:
-            self.current_message = i
-
-        if self.current_message >= 0 and self.current_message < self.model.num_messages():
-            if not self.model.mark_as_read(self.current_message):
-                self.refresh_view()
-            m = self.model.message_at(self.current_message)
-            self.message_handler.message_json = m
-
-            if self.html_mode:
-                if 'filename' in m and len(m['filename']) != 0:
-                    self.image_handler.set_message(m['filename'][0])
-                self.message_view.page().setUrl(QUrl('message:html'))
-            else:
-                self.message_view.page().setUrl(QUrl('message:plain'))
-            self.scroll_message(pos = 'top')
-
-
     def next_message(self) -> None:
         """Show the next message in the thread"""
-
-        self.show_message(min(self.current_message + 1, self.model.num_messages() - 1))
+        self._select_index(self.model.index(self.current_message+1, 0))
 
     def previous_message(self) -> None:
         """Show the previous message in the thread"""
-
-        self.show_message(max(self.current_message - 1, 0))
+        self._select_index(self.model.index(self.current_message-1, 0))
 
     def next_unread(self) -> None:
-        self.show_message(self.model.next_unread(self.current_message))
+        self._select_index(self.model.index(self.model.next_unread(self.current_message), 0))
 
     def scroll_message(self,
             lines: Optional[int]=None,
@@ -622,7 +610,7 @@ class ThreadPanel(panel.Panel):
         """Toggle between HTML and plain text message view"""
 
         self.html_mode = not self.html_mode
-        self.show_message()
+        self.refresh_view()
 
     def reply(self, to_all: bool=True) -> None:
         """Open a :class:`~dodo.compose.ComposePanel` populated with a reply
