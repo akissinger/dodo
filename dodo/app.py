@@ -185,7 +185,7 @@ class Dodo(QApplication):
         p = search.SearchPanel(self, query, keep_open=keep_open)
         self.add_panel(p)
 
-    def open_thread(self, thread_id: str) -> None:
+    def open_thread(self, thread_id: str, query: str) -> None:
         """Open a thread panel with the given thread_id
 
         If a panel with this thread_id is already open, switch to it rather than
@@ -197,7 +197,7 @@ class Dodo(QApplication):
                 self.tabs.setCurrentIndex(i)
                 return
 
-        p = thread.ThreadPanel(self, thread_id)
+        p = thread.ThreadPanel(self, thread_id, query)
         self.add_panel(p)
 
     def open_compose(self, mode: str='', msg: Optional[dict]=None) -> None:

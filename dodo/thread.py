@@ -205,22 +205,34 @@ class ThreadModel(QAbstractItemModel):
     :param thread_id: the unique thread identifier used by notmuch
     """
 
-    def __init__(self, thread_id: str) -> None:
+    matches: set[str]
+    message_list: list[dict]
+
+    def __init__(self, thread_id: str, search_query: str) -> None:
         super().__init__()
         self.thread_id = thread_id
+        self.query = search_query
         self.refresh()
+
+    def _fetch_full_thread(self) -> list:
+        r = subprocess.run(['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', self.thread_id],
+                stdout=subprocess.PIPE, encoding='utf8')
+        return json.loads(r.stdout)
+
+    def _fetch_matching_ids(self) -> set[str]:
+        r = subprocess.run(['notmuch', 'search', '--exclude=false', '--format=json', '--output=messages', f'thread:{self.thread_id} AND {self.query}'],
+                stdout=subprocess.PIPE, encoding='utf8')
+        return set(json.loads(r.stdout))
 
     def refresh(self) -> None:
         """Refresh the model by calling "notmuch show"."""
 
-        r = subprocess.run(['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', self.thread_id],
-                stdout=subprocess.PIPE, encoding='utf8')
-        self.json_str = r.stdout
-        self.d = json.loads(self.json_str)
         logger.info("Full thread refresh")
-        thread = flat_thread(self.d)
+        matches = self._fetch_matching_ids()
+        thread = flat_thread(self._fetch_full_thread())
         self.beginResetModel()
         self.message_list = thread
+        self.matches = matches
         self.endResetModel()
 
     def refresh_message(self, msg_id: str):
@@ -229,8 +241,11 @@ class ThreadModel(QAbstractItemModel):
         r = subprocess.run(['notmuch', 'show', '--entire-thread=false', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', f'id:{msg_id}'],
                 stdout=subprocess.PIPE, encoding='utf8')
         msg = next(m for m in flatten(json.loads(r.stdout)) if m is not None)
+        # We need to refresh the matches in case the message dropped out of the set
+        matches = self._fetch_matching_ids()
         self.beginResetModel()
         self.message_list[idx] = msg
+        self.matches = matches
         self.endResetModel()
 
     def message_at(self, i: int) -> dict:
@@ -243,11 +258,11 @@ class ThreadModel(QAbstractItemModel):
 
 
     def default_message(self) -> int:
-        """Return the index of either the oldest unread message or the last message
+        """Return the index of either the oldest matching message or the last message
         in the thread."""
 
         for i, m in enumerate(self.message_list):
-            if 'tags' in m and 'unread' in m['tags']:
+            if m['id'] in self.matches:
                 return i
 
         return self.num_messages() - 1
@@ -321,10 +336,10 @@ class ThreadPanel(panel.Panel):
     :param thread_id: the unique ID notmuch uses to identify this thread
     """
 
-    def __init__(self, a: app.Dodo, thread_id: str, parent: Optional[QWidget]=None):
+    def __init__(self, a: app.Dodo, thread_id: str, search_query: str, parent: Optional[QWidget]=None):
         super().__init__(a, parent=parent)
         self.set_keymap(keymap.thread_keymap)
-        self.model = ThreadModel(thread_id)
+        self.model = ThreadModel(thread_id, search_query)
         self.thread_id = thread_id
         self.html_mode = settings.default_to_html
 
