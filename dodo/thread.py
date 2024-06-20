@@ -212,7 +212,8 @@ class ThreadModel(QAbstractItemModel):
         super().__init__()
         self.thread_id = thread_id
         self.query = search_query
-        self.refresh()
+        self.message_list = []
+        self.matches = set()
 
     def _fetch_full_thread(self) -> list:
         r = subprocess.run(['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', self.thread_id],
@@ -243,10 +244,10 @@ class ThreadModel(QAbstractItemModel):
         msg = next(m for m in flatten(json.loads(r.stdout)) if m is not None)
         # We need to refresh the matches in case the message dropped out of the set
         matches = self._fetch_matching_ids()
-        self.beginResetModel()
         self.message_list[idx] = msg
         self.matches = matches
-        self.endResetModel()
+        index = self.index(idx, 0)
+        self.dataChanged.emit(idx, idx)
 
     def message_at(self, i: int) -> dict:
         """A JSON object describing the i-th message in the (flattened) thread"""
@@ -346,6 +347,7 @@ class ThreadPanel(panel.Panel):
         self.model = ThreadModel(thread_id, search_query)
         self.thread_id = thread_id
         self.html_mode = settings.default_to_html
+        self._saved_msg = None
 
         self.subject = '(no subject)'
         self.current_message = -1
@@ -354,6 +356,9 @@ class ThreadPanel(panel.Panel):
         self.thread_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.thread_list.setModel(self.model)
         self.thread_list.clicked.connect(lambda ix: self.show_message(ix.row()))
+        self.model.modelAboutToBeReset.connect(self._prepare_reset)
+        self.model.modelReset.connect(self._do_reset)
+        self.model.dataChanged.connect(lambda _a,_b: self.refresh_view())
 
         self.message_info = QTextBrowser()
 
@@ -379,7 +384,18 @@ class ThreadPanel(panel.Panel):
 
         self.layout_panel()
 
-        self.show_message(self.model.default_message())
+    def _prepare_reset(self):
+        if self.current_message >= 0:
+            self._saved_msg = self.model.message_at(self.current_message)['id']
+
+    def _do_reset(self):
+        idx = -1
+        if self._saved_msg:
+            idx = self.model.find(self._saved_msg)
+            self._saved_msg = None
+        if idx < 0:
+            idx = self.model.default_message()
+        self.show_message(idx)
 
     def layout_panel(self):
         """Method for laying out various components in the ThreadPanel"""
@@ -416,7 +432,6 @@ class ThreadPanel(panel.Panel):
         :func:`show_message` wihtout any arguments."""
 
         self.model.refresh()
-        self.refresh_view()
         super().refresh()
 
     def refresh_view(self):
@@ -483,7 +498,6 @@ class ThreadPanel(panel.Panel):
         if self.model.thread_id == thread_id:
             if msg_id and self.model.find(msg_id) is not None:
                 self.model.refresh_message(msg_id)
-                self.refresh_view()
             else:
                 self.dirty = True
 
