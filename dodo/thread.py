@@ -488,8 +488,8 @@ class ThreadPanel(panel.Panel):
         the top of the message every time it happens. To refresh the current message body, use
         :func:`show_message` wihtout any arguments."""
 
-        self.model.refresh()
         super().refresh()
+        self.model.refresh()
 
     def refresh_view(self):
         """Refresh the UI, without refreshing the underlying content"""
@@ -556,6 +556,7 @@ class ThreadPanel(panel.Panel):
         else:
             self.message_view.page().setUrl(QUrl('message:plain'))
         self.scroll_message(pos = 'top')
+        self.has_refreshed.emit()
 
 
     def update_thread(self, thread_id: str, msg_id: str|None=None):
