@@ -32,6 +32,7 @@ import subprocess
 import json
 import re
 import email
+import email.utils
 import email.message
 import itertools
 import tempfile
@@ -58,6 +59,19 @@ def flat_thread(d: list) -> List[dict]:
     thread = list(flatten(d))
     thread.sort(key=lambda m: m['timestamp'])
     return thread
+
+def make_thread_trees(raw_thread_data: list) -> list[ThreadItem]:
+    "Return the set of roots for a given thread. If the thread is linear, then all messages are roots."
+    def has_multiple_children(forest: list):
+        while forest:
+            if len(forest) > 1:
+                return True
+            forest = forest[0][1]
+
+    if has_multiple_children(raw_thread_data):
+        return [ThreadItem(root, None) for root in raw_thread_data]
+    else:
+        return [ThreadItem([msg, []], None) for msg in flatten(raw_thread_data)]
 
 def short_string(m: dict) -> str:
     """Return a short string describing the provided message
@@ -269,7 +283,7 @@ class ThreadModel(QAbstractItemModel):
         data = self._fetch_full_thread()
         assert(len(data) == 1)
         data = data[0]
-        roots = [ThreadItem(d, None) for d in data]
+        roots = make_thread_trees(data)
         self.beginResetModel()
         self.raw_data = data
         self.roots = roots
