@@ -195,6 +195,7 @@ class RemoteBlockingUrlRequestInterceptor(QWebEngineUrlRequestInterceptor):
         if info.requestUrl().scheme() not in app.LOCAL_PROTOCOLS:
             info.block(settings.html_block_remote_requests)
 
+RE_REGEX = re.compile('^R[Ee]: ')
 class ThreadItem:
     def __init__(self, raw_data, parent: ThreadItem|None):
         self.msg = raw_data[0]
@@ -206,8 +207,17 @@ class ThreadItem:
         name, addr = email.utils.parseaddr(from_hdr)
         if not name:
             name = addr
+        if not self.parent:
+            return name
+
         subject = self.msg.get('headers', {}).get('Subject', '')
-        if self.parent and subject != self.parent.msg.get('headers', {}).get('Subject', ''):
+        while RE_REGEX.match(subject):
+            subject = RE_REGEX.sub('', subject)
+        prev_subject = self.parent.msg.get('headers', {}).get('Subject', '')
+        while RE_REGEX.match(prev_subject):
+            prev_subject = RE_REGEX.sub('', prev_subject)
+
+        if subject != prev_subject:
             return f"{name} — {subject}"
         else:
             return name
@@ -363,12 +373,10 @@ class ThreadModel(QAbstractItemModel):
         Currently, this just returns the message sender and makes it bold if the message is unread. Adding an
         emoji to show attachments would be good."""
 
-        m = self.message_at(index)
+        item: ThreadItem = index.internalPointer()
+        m = item.msg
         if role == Qt.ItemDataRole.DisplayRole:
-            if 'headers' in m and 'From' in m["headers"]:
-                return m['headers']['From']
-            else:
-                return '(message)'
+            return item.thread_string()
         elif role == Qt.ItemDataRole.FontRole:
             font = QFont(settings.search_font, settings.search_font_size)
             if m['id'] not in self.matches:
