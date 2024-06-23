@@ -514,21 +514,25 @@ class ThreadPanel(panel.Panel):
         """Method for laying out various components in the ThreadPanel"""
 
         splitter = QSplitter(Qt.Orientation.Vertical)
-        info_area = QWidget()
-        info_area.setLayout(QHBoxLayout())
-        self.thread_list.setFixedWidth(250)
-        info_area.layout().addWidget(self.thread_list)
-        info_area.layout().addWidget(self.message_info)
+        info_area = QSplitter(Qt.Orientation.Horizontal)
+        #self.thread_list.setFixedWidth(250)
+        info_area.addWidget(self.thread_list)
+        info_area.addWidget(self.message_info)
         splitter.addWidget(info_area)
         splitter.addWidget(self.message_view)
         self.layout().addWidget(splitter)
 
-        # save splitter position
+        # save splitter positions
         window_settings = QSettings("dodo", "dodo")
-        state = window_settings.value("thread_splitter_state")
+        main_state = window_settings.value("thread_splitter_state")
         splitter.splitterMoved.connect(
                 lambda x: window_settings.setValue("thread_splitter_state", splitter.saveState()))
-        if state: splitter.restoreState(state)
+        if main_state: splitter.restoreState(main_state)
+
+        info_area.splitterMoved.connect(
+                lambda x: window_settings.setValue("thread_info_state", info_area.saveState()))
+        info_state = window_settings.value("thread_info_state")
+        if info_state: info_area.restoreState(info_state)
 
     def title(self) -> str:
         """The tab title
