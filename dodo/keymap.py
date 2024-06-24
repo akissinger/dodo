@@ -99,6 +99,7 @@ thread_keymap = {
   'u':          ('toggle unread', lambda p: p.toggle_message_tag('unread')),
   'f':          ('toggle flagged', lambda p: p.toggle_message_tag('flagged')),
   'H':          ('toggle HTML', lambda p: p.toggle_html()),
+  'M':          ('toggle thread list mode', lambda p: p.toggle_list_mode()),
   'r':          ('reply to all', lambda p: p.reply(to_all=True)),
   'R':          ('reply', lambda p: p.reply(to_all=False)),
   'C-f':        ('forward', lambda p: p.forward()),

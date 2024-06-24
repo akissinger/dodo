@@ -34,6 +34,7 @@ defaults, as detailed below.
 """
 
 from . import themes
+from typing import Literal
 
 # functional
 email_address = ''
@@ -137,6 +138,14 @@ remove_temp_dirs = 'ask'
 Thread panels create temporary directories to open attachments. These can be cleaned up
 automatically when a panel (or Dodo) is closed. Possible values are: 'always', 'never',
 or 'ask'.
+"""
+
+default_thread_list_mode: Literal['conversation', 'thread'] = 'conversation'
+"""Set the way your thread should be listed.
+
+Possible values are:
+    * 'conversation': flat list, chronologically sorted
+    * 'thread': tree view, following the various subthreads
 """
 
 gnupg_home = None

@@ -17,7 +17,7 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import List, Optional, Any, Union
+from typing import List, Optional, Any, Union, Literal
 from collections.abc import Generator, Iterable
 
 from PyQt6.QtCore import *
@@ -59,19 +59,6 @@ def flat_thread(d: list) -> List[dict]:
     thread = list(flatten(d))
     thread.sort(key=lambda m: m['timestamp'])
     return thread
-
-def make_thread_trees(raw_thread_data: list) -> list[ThreadItem]:
-    "Return the set of roots for a given thread. If the thread is linear, then all messages are roots."
-    def has_multiple_children(forest: list):
-        while forest:
-            if len(forest) > 1:
-                return True
-            forest = forest[0][1]
-
-    if has_multiple_children(raw_thread_data):
-        return [ThreadItem(root, None) for root in raw_thread_data]
-    else:
-        return [ThreadItem([msg, []], None) for msg in flatten(raw_thread_data)]
 
 def short_string(m: dict) -> str:
     """Return a short string describing the provided message
@@ -236,6 +223,19 @@ class ThreadItem:
         else:
             return name
 
+def make_thread_trees(raw_thread_data: list) -> list[ThreadItem]:
+    "Return the set of roots for a given thread. If the thread is linear, then all messages are roots."
+    def has_multiple_children(forest: list):
+        while forest:
+            if len(forest) > 1:
+                return True
+            forest = forest[0][1]
+
+    if has_multiple_children(raw_thread_data):
+        return [ThreadItem(root, None) for root in raw_thread_data]
+    else:
+        return [ThreadItem([msg, []], None) for msg in flatten(raw_thread_data)]
+
 class ThreadModel(QAbstractItemModel):
     """A model containing a thread, its messages, and some metadata
 
@@ -251,13 +251,34 @@ class ThreadModel(QAbstractItemModel):
 
     messageChanged = pyqtSignal(QModelIndex)
 
-    def __init__(self, thread_id: str, search_query: str) -> None:
+    def __init__(self, thread_id: str, search_query: str, mode: Literal['conversation','thread']) -> None:
         super().__init__()
         self.thread_id = thread_id
         self.query = search_query
         self.matches = set()
         self.raw_data = []
         self.roots = []
+        self._mode: Literal['conversation','thread'] = mode
+
+    @property
+    def mode(self) -> Literal['conversation','thread']:
+        return self._mode
+
+    def toggle_mode(self):
+        self.beginResetModel()
+        if self._mode == 'conversation':
+            self._mode = 'thread'
+        else:
+            self._mode = 'conversation'
+        self.roots = self.compute_roots(self.raw_data)
+        self.endResetModel()
+
+    def compute_roots(self, raw_data):
+        match self.mode:
+            case 'conversation':
+                return [ThreadItem([msg, []], None) for msg in flat_thread(raw_data)]
+            case 'thread':
+                return make_thread_trees(raw_data)
 
     def _fetch_full_thread(self) -> list:
         r = subprocess.run(['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', self.thread_id],
@@ -283,7 +304,7 @@ class ThreadModel(QAbstractItemModel):
         data = self._fetch_full_thread()
         assert(len(data) == 1)
         data = data[0]
-        roots = make_thread_trees(data)
+        roots = self.compute_roots(data)
         self.beginResetModel()
         self.raw_data = data
         self.roots = roots
@@ -443,7 +464,7 @@ class ThreadPanel(panel.Panel):
     def __init__(self, a: app.Dodo, thread_id: str, search_query: str, parent: Optional[QWidget]=None):
         super().__init__(a, parent=parent)
         self.set_keymap(keymap.thread_keymap)
-        self.model = ThreadModel(thread_id, search_query)
+        self.model = ThreadModel(thread_id, search_query, settings.default_thread_list_mode)
         self.thread_id = thread_id
         self.html_mode = settings.default_to_html
         self._saved_msg = None
@@ -501,6 +522,10 @@ class ThreadPanel(panel.Panel):
         else:
             self._select_index(self.model.default_message())
             self.thread_list.expandAll()
+
+    def toggle_list_mode(self):
+        self.model.toggle_mode()
+        self.thread_list.expandAll()
 
     def _select_index(self, index: QModelIndex):
         if not index.isValid():
