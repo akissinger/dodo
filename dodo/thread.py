@@ -31,6 +31,7 @@ import subprocess
 import json
 import re
 import email
+import email.parser
 import email.message
 import tempfile
 
@@ -161,8 +162,8 @@ class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
         self.message: Optional[email.message.Message] = None
 
     def set_message(self, filename: str) -> None:
-        with open(filename) as f:
-            self.message = email.message_from_file(f)
+        with open(filename, 'rb') as f:
+            self.message = email.parser.BytesParser().parse(f)
 
     def requestStarted(self, request: QWebEngineUrlRequestJob) -> None:
         cid = request.requestUrl().toString()[len('cid:'):]
