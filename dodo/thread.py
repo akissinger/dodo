@@ -392,6 +392,22 @@ class ThreadModel(QAbstractItemModel):
                 return idx
         return self.get_last_msg_idx()
 
+    def default_collapsed(self) -> set[str]:
+        irrelevant_branches = set()
+        def prune_irrelevant_branches(node: ThreadItem) -> bool:
+            has_relevant_child = False
+            msg_id = node.msg['id']
+            if msg_id in self.matches:
+                return True
+            for c in node.children:
+                has_relevant_child |= prune_irrelevant_branches(c)
+            if not has_relevant_child:
+                irrelevant_branches.add(msg_id)
+            return has_relevant_child
+        for root in self.roots:
+            prune_irrelevant_branches(root)
+        return irrelevant_branches
+
     def next_unread(self, current: QModelIndex) -> QModelIndex:
         """Show the next relevant unread message in the thread"""
         # We do a full iteration to be able to see sibling subthreads
@@ -538,7 +554,7 @@ class ThreadPanel(panel.Panel):
         else:
             self._select_index(self.model.default_message())
         if self._saved_collapsed is None:
-            collapsed = set()
+            collapsed = self.model.default_collapsed()
         else:
             collapsed = self._saved_collapsed
             self._saved_collapsed = None
