@@ -468,6 +468,7 @@ class ThreadPanel(panel.Panel):
         self.thread_id = thread_id
         self.html_mode = settings.default_to_html
         self._saved_msg = None
+        self._saved_collapsed = None
 
         self.subject = '(no subject)'
 
@@ -508,9 +509,24 @@ class ThreadPanel(panel.Panel):
 
         self.layout_panel()
 
+    def _get_collapsed(self) -> set[str]:
+        collapsed = set()
+        for idx in self.model.iterate_indices():
+            if not self.thread_list.isExpanded(idx):
+                collapsed.add(self.model.message_at(idx)['id'])
+        return collapsed
+
+    def _restore_collapsed(self, collapsed: set[str]):
+        self.thread_list.expandAll()
+        for idx in self.model.iterate_indices():
+            msg_id = self.model.message_at(idx)['id']
+            if msg_id in collapsed:
+                self.thread_list.setExpanded(idx, False)
+
     def _prepare_reset(self):
         if self.current_index.isValid():
             self._saved_msg = self.current_message['id']
+            self._saved_collapsed = self._get_collapsed()
 
     def _do_reset(self):
         idx = QModelIndex()
@@ -521,11 +537,15 @@ class ThreadPanel(panel.Panel):
             self._select_index(idx)
         else:
             self._select_index(self.model.default_message())
-            self.thread_list.expandAll()
+        if self._saved_collapsed is None:
+            collapsed = set()
+        else:
+            collapsed = self._saved_collapsed
+            self._saved_collapsed = None
+        self._restore_collapsed(collapsed)
 
     def toggle_list_mode(self):
         self.model.toggle_mode()
-        self.thread_list.expandAll()
 
     def _select_index(self, index: QModelIndex):
         if not index.isValid():
