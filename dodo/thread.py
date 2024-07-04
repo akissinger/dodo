@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 from typing import List, Optional, Any, Union
+from collections.abc import Generator
 
 from PyQt6.QtCore import *
 from PyQt6.QtGui import QFont, QColor, QDesktopServices
@@ -33,6 +34,7 @@ import re
 import email
 import email.message
 import tempfile
+import logging
 
 from . import app
 from . import settings
@@ -40,18 +42,19 @@ from . import util
 from . import keymap
 from . import panel
 
+logger = logging.getLogger(__name__)
 
-def flat_thread(d: dict) -> List[dict]:
+def flatten(collection: list) -> Generator:
+    for elt in collection:
+        if isinstance(elt, list):
+            yield from flatten(elt)
+        else:
+            yield elt
+
+def flat_thread(d: list) -> List[dict]:
     "Return the thread as a flattened list of messages, sorted by date."
 
-    thread: List[dict] = []
-    def dfs(x: Union[list, dict]) -> None:
-        if isinstance(x, list):
-            for y in x:
-                dfs(y)
-        else: thread.append(x)
-
-    dfs(d)
+    thread = list(flatten(d))
     thread.sort(key=lambda m: m['timestamp'])
     return thread
 
@@ -202,20 +205,47 @@ class ThreadModel(QAbstractItemModel):
     :param thread_id: the unique thread identifier used by notmuch
     """
 
-    def __init__(self, thread_id: str) -> None:
+    matches: set[str]
+    message_list: list[dict]
+
+    def __init__(self, thread_id: str, search_query: str) -> None:
         super().__init__()
         self.thread_id = thread_id
+        self.query = search_query
         self.refresh()
+
+    def _fetch_full_thread(self) -> list:
+        r = subprocess.run(['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', self.thread_id],
+                stdout=subprocess.PIPE, encoding='utf8')
+        return json.loads(r.stdout)
+
+    def _fetch_matching_ids(self) -> set[str]:
+        r = subprocess.run(['notmuch', 'search', '--exclude=false', '--format=json', '--output=messages', f'thread:{self.thread_id} AND {self.query}'],
+                stdout=subprocess.PIPE, encoding='utf8')
+        return set(json.loads(r.stdout))
 
     def refresh(self) -> None:
         """Refresh the model by calling "notmuch show"."""
 
-        r = subprocess.run(['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', self.thread_id],
-                stdout=subprocess.PIPE, encoding='utf8')
-        self.json_str = r.stdout
-        self.d = json.loads(self.json_str)
+        logger.info("Full thread refresh")
+        matches = self._fetch_matching_ids()
+        thread = flat_thread(self._fetch_full_thread())
         self.beginResetModel()
-        self.message_list = flat_thread(self.d)
+        self.message_list = thread
+        self.matches = matches
+        self.endResetModel()
+
+    def refresh_message(self, msg_id: str):
+        idx = self.find(msg_id)
+        assert idx is not None
+        r = subprocess.run(['notmuch', 'show', '--entire-thread=false', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', f'id:{msg_id}'],
+                stdout=subprocess.PIPE, encoding='utf8')
+        msg = next(m for m in flatten(json.loads(r.stdout)) if m is not None)
+        # We need to refresh the matches in case the message dropped out of the set
+        matches = self._fetch_matching_ids()
+        self.beginResetModel()
+        self.message_list[idx] = msg
+        self.matches = matches
         self.endResetModel()
 
     def message_at(self, i: int) -> dict:
@@ -223,12 +253,16 @@ class ThreadModel(QAbstractItemModel):
 
         return self.message_list[i]
 
+    def find(self, msg_id: str) -> int|None:
+        return next((i for i,m in enumerate(self.message_list) if m['id'] == msg_id), None)
+
+
     def default_message(self) -> int:
-        """Return the index of either the oldest unread message or the last message
+        """Return the index of either the oldest matching message or the last message
         in the thread."""
 
         for i, m in enumerate(self.message_list):
-            if 'tags' in m and 'unread' in m['tags']:
+            if m['id'] in self.matches:
                 return i
 
         return self.num_messages() - 1
@@ -257,10 +291,14 @@ class ThreadModel(QAbstractItemModel):
                 return '(message)'
         elif role == Qt.ItemDataRole.FontRole:
             font = QFont(settings.search_font, settings.search_font_size)
+            if m['id'] not in self.matches:
+                font.setItalic(True)
             if 'tags' in m and 'unread' in m['tags']:
                 font.setBold(True)
             return font
         elif role == Qt.ItemDataRole.ForegroundRole:
+            if m['id'] not in self.matches:
+                return QColor(settings.theme['fg_subject_irrelevant'])
             if 'tags' in m and 'unread' in m['tags']:
                 return QColor(settings.theme['fg_subject_unread'])
             else:
@@ -302,10 +340,10 @@ class ThreadPanel(panel.Panel):
     :param thread_id: the unique ID notmuch uses to identify this thread
     """
 
-    def __init__(self, a: app.Dodo, thread_id: str, parent: Optional[QWidget]=None):
+    def __init__(self, a: app.Dodo, thread_id: str, search_query: str, parent: Optional[QWidget]=None):
         super().__init__(a, parent=parent)
         self.set_keymap(keymap.thread_keymap)
-        self.model = ThreadModel(thread_id)
+        self.model = ThreadModel(thread_id, search_query)
         self.thread_id = thread_id
         self.html_mode = settings.default_to_html
 
@@ -378,6 +416,11 @@ class ThreadPanel(panel.Panel):
         :func:`show_message` wihtout any arguments."""
 
         self.model.refresh()
+        self.refresh_view()
+        super().refresh()
+
+    def refresh_view(self):
+        """Refresh the UI, without refreshing the underlying content"""
         ix = self.thread_list.model().index(self.current_message, 0)
         if self.thread_list.model().checkIndex(ix):
             self.thread_list.setCurrentIndex(ix)
@@ -436,11 +479,13 @@ class ThreadPanel(panel.Panel):
             header_html += '</table>'
             self.message_info.setHtml(header_html)
 
-        super().refresh()
-
-    def update_thread(self, thread_id: str):
+    def update_thread(self, thread_id: str, msg_id: str|None=None):
         if self.model.thread_id == thread_id:
-            self.dirty = True
+            if msg_id and self.model.find(msg_id) is not None:
+                self.model.refresh_message(msg_id)
+                self.refresh_view()
+            else:
+                self.dirty = True
 
     def show_message(self, i: int=-1) -> None:
         """Show a message
@@ -454,7 +499,7 @@ class ThreadPanel(panel.Panel):
             self.current_message = i
 
         if self.current_message >= 0 and self.current_message < self.model.num_messages():
-            self.refresh()
+            self.refresh_view()
             m = self.model.message_at(self.current_message)
             if 'unread' in m['tags']:
                 self.tag_message('-unread')
@@ -480,6 +525,14 @@ class ThreadPanel(panel.Panel):
         """Show the previous message in the thread"""
 
         self.show_message(max(self.current_message - 1, 0))
+
+    def next_unread(self) -> None:
+        """Show the next relevant unread message in the thread"""
+        for i in range(self.current_message+1, self.model.num_messages()):
+            msg = self.model.message_at(i)
+            if msg['id'] in self.model.matches and 'unread' in msg['tags']:
+                self.show_message(i)
+                break
 
     def scroll_message(self,
             lines: Optional[int]=None,
@@ -526,11 +579,12 @@ class ThreadPanel(panel.Panel):
 
         m = self.model.message_at(self.current_message)
         if m:
+            msg_id = m['id']
             if not ('+' in tag_expr or '-' in tag_expr):
                 tag_expr = '+' + tag_expr
-            r = subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'id:' + m['id']],
+            r = subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'id:' + msg_id],
                     stdout=subprocess.PIPE)
-            self.app.update_single_thread(self.thread_id)
+            self.app.update_single_thread(self.thread_id, msg_id=msg_id)
 
     def toggle_html(self) -> None:
         """Toggle between HTML and plain text message view"""
