@@ -17,8 +17,8 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import List, Optional, Any, Union
-from collections.abc import Generator
+from typing import List, Optional, Any, Union, Literal
+from collections.abc import Generator, Iterable
 
 from PyQt6.QtCore import *
 from PyQt6.QtGui import QFont, QColor, QDesktopServices
@@ -32,7 +32,9 @@ import subprocess
 import json
 import re
 import email
+import email.utils
 import email.message
+import itertools
 import tempfile
 import logging
 
@@ -194,6 +196,46 @@ class RemoteBlockingUrlRequestInterceptor(QWebEngineUrlRequestInterceptor):
         if info.requestUrl().scheme() not in app.LOCAL_PROTOCOLS:
             info.block(settings.html_block_remote_requests)
 
+RE_REGEX = re.compile('^R[Ee]: ')
+class ThreadItem:
+    def __init__(self, raw_data, parent: ThreadItem|None):
+        self.msg = raw_data[0]
+        self.parent = parent
+        self.children = [ThreadItem(elt, self) for elt in raw_data[1]]
+
+    def thread_string(self):
+        from_hdr = self.msg.get('headers', {}).get('From', '(message) <>')
+        name, addr = email.utils.parseaddr(from_hdr)
+        if not name:
+            name = addr
+        if not self.parent:
+            return name
+
+        subject = self.msg.get('headers', {}).get('Subject', '')
+        while RE_REGEX.match(subject):
+            subject = RE_REGEX.sub('', subject)
+        prev_subject = self.parent.msg.get('headers', {}).get('Subject', '')
+        while RE_REGEX.match(prev_subject):
+            prev_subject = RE_REGEX.sub('', prev_subject)
+
+        if subject != prev_subject:
+            return f"{name} — {subject}"
+        else:
+            return name
+
+def make_thread_trees(raw_thread_data: list) -> list[ThreadItem]:
+    "Return the set of roots for a given thread. If the thread is linear, then all messages are roots."
+    def has_multiple_children(forest: list):
+        while forest:
+            if len(forest) > 1:
+                return True
+            forest = forest[0][1]
+
+    if has_multiple_children(raw_thread_data):
+        return [ThreadItem(root, None) for root in raw_thread_data]
+    else:
+        return [ThreadItem([msg, []], None) for msg in flatten(raw_thread_data)]
+
 class ThreadModel(QAbstractItemModel):
     """A model containing a thread, its messages, and some metadata
 
@@ -206,16 +248,37 @@ class ThreadModel(QAbstractItemModel):
     """
 
     matches: set[str]
-    message_list: list[dict]
 
     messageChanged = pyqtSignal(QModelIndex)
 
-    def __init__(self, thread_id: str, search_query: str) -> None:
+    def __init__(self, thread_id: str, search_query: str, mode: Literal['conversation','thread']) -> None:
         super().__init__()
         self.thread_id = thread_id
         self.query = search_query
-        self.message_list = []
         self.matches = set()
+        self.raw_data = []
+        self.roots = []
+        self._mode: Literal['conversation','thread'] = mode
+
+    @property
+    def mode(self) -> Literal['conversation','thread']:
+        return self._mode
+
+    def toggle_mode(self):
+        self.beginResetModel()
+        if self._mode == 'conversation':
+            self._mode = 'thread'
+        else:
+            self._mode = 'conversation'
+        self.roots = self.compute_roots(self.raw_data)
+        self.endResetModel()
+
+    def compute_roots(self, raw_data):
+        match self.mode:
+            case 'conversation':
+                return [ThreadItem([msg, []], None) for msg in flat_thread(raw_data)]
+            case 'thread':
+                return make_thread_trees(raw_data)
 
     def _fetch_full_thread(self) -> list:
         r = subprocess.run(['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', self.thread_id],
@@ -227,14 +290,24 @@ class ThreadModel(QAbstractItemModel):
                 stdout=subprocess.PIPE, encoding='utf8')
         return set(json.loads(r.stdout))
 
+    def get_last_msg_idx(self, parent: QModelIndex=QModelIndex()) -> QModelIndex:
+        children = parent.internalPointer().children
+        if children:
+            return self.get_last_msg_idx(self.index(len(children)-1, 0, parent))
+        return parent
+
     def refresh(self) -> None:
         """Refresh the model by calling "notmuch show"."""
 
         logger.info("Full thread refresh")
         matches = self._fetch_matching_ids()
-        thread = flat_thread(self._fetch_full_thread())
+        data = self._fetch_full_thread()
+        assert(len(data) == 1)
+        data = data[0]
+        roots = self.compute_roots(data)
         self.beginResetModel()
-        self.message_list = thread
+        self.raw_data = data
+        self.roots = roots
         self.matches = matches
         self.endResetModel()
 
@@ -249,7 +322,7 @@ class ThreadModel(QAbstractItemModel):
         # We need to refresh the matches in case the message dropped out of the set
         matches = self._fetch_matching_ids()
         # Update the old message in-place to not invalidate existing indices
-        old_msg = self.message_list[idx.row()]
+        old_msg = self.message_at(idx)
         old_msg.clear()
         old_msg.update(msg)
         self.matches = matches
@@ -292,35 +365,57 @@ class ThreadModel(QAbstractItemModel):
     def message_at(self, idx: QModelIndex) -> dict:
         """A JSON object describing the i-th message in the (flattened) thread"""
         assert idx.isValid()
-        return idx.internalPointer()
+        return idx.internalPointer().msg
+
+    def _children_at(self, idx: QModelIndex) -> list[ThreadItem]:
+        if idx.isValid():
+            return idx.internalPointer().children
+        return self.roots
+
+    def iterate_indices(self) -> Iterable[QModelIndex]:
+        """Iterate indices in the topological order"""
+        def rec_iterate_indices(node: QModelIndex) -> Iterable[QModelIndex]:
+            yield node
+            for i,c in enumerate(self._children_at(node)):
+                yield from rec_iterate_indices(self.createIndex(i, 0, c))
+        for i,r in enumerate(self.roots):
+            yield from rec_iterate_indices(self.createIndex(i, 0, r))
 
     def find(self, msg_id: str) -> QModelIndex:
-        for i,m in enumerate(self.message_list):
-            if m['id'] == msg_id:
-                return self.createIndex(i, 0, m)
-        return QModelIndex()
+        return next((idx for idx in self.iterate_indices() if self.message_at(idx)['id'] == msg_id), QModelIndex())
 
     def default_message(self) -> QModelIndex:
         """Return the index of either the oldest matching message or the last message
         in the thread."""
-        for i, m in enumerate(self.message_list):
-            if m['id'] in self.matches:
-                return self.createIndex(i, 0, m)
+        for idx in self.iterate_indices():
+            if self.message_at(idx)['id'] in self.matches:
+                return idx
+        return self.get_last_msg_idx()
 
-        return self.index(len(self.message_list)-1, 0)
+    def default_collapsed(self) -> set[str]:
+        irrelevant_branches = set()
+        def prune_irrelevant_branches(node: ThreadItem) -> bool:
+            has_relevant_child = False
+            msg_id = node.msg['id']
+            if msg_id in self.matches:
+                return True
+            for c in node.children:
+                has_relevant_child |= prune_irrelevant_branches(c)
+            if not has_relevant_child:
+                irrelevant_branches.add(msg_id)
+            return has_relevant_child
+        for root in self.roots:
+            prune_irrelevant_branches(root)
+        return irrelevant_branches
 
     def next_unread(self, current: QModelIndex) -> QModelIndex:
         """Show the next relevant unread message in the thread"""
-        start = current.row()+1 if current.isValid() else 0
-        for i,msg in enumerate(self.message_list[start:]):
+        # We do a full iteration to be able to see sibling subthreads
+        for idx in itertools.dropwhile(lambda idx: idx != current, self.iterate_indices()):
+            msg = self.message_at(idx)
             if msg['id'] in self.matches and 'unread' in msg['tags']:
-                return self.createIndex(i+start, 0, msg)
+                return idx
         return QModelIndex()
-
-    def num_messages(self) -> int:
-        """The number of messages in the thread"""
-
-        return len(self.message_list)
 
     def data(self, index: QModelIndex, role: int=Qt.ItemDataRole.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.data` to populate a list view with short descriptions of
@@ -329,16 +424,10 @@ class ThreadModel(QAbstractItemModel):
         Currently, this just returns the message sender and makes it bold if the message is unread. Adding an
         emoji to show attachments would be good."""
 
-        if index.row() >= len(self.message_list):
-            return None
-
-        m = self.message_list[index.row()]
-
+        item: ThreadItem = index.internalPointer()
+        m = item.msg
         if role == Qt.ItemDataRole.DisplayRole:
-            if 'headers' in m and 'From' in m["headers"]:
-                return m['headers']['From']
-            else:
-                return '(message)'
+            return item.thread_string()
         elif role == Qt.ItemDataRole.FontRole:
             font = QFont(settings.search_font, settings.search_font_size)
             if m['id'] not in self.matches:
@@ -356,29 +445,27 @@ class ThreadModel(QAbstractItemModel):
 
     def index(self, row: int, column: int, parent: QModelIndex=QModelIndex()) -> QModelIndex:
         """Construct a `QModelIndex` for the given row and (irrelevant) column"""
+        children = self._children_at(parent)
+        if row not in range(0, len(children)) or column != 0:
+            return QModelIndex()
+        return self.createIndex(row, column, children[row])
 
-        if not self.hasIndex(row, column, parent): return QModelIndex()
-        else: return self.createIndex(row, column, self.message_list[row])
+    def parent(self, child: QModelIndex=QModelIndex()) -> QModelIndex:
+        data = child.internalPointer()
+        if data is None or data.parent is None:
+            return QModelIndex()
+        aunties = data.parent.parent.children if data.parent.parent else self.roots
+        for i,c in enumerate(aunties):
+            if c == data.parent:
+                return self.createIndex(i, 0, data.parent)
 
     def columnCount(self, index: QModelIndex=QModelIndex()) -> int:
         """Constant = 1"""
-
         return 1
 
-    def rowCount(self, index: QModelIndex=QModelIndex()) -> int:
-        """The number of rows
-
-        This is essentially an alias for :func:`num_messages`, but it also returns 0 if an index is
-        given to tell Qt not to add any child items."""
-
-        if not index or not index.isValid(): return self.num_messages()
-        else: return 0
-
-    def parent(self, child: QModelIndex=None) -> Any:
-        """Always return an invalid index, since there are no nested indices"""
-
-        if not child: return super().parent()
-        else: return QModelIndex()
+    def rowCount(self, parent: QModelIndex=QModelIndex()) -> int:
+        """The number of rows (for a given parent)"""
+        return len(self._children_at(parent))
 
 
 class ThreadPanel(panel.Panel):
@@ -393,15 +480,20 @@ class ThreadPanel(panel.Panel):
     def __init__(self, a: app.Dodo, thread_id: str, search_query: str, parent: Optional[QWidget]=None):
         super().__init__(a, parent=parent)
         self.set_keymap(keymap.thread_keymap)
-        self.model = ThreadModel(thread_id, search_query)
+        self.model = ThreadModel(thread_id, search_query, settings.default_thread_list_mode)
         self.thread_id = thread_id
         self.html_mode = settings.default_to_html
         self._saved_msg = None
+        self._saved_collapsed = None
 
         self.subject = '(no subject)'
 
-        self.thread_list = QListView()
+        self.thread_list = QTreeView()
         self.thread_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.thread_list.header().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.thread_list.header().setStretchLastSection(False)
+        self.thread_list.setHeaderHidden(True)
+        self.thread_list.setRootIsDecorated(False)
         self.thread_list.setModel(self.model)
         self.thread_list.clicked.connect(self._select_index)
         self.model.modelAboutToBeReset.connect(self._prepare_reset)
@@ -433,18 +525,43 @@ class ThreadPanel(panel.Panel):
 
         self.layout_panel()
 
+    def _get_collapsed(self) -> set[str]:
+        collapsed = set()
+        for idx in self.model.iterate_indices():
+            if not self.thread_list.isExpanded(idx):
+                collapsed.add(self.model.message_at(idx)['id'])
+        return collapsed
+
+    def _restore_collapsed(self, collapsed: set[str]):
+        self.thread_list.expandAll()
+        for idx in self.model.iterate_indices():
+            msg_id = self.model.message_at(idx)['id']
+            if msg_id in collapsed:
+                self.thread_list.setExpanded(idx, False)
+
     def _prepare_reset(self):
         if self.current_index.isValid():
             self._saved_msg = self.current_message['id']
+            self._saved_collapsed = self._get_collapsed()
 
     def _do_reset(self):
         idx = QModelIndex()
         if self._saved_msg:
             idx = self.model.find(self._saved_msg)
             self._saved_msg = None
-        if not idx.isValid():
-            idx = self.model.default_message()
-        self._select_index(idx)
+        if idx.isValid():
+            self._select_index(idx)
+        else:
+            self._select_index(self.model.default_message())
+        if self._saved_collapsed is None:
+            collapsed = self.model.default_collapsed()
+        else:
+            collapsed = self._saved_collapsed
+            self._saved_collapsed = None
+        self._restore_collapsed(collapsed)
+
+    def toggle_list_mode(self):
+        self.model.toggle_mode()
 
     def _select_index(self, index: QModelIndex):
         if not index.isValid():
@@ -458,21 +575,25 @@ class ThreadPanel(panel.Panel):
         """Method for laying out various components in the ThreadPanel"""
 
         splitter = QSplitter(Qt.Orientation.Vertical)
-        info_area = QWidget()
-        info_area.setLayout(QHBoxLayout())
-        self.thread_list.setFixedWidth(250)
-        info_area.layout().addWidget(self.thread_list)
-        info_area.layout().addWidget(self.message_info)
+        info_area = QSplitter(Qt.Orientation.Horizontal)
+        #self.thread_list.setFixedWidth(250)
+        info_area.addWidget(self.thread_list)
+        info_area.addWidget(self.message_info)
         splitter.addWidget(info_area)
         splitter.addWidget(self.message_view)
         self.layout().addWidget(splitter)
 
-        # save splitter position
+        # save splitter positions
         window_settings = QSettings("dodo", "dodo")
-        state = window_settings.value("thread_splitter_state")
+        main_state = window_settings.value("thread_splitter_state")
         splitter.splitterMoved.connect(
                 lambda x: window_settings.setValue("thread_splitter_state", splitter.saveState()))
-        if state: splitter.restoreState(state)
+        if main_state: splitter.restoreState(main_state)
+
+        info_area.splitterMoved.connect(
+                lambda x: window_settings.setValue("thread_info_state", info_area.saveState()))
+        info_state = window_settings.value("thread_info_state")
+        if info_state: info_area.restoreState(info_state)
 
     def title(self) -> str:
         """The tab title
@@ -568,11 +689,11 @@ class ThreadPanel(panel.Panel):
 
     def next_message(self) -> None:
         """Show the next message in the thread"""
-        self._select_index(self.model.index(self.current_index.row()+1, 0))
+        self._select_index(self.thread_list.indexBelow(self.current_index))
 
     def previous_message(self) -> None:
         """Show the previous message in the thread"""
-        self._select_index(self.model.index(self.current_index.row()-1, 0))
+        self._select_index(self.thread_list.indexAbove(self.current_index))
 
     def next_unread(self) -> None:
         self._select_index(self.model.next_unread(self.current_index))
