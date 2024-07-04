@@ -130,6 +130,7 @@ class Dodo(QApplication):
         from key mappings."""
 
         self.tabs.addTab(p, p.title())
+        p.has_refreshed.connect(lambda: self.tabs.setTabText(self.tabs.indexOf(p), p.title()))
 
         if focus:
             self.tabs.setCurrentWidget(p)

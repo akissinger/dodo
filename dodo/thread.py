@@ -208,11 +208,14 @@ class ThreadModel(QAbstractItemModel):
     matches: set[str]
     message_list: list[dict]
 
+    messageChanged = pyqtSignal(QModelIndex)
+
     def __init__(self, thread_id: str, search_query: str) -> None:
         super().__init__()
         self.thread_id = thread_id
         self.query = search_query
-        self.refresh()
+        self.message_list = []
+        self.matches = set()
 
     def _fetch_full_thread(self) -> list:
         r = subprocess.run(['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', self.thread_id],
@@ -237,35 +240,82 @@ class ThreadModel(QAbstractItemModel):
 
     def refresh_message(self, msg_id: str):
         idx = self.find(msg_id)
-        assert idx is not None
+        assert idx.isValid()
+        logger.info("Single message refresh: %s", msg_id)
         r = subprocess.run(['notmuch', 'show', '--entire-thread=false', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', f'id:{msg_id}'],
                 stdout=subprocess.PIPE, encoding='utf8')
         msg = next(m for m in flatten(json.loads(r.stdout)) if m is not None)
+        logger.info("refreshed tags: %s", str(msg['tags']))
         # We need to refresh the matches in case the message dropped out of the set
         matches = self._fetch_matching_ids()
-        self.beginResetModel()
-        self.message_list[idx] = msg
+        # Update the old message in-place to not invalidate existing indices
+        old_msg = self.message_list[idx.row()]
+        old_msg.clear()
+        old_msg.update(msg)
         self.matches = matches
-        self.endResetModel()
+        self.dataChanged.emit(idx, idx)
 
-    def message_at(self, i: int) -> dict:
+    def tag_message(self, idx: QModelIndex, tag_expr: str) -> None:
+        """Apply the given tag expression to the current message
+
+        A tag expression is a string consisting of one more statements of the form "+TAG"
+        or "-TAG" to add or remove TAG, respectively, separated by whitespace."""
+
+        if not idx.isValid():
+            return
+        m = self.message_at(idx)
+        msg_id = m['id']
+        if not ('+' in tag_expr or '-' in tag_expr):
+            tag_expr = '+' + tag_expr
+        r = subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'id:' + msg_id],
+                stdout=subprocess.PIPE)
+        self.messageChanged.emit(idx)
+
+    def toggle_message_tag(self, idx: QModelIndex, tag: str) -> None:
+        """Toggle the given tag on the current message"""
+
+        m = self.message_at(idx)
+        if tag in m['tags']:
+            tag_expr = '-' + tag
+        else:
+            tag_expr = '+' + tag
+        self.tag_message(idx, tag_expr)
+
+    def mark_as_read(self, idx: QModelIndex) -> bool:
+        "Marks a message as read. Returns False if nothing is to be done"
+        m = self.message_at(idx)
+        if 'unread' in m['tags']:
+            self.tag_message(idx, '-unread')
+            return True
+        return False
+
+    def message_at(self, idx: QModelIndex) -> dict:
         """A JSON object describing the i-th message in the (flattened) thread"""
+        assert idx.isValid()
+        return idx.internalPointer()
 
-        return self.message_list[i]
+    def find(self, msg_id: str) -> QModelIndex:
+        for i,m in enumerate(self.message_list):
+            if m['id'] == msg_id:
+                return self.createIndex(i, 0, m)
+        return QModelIndex()
 
-    def find(self, msg_id: str) -> int|None:
-        return next((i for i,m in enumerate(self.message_list) if m['id'] == msg_id), None)
-
-
-    def default_message(self) -> int:
+    def default_message(self) -> QModelIndex:
         """Return the index of either the oldest matching message or the last message
         in the thread."""
-
         for i, m in enumerate(self.message_list):
             if m['id'] in self.matches:
-                return i
+                return self.createIndex(i, 0, m)
 
-        return self.num_messages() - 1
+        return self.index(len(self.message_list)-1, 0)
+
+    def next_unread(self, current: QModelIndex) -> QModelIndex:
+        """Show the next relevant unread message in the thread"""
+        start = current.row()+1 if current.isValid() else 0
+        for i,msg in enumerate(self.message_list[start:]):
+            if msg['id'] in self.matches and 'unread' in msg['tags']:
+                return self.createIndex(i+start, 0, msg)
+        return QModelIndex()
 
     def num_messages(self) -> int:
         """The number of messages in the thread"""
@@ -308,7 +358,7 @@ class ThreadModel(QAbstractItemModel):
         """Construct a `QModelIndex` for the given row and (irrelevant) column"""
 
         if not self.hasIndex(row, column, parent): return QModelIndex()
-        else: return self.createIndex(row, column, None)
+        else: return self.createIndex(row, column, self.message_list[row])
 
     def columnCount(self, index: QModelIndex=QModelIndex()) -> int:
         """Constant = 1"""
@@ -346,14 +396,18 @@ class ThreadPanel(panel.Panel):
         self.model = ThreadModel(thread_id, search_query)
         self.thread_id = thread_id
         self.html_mode = settings.default_to_html
+        self._saved_msg = None
 
         self.subject = '(no subject)'
-        self.current_message = -1
 
         self.thread_list = QListView()
         self.thread_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.thread_list.setModel(self.model)
-        self.thread_list.clicked.connect(lambda ix: self.show_message(ix.row()))
+        self.thread_list.clicked.connect(self._select_index)
+        self.model.modelAboutToBeReset.connect(self._prepare_reset)
+        self.model.modelReset.connect(self._do_reset)
+        self.model.dataChanged.connect(lambda _a,_b: self.refresh_view())
+        self.model.messageChanged.connect(lambda idx: self.app.update_single_thread(self.thread_id, msg_id=self.model.message_at(idx)['id']))
 
         self.message_info = QTextBrowser()
 
@@ -379,7 +433,26 @@ class ThreadPanel(panel.Panel):
 
         self.layout_panel()
 
-        self.show_message(self.model.default_message())
+    def _prepare_reset(self):
+        if self.current_index.isValid():
+            self._saved_msg = self.current_message['id']
+
+    def _do_reset(self):
+        idx = QModelIndex()
+        if self._saved_msg:
+            idx = self.model.find(self._saved_msg)
+            self._saved_msg = None
+        if not idx.isValid():
+            idx = self.model.default_message()
+        self._select_index(idx)
+
+    def _select_index(self, index: QModelIndex):
+        if not index.isValid():
+            return
+        self.thread_list.setCurrentIndex(index)
+        # We only refresh the view if there was no tagging
+        if not self.model.mark_as_read(index):
+            self.refresh_view()
 
     def layout_panel(self):
         """Method for laying out various components in the ThreadPanel"""
@@ -415,17 +488,12 @@ class ThreadPanel(panel.Panel):
         the top of the message every time it happens. To refresh the current message body, use
         :func:`show_message` wihtout any arguments."""
 
-        self.model.refresh()
-        self.refresh_view()
         super().refresh()
+        self.model.refresh()
 
     def refresh_view(self):
         """Refresh the UI, without refreshing the underlying content"""
-        ix = self.thread_list.model().index(self.current_message, 0)
-        if self.thread_list.model().checkIndex(ix):
-            self.thread_list.setCurrentIndex(ix)
-
-        m = self.model.message_at(self.current_message)
+        m = self.current_message
 
         if 'headers' in m and 'Subject' in m['headers']:
             self.subject = m['headers']['Subject']
@@ -479,60 +547,35 @@ class ThreadPanel(panel.Panel):
             header_html += '</table>'
             self.message_info.setHtml(header_html)
 
+        self.message_handler.message_json = m
+
+        if self.html_mode:
+            if 'filename' in m and len(m['filename']) != 0:
+                self.image_handler.set_message(m['filename'][0])
+            self.message_view.page().setUrl(QUrl('message:html'))
+        else:
+            self.message_view.page().setUrl(QUrl('message:plain'))
+        self.scroll_message(pos = 'top')
+        self.has_refreshed.emit()
+
+
     def update_thread(self, thread_id: str, msg_id: str|None=None):
         if self.model.thread_id == thread_id:
-            if msg_id and self.model.find(msg_id) is not None:
+            if msg_id and self.model.find(msg_id).isValid():
                 self.model.refresh_message(msg_id)
-                self.refresh_view()
             else:
                 self.dirty = True
 
-    def show_message(self, i: int=-1) -> None:
-        """Show a message
-
-        If an index is provided, switch the current message to that index, otherwise refresh
-        the view of the current message.
-        """
-        if i == self.current_message:
-            return
-        elif i != -1:
-            self.current_message = i
-
-        if self.current_message >= 0 and self.current_message < self.model.num_messages():
-            self.refresh_view()
-            m = self.model.message_at(self.current_message)
-            if 'unread' in m['tags']:
-                self.tag_message('-unread')
-                m = self.model.message_at(self.current_message)
-
-            self.message_handler.message_json = m
-
-            if self.html_mode:
-                if 'filename' in m and len(m['filename']) != 0:
-                    self.image_handler.set_message(m['filename'][0])
-                self.message_view.page().setUrl(QUrl('message:html'))
-            else:
-                self.message_view.page().setUrl(QUrl('message:plain'))
-            self.scroll_message(pos = 'top')
-
-
     def next_message(self) -> None:
         """Show the next message in the thread"""
-
-        self.show_message(min(self.current_message + 1, self.model.num_messages() - 1))
+        self._select_index(self.model.index(self.current_index.row()+1, 0))
 
     def previous_message(self) -> None:
         """Show the previous message in the thread"""
-
-        self.show_message(max(self.current_message - 1, 0))
+        self._select_index(self.model.index(self.current_index.row()-1, 0))
 
     def next_unread(self) -> None:
-        """Show the next relevant unread message in the thread"""
-        for i in range(self.current_message+1, self.model.num_messages()):
-            msg = self.model.message_at(i)
-            if msg['id'] in self.model.matches and 'unread' in msg['tags']:
-                self.show_message(i)
-                break
+        self._select_index(self.model.next_unread(self.current_index))
 
     def scroll_message(self,
             lines: Optional[int]=None,
@@ -560,37 +603,25 @@ class ThreadPanel(panel.Panel):
             self.message_view.page().runJavaScript(f'window.scrollBy(0, {pages} * 0.9 * window.innerHeight)',
                     QWebEngineScript.ScriptWorldId.ApplicationWorld)
 
-    def toggle_message_tag(self, tag: str) -> None:
-        """Toggle the given tag on the current message"""
+    @property
+    def current_index(self) -> QModelIndex:
+        return self.thread_list.currentIndex()
 
-        m = self.model.message_at(self.current_message)
-        if m:
-            if tag in m['tags']:
-                tag_expr = '-' + tag
-            else:
-                tag_expr = '+' + tag
-            self.tag_message(tag_expr)
+    @property
+    def current_message(self) -> dict:
+        return self.model.message_at(self.current_index)
+
+    def toggle_message_tag(self, tag: str) -> None:
+        return self.model.toggle_message_tag(self.current_index, tag)
 
     def tag_message(self, tag_expr: str) -> None:
-        """Apply the given tag expression to the current message
-
-        A tag expression is a string consisting of one more statements of the form "+TAG"
-        or "-TAG" to add or remove TAG, respectively, separated by whitespace."""
-
-        m = self.model.message_at(self.current_message)
-        if m:
-            msg_id = m['id']
-            if not ('+' in tag_expr or '-' in tag_expr):
-                tag_expr = '+' + tag_expr
-            r = subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'id:' + msg_id],
-                    stdout=subprocess.PIPE)
-            self.app.update_single_thread(self.thread_id, msg_id=msg_id)
+        return self.model.tag_message(self.current_index, tag_expr)
 
     def toggle_html(self) -> None:
         """Toggle between HTML and plain text message view"""
 
         self.html_mode = not self.html_mode
-        self.show_message()
+        self.refresh_view()
 
     def reply(self, to_all: bool=True) -> None:
         """Open a :class:`~dodo.compose.ComposePanel` populated with a reply
@@ -602,13 +633,13 @@ class ThreadPanel(panel.Panel):
         """
 
         self.app.open_compose(mode='replyall' if to_all else 'reply',
-                              msg=self.model.message_at(self.current_message))
+                              msg=self.current_message)
 
     def forward(self) -> None:
         """Open a :class:`~dodo.compose.ComposePanel` populated with a forwarded message
         """
 
-        self.app.open_compose(mode='forward', msg=self.model.message_at(self.current_message))
+        self.app.open_compose(mode='forward', msg=self.current_message)
 
     def open_attachments(self) -> None:
         """Write attachments out into temp directory and open with `settings.file_browser_command`
@@ -617,7 +648,7 @@ class ThreadPanel(panel.Panel):
         do something smarter?
         """
 
-        m = self.model.message_at(self.current_message)
+        m = self.current_message
         temp_dir, _ = util.write_attachments(m)
 
         if temp_dir:
