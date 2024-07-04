@@ -32,6 +32,7 @@ import subprocess
 import json
 import re
 import email
+import email.parser
 import email.utils
 import email.message
 import itertools
@@ -155,7 +156,7 @@ class MessageHandler(QWebEngineUrlSchemeHandler):
                     </html>""".encode('utf-8'))
 
             buf.close()
-            request.reply('text/html'.encode('latin1'), buf)
+            request.reply('text/html;charset=utf-8'.encode('latin1'), buf)
         else:
             request.fail(QWebEngineUrlRequestJob.Error.UrlNotFound)
 
@@ -166,8 +167,8 @@ class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
         self.message: Optional[email.message.Message] = None
 
     def set_message(self, filename: str) -> None:
-        with open(filename) as f:
-            self.message = email.message_from_file(f)
+        with open(filename, 'rb') as f:
+            self.message = email.parser.BytesParser().parse(f)
 
     def requestStarted(self, request: QWebEngineUrlRequestJob) -> None:
         cid = request.requestUrl().toString()[len('cid:'):]
