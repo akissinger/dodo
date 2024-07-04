@@ -18,7 +18,7 @@
 
 from __future__ import annotations
 from typing import Optional, List, Set
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QKeyEvent
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import *
@@ -45,6 +45,8 @@ class Panel(QWidget):
                       This is used to make sure the "Inbox" :class:`~dodo.search.SearchPanel`
                       always stays open.
     """
+
+    has_refreshed = pyqtSignal()
 
     def __init__(self, a: app.Dodo, keep_open: bool=False, parent: Optional[QWidget]=None):
         """Initialise a panel"""
@@ -104,8 +106,9 @@ class Panel(QWidget):
 
     def refresh(self) -> None:
         self.dirty = False
+        self.has_refreshed.emit()
 
-    def update_thread(self, thread_id: str) -> None:
+    def update_thread(self, thread_id: str, msg_id: str|None=None) -> None:
         self.dirty = True
 
     def before_close(self) -> bool:

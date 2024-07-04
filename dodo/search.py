@@ -245,7 +245,7 @@ class SearchPanel(panel.Panel):
 
         super().refresh()
 
-    def update_thread(self, thread_id: str) -> None:
+    def update_thread(self, thread_id: str, msg_id: str|None= None) -> None:
         self.updated_threads.add(thread_id)
         if self.hasFocus():
             self.refresh_threads()
@@ -334,7 +334,7 @@ class SearchPanel(panel.Panel):
 
         thread_id = self.model.thread_id(self.tree.currentIndex())
         if thread_id:
-            self.app.open_thread(thread_id)
+            self.app.open_thread(thread_id, self.model.q)
     
     def toggle_thread_tag(self, tag: str) -> None:
         """Toggle the given thread tag"""
