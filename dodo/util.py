@@ -27,6 +27,7 @@ import tempfile
 import subprocess
 import email
 import email.header
+import email.message
 import email.utils
 import email.policy
 import textwrap
@@ -243,11 +244,18 @@ def write_attachments(m: dict) -> Tuple[str, List[str]]:
         with open(filename, 'r') as f:
             msg = email.message_from_file(f,policy=email.policy.default)
             for part in msg.walk():
-                if part.get_content_disposition() == 'attachment':
-                    p = temp_dir + '/' + decode_header(part.get_filename())
-                    with open(p, 'wb') as att:
-                        att.write(part.get_content())
-                    file_paths.append(p)
+                if not part.is_attachment():
+                    continue
+                filename = part.get_filename()
+                p = temp_dir + '/' + decode_header(filename)
+                contents = part.get_content()
+                # Write back text files using their original encoding,
+                # for the rest use straight binary encoding
+                if isinstance(contents, str):
+                    contents = contents.encode(part.get_content_charset('ascii').lower())
+                with open(p, 'wb') as att:
+                    att.write(contents)
+                file_paths.append(p)
 
     if len(file_paths) == 0:
         os.rmdir(temp_dir)
