@@ -100,6 +100,7 @@ class Dodo(QApplication):
 
         # set timer to sync email periodically
         if settings.sync_mail_interval != -1:
+            self.sync_mail()
             timer = QTimer(self)
             timer.timeout.connect(self.sync_mail)
             timer.start(settings.sync_mail_interval * 1000)
