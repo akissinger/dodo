@@ -63,13 +63,16 @@ def w3m_html2text(s: str) -> str:
     :param s: an HTML input string
     :returns: plain text representation of the HTML
     """
-
-    (fd, file) = tempfile.mkstemp(suffix='.html')
-    with os.fdopen(fd, 'w') as f:
-        f.write(s)
-    p = subprocess.run(['w3m', '-O', 'utf8', '-dump', file],
-            stdout=subprocess.PIPE, encoding='utf8')
-    os.remove(file)
+    try:
+        p = subprocess.run(
+            ["w3m", "-T", "text/html", "-O", "utf8", "-dump"],
+            stdout=subprocess.PIPE,
+            encoding="utf8",
+            input=s,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as e:
+        return f"dodo w3m error: {e}"
     return p.stdout
 
 def linkify(s: str) -> str:
