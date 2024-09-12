@@ -26,11 +26,16 @@ try:
     import gnupg
     Gpg = gnupg.GPG(gnupghome=settings.gnupg_home, use_agent=True)
 except (ImportError, NameError):
-    pass
+    Gpg = None
 
+
+def ensure_gpg():
+    if Gpg is None:
+        raise Exception("python-gnupg is needed to sign/encrypt")
 
 
 def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
+    ensure_gpg()
     RFC4880_HASH_ALGO = {'1': "MD5", '2': "SHA1", '3': "RIPEMD160",
                          '8': "SHA256", '9': "SHA384", '10': "SHA512",
                          '11': "SHA224"}
@@ -67,6 +72,7 @@ def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
 
 
 def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
+    ensure_gpg()
     # Always also encrypt with the key corresponding to the From address in order to
     # be able to decrypt the mail that has been sent.
     recipients = [
