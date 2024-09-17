@@ -131,6 +131,11 @@ class SearchModel(QAbstractItemModel):
                 font.setBold(True)
             return font
         elif role == Qt.ItemDataRole.ForegroundRole:
+            for tag in settings.search_color_overrides.keys() & thread_d['tags']:
+                if col in settings.search_color_overrides[tag]:
+                    color = settings.search_color_overrides[tag][col]
+                    return QColor(color)
+
             color = 'fg_' + col
             unread_color = 'fg_' + col + '_unread'
             flagged_color = 'fg_' + col + '_flagged'
