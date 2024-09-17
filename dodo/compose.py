@@ -241,10 +241,7 @@ class ComposePanel(panel.Panel):
         instead of Qt's built-in one."""
 
         if settings.file_picker_command == None:
-            f = QFileDialog.getOpenFileName()
-            if f[0]:
-                self.raw_message_string = util.add_header_line(self.raw_message_string, 'A: ' + f[0])
-                self.refresh()
+            file_list, _filter = QFileDialog.getOpenFileNames()
         else:
             fd, file = tempfile.mkstemp()
             cmd = settings.file_picker_command.format(tempfile=file)
@@ -254,10 +251,10 @@ class ComposePanel(panel.Panel):
                 file_list = f1.read().split('\n')
             os.remove(file)
 
-            for att in file_list:
-                if att != '':
-                    self.raw_message_string = util.add_header_line(self.raw_message_string, 'A: ' + att)
-            self.refresh()
+        for att in file_list:
+            if att != '':
+                self.raw_message_string = util.add_header_line(self.raw_message_string, 'A: ' + att)
+        self.refresh()
 
 
     def toggle_wrap(self) -> None:
