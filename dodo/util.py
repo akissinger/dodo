@@ -17,7 +17,7 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import Iterator, List, Tuple, Dict, Union
+from typing import Iterator, List, Tuple, Dict, Optional
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeyEvent
@@ -311,14 +311,14 @@ def email_is_me(e: str) -> bool:
 
     return False
 
-def email_smtp_account_index(e: str) -> Union[int, None]:
+def email_smtp_account_index(e: str) -> Optional[int]:
     """Index in settings.smtp_accounts of account having the provided email address
 
     This method is used e.g. by :class:`dodo.compose.Compose` to autmatically
     select the account to be used when replying to a mail. It returns the index
     of first matching account or None if provided email does not match
     any smtp account.  """
-
+    assert isinstance(settings.email_address, dict)
     return next(
             (i for i, acc in enumerate(settings.smtp_accounts) if
              strip_email_address(e) ==
