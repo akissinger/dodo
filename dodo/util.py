@@ -89,6 +89,19 @@ def linkify(s: str) -> str:
     # get preference over email addresses
     return lnk_email.linkify(lnk.linkify(s))
 
+
+def get_header_addresses(
+    headers: Dict[str, str], header_keys: List[str]
+) -> List[Tuple[str, str]]:
+    """Extract realnames and email addresses from message headers.
+
+    The given header_keys are considered, e.g. ['From', 'Reply-To'] to get senders,
+    or ['To', 'Cc'] to get recipients.
+    """
+    header_values = [headers[key] for key in header_keys if key in headers]
+    return email.utils.getaddresses(header_values)
+
+
 html2html = lambda s : s
 """Function used to process HTML messages
 
