@@ -273,8 +273,8 @@ def strip_email_address(e: str) -> str:
     """
 
     # TODO proper handling of quoted strings
-    head = re.compile('^.*<')
-    tail = re.compile('>.*$')
+    head = re.compile(r'^.*<')
+    tail = re.compile(r'>.*$')
     return tail.sub('', head.sub('', e))
 
 def email_is_me(e: str) -> bool:
@@ -357,7 +357,7 @@ def replace_header(s: str, h: str, new_value: str) -> str:
     Note this ONLY works for short (i.e. unwrapped) headers."""
 
     (headers, body) = separate_headers(s)
-    old_h = re.compile('^' + h + ':.*$', re.MULTILINE)
+    old_h = re.compile(r'^' + h + r':.*$', re.MULTILINE)
     headers = old_h.sub(h + ': ' + new_value, headers)
 
     return headers + '\n' + body

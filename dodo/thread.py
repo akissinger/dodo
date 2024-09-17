@@ -197,7 +197,7 @@ class RemoteBlockingUrlRequestInterceptor(QWebEngineUrlRequestInterceptor):
         if info.requestUrl().scheme() not in app.LOCAL_PROTOCOLS:
             info.block(settings.html_block_remote_requests)
 
-RE_REGEX = re.compile('^R[Ee]: ')
+RE_REGEX = re.compile(r'^R[Ee]: ')
 class ThreadItem:
     def __init__(self, raw_data, parent: ThreadItem|None):
         self.msg = raw_data[0]
