@@ -546,6 +546,13 @@ class ThreadPanel(panel.Panel):
             self._saved_collapsed = self._get_collapsed()
 
     def _do_reset(self):
+        if self._saved_collapsed is None:
+            collapsed = self.model.default_collapsed()
+        else:
+            collapsed = self._saved_collapsed
+            self._saved_collapsed = None
+        self._restore_collapsed(collapsed)
+
         idx = QModelIndex()
         if self._saved_msg:
             idx = self.model.find(self._saved_msg)
@@ -554,12 +561,6 @@ class ThreadPanel(panel.Panel):
             self._select_index(idx)
         else:
             self._select_index(self.model.default_message())
-        if self._saved_collapsed is None:
-            collapsed = self.model.default_collapsed()
-        else:
-            collapsed = self._saved_collapsed
-            self._saved_collapsed = None
-        self._restore_collapsed(collapsed)
 
     def toggle_list_mode(self):
         self.model.toggle_mode()
