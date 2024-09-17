@@ -298,18 +298,16 @@ def email_is_me(e: str) -> bool:
     :class:`dodo.compose.Compose` to filter out the user's own email when forming
     a "reply-to-all" message.
     """
-
-    e_strip = strip_email_address(e)
-
     if isinstance(settings.email_address, dict):
-        for v in settings.email_address.values():
-            if strip_email_address(v) == e_strip:
-                return True
+        addresses = [
+            strip_email_address(v) for v in settings.email_address.values()
+        ]
     else:
-        if strip_email_address(settings.email_address) == e_strip:
-            return True
+        addresses = [email.utils.parseaddr(settings.email_address)[1]]
 
-    return False
+    # nb: strip_email_address(e) is unnecessary with how this is used in compose.py,
+    # but doing it avoids a future footgun, and it is idempotent.
+    return strip_email_address(e) in addresses
 
 def email_smtp_account_index(e: str) -> Optional[int]:
     """Index in settings.smtp_accounts of account having the provided email address
