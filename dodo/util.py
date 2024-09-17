@@ -284,11 +284,7 @@ def strip_email_address(e: str) -> str:
 
     E.g. "First Last <me@domain.com>" -> "me@domain.com"
     """
-
-    # TODO proper handling of quoted strings
-    head = re.compile(r'^.*<')
-    tail = re.compile(r'>.*$')
-    return tail.sub('', head.sub('', e))
+    return email.utils.parseaddr(e)[1]
 
 def email_is_me(e: str) -> bool:
     """Check whether the provided email is me
