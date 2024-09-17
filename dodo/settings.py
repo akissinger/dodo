@@ -34,10 +34,10 @@ defaults, as detailed below.
 """
 
 from . import themes
-from typing import Literal
+from typing import Literal, Dict, Union
 
 # functional
-email_address = ''
+email_address: Union[str, Dict[str, str]] = ''
 """Your email address (REQUIRED)
 
 This is used both to populate the 'From' field of emails and to (mostly)

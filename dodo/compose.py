@@ -78,18 +78,8 @@ class ComposePanel(panel.Panel):
         self.message_string = ''
 
         if msg:
-            senders: List[str] = []
-            recipients: List[str] = []
-
-            email_sep = re.compile(r'\s*,\s*')
-            if 'Reply-To' in msg['headers']:
-                senders.append(msg['headers']['Reply-To'])
-            elif 'From' in msg['headers']:
-                senders.append(msg["headers"]["From"])
-            if 'To' in msg['headers']:
-                recipients += email_sep.split(msg['headers']['To'])
-            if 'Cc' in msg['headers']:
-                recipients += email_sep.split(msg['headers']['Cc'])
+            senders = util.get_header_addresses(msg['headers'], ['From', 'Reply-To'])
+            recipients = util.get_header_addresses(msg['headers'], ['To', 'Cc'])
 
             # Select current_account by checking which smtp_account's address
             # is found first in the headers. Start with the recipient headers
@@ -98,7 +88,7 @@ class ComposePanel(panel.Panel):
             if isinstance(settings.email_address, dict):
                 self.current_account = next(
                         (
-                         util.email_smtp_account_index(m) for m in
+                         util.email_smtp_account_index(m) for _, m in
                          recipients + senders if
                          util.email_smtp_account_index(m) is not None
                          ), 0)
@@ -121,15 +111,17 @@ class ComposePanel(panel.Panel):
             self.raw_message_string += '\n\n\n'
 
         elif msg and (mode == 'reply' or mode == 'replyall'):
-            send_to = [e for e in senders + recipients if not util.email_is_me(e)]
+            send_to = [(name, e) for name, e in senders + recipients if not util.email_is_me(e)]
 
             # put the first non-me email in To
             if len(send_to) != 0:
-                self.raw_message_string += f'To: {send_to.pop(0)}\n'
+                to_value = email.utils.formataddr(send_to.pop(0))
+                self.raw_message_string += f'To: {to_value}\n'
 
             # for replyall, put the rest of the emails in Cc
             if len(send_to) != 0 and mode == 'replyall':
-                self.raw_message_string += f'Cc: {", ".join(send_to)}\n'
+                cc_values = [email.utils.formataddr(pair) for pair in send_to]
+                self.raw_message_string += f'Cc: {", ".join(cc_values)}\n'
 
             if 'Subject' in msg['headers']:
                 subject = msg['headers']['Subject']

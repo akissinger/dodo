@@ -17,7 +17,7 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import Iterator, List, Tuple, Dict, Union
+from typing import Iterator, List, Tuple, Dict, Optional
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeyEvent
@@ -88,6 +88,19 @@ def linkify(s: str) -> str:
     # using 2 instances of Linker() so explicit 'mailto:' links
     # get preference over email addresses
     return lnk_email.linkify(lnk.linkify(s))
+
+
+def get_header_addresses(
+    headers: Dict[str, str], header_keys: List[str]
+) -> List[Tuple[str, str]]:
+    """Extract realnames and email addresses from message headers.
+
+    The given header_keys are considered, e.g. ['From', 'Reply-To'] to get senders,
+    or ['To', 'Cc'] to get recipients.
+    """
+    header_values = [headers[key] for key in header_keys if key in headers]
+    return email.utils.getaddresses(header_values)
+
 
 html2html = lambda s : s
 """Function used to process HTML messages
@@ -271,11 +284,7 @@ def strip_email_address(e: str) -> str:
 
     E.g. "First Last <me@domain.com>" -> "me@domain.com"
     """
-
-    # TODO proper handling of quoted strings
-    head = re.compile(r'^.*<')
-    tail = re.compile(r'>.*$')
-    return tail.sub('', head.sub('', e))
+    return email.utils.parseaddr(e)[1]
 
 def email_is_me(e: str) -> bool:
     """Check whether the provided email is me
@@ -285,27 +294,25 @@ def email_is_me(e: str) -> bool:
     :class:`dodo.compose.Compose` to filter out the user's own email when forming
     a "reply-to-all" message.
     """
-
-    e_strip = strip_email_address(e)
-
     if isinstance(settings.email_address, dict):
-        for v in settings.email_address.values():
-            if strip_email_address(v) == e_strip:
-                return True
+        addresses = [
+            strip_email_address(v) for v in settings.email_address.values()
+        ]
     else:
-        if strip_email_address(settings.email_address) == e_strip:
-            return True
+        addresses = [email.utils.parseaddr(settings.email_address)[1]]
 
-    return False
+    # nb: strip_email_address(e) is unnecessary with how this is used in compose.py,
+    # but doing it avoids a future footgun, and it is idempotent.
+    return strip_email_address(e) in addresses
 
-def email_smtp_account_index(e: str) -> Union[int, None]:
+def email_smtp_account_index(e: str) -> Optional[int]:
     """Index in settings.smtp_accounts of account having the provided email address
 
     This method is used e.g. by :class:`dodo.compose.Compose` to autmatically
     select the account to be used when replying to a mail. It returns the index
     of first matching account or None if provided email does not match
     any smtp account.  """
-
+    assert isinstance(settings.email_address, dict)
     return next(
             (i for i, acc in enumerate(settings.smtp_accounts) if
              strip_email_address(e) ==
