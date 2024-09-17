@@ -19,6 +19,8 @@
 import email
 import email.utils
 import re
+import sys
+from typing import Protocol
 from . import settings
 
 # gnupg is only needed for pgp/mime support, do not throw when not present
@@ -28,6 +30,21 @@ try:
 except (ImportError, NameError):
     pass
 
+
+
+class GpgResult(Protocol):
+    returncode: int
+    status: str
+    status_detail: str
+    stderr: str
+
+
+def raise_for_status(result: GpgResult) -> None:
+    if result.returncode == 0:
+        return
+
+    print(result.stderr, file=sys.stderr)
+    raise Exception(f"GPG failed with exit status {result.returncode}: {result.status}")
 
 
 def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
@@ -56,6 +73,7 @@ def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     signed_mail.attach(msg_to_sign)
     # Create the signature
     sig = Gpg.sign(msg_to_sign.as_string(), keyid=settings.gnupg_keyid, detach=True)
+    raise_for_status(sig)
     # Attach the ASCII representation (as per rfc) of the signature, note that
     # set_content with contaent-type other then text requires a bytes object
     sigpart = email.message.EmailMessage()
@@ -100,6 +118,7 @@ def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     # Encrypt the parts of the original message (with non-content headers removed)
     encrypted_contents = Gpg.encrypt(msg_to_encrypt.as_bytes(), recipients_keys,
                                      extra_args=['--emit-version'])
+    raise_for_status(encrypted_contents)
 
     # attach the ASCII representation of the encrypted test, note that
     # set_content with contaent-type other then text requires a bytes object
