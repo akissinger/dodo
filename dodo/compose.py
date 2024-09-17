@@ -31,6 +31,7 @@ import email.policy
 import email.message
 import mimetypes
 import subprocess
+import traceback
 from subprocess import PIPE, Popen, TimeoutExpired
 import tempfile
 import typing
@@ -460,4 +461,6 @@ class SendmailThread(QThread):
         except TimeoutExpired:
             self.panel.status = f'<i style="color:{settings.theme["fg_bad"]}">timed out</i>'
         except Exception as e:
-            self.panel.status = f'<i style=f"color:{settings.theme["fg_bad"]}">exception {e}</i>'
+            msg = util.simple_escape(str(e))
+            self.panel.status = f'<i style="color:{settings.theme["fg_bad"]}">exception {msg} (traceback on stderr)</i>'
+            traceback.print_exc()
