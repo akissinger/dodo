@@ -177,6 +177,8 @@ class Dodo(QApplication):
 
         If a panel with this query is already open, switch to it rather than
         opening another copy."""
+        if not query:
+            return
 
         for i in range(self.num_panels()):
             w = self.tabs.widget(i)
