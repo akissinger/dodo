@@ -18,6 +18,7 @@
 
 import email
 import email.utils
+import email.message
 import re
 import sys
 from typing import Protocol
@@ -53,6 +54,8 @@ def raise_for_status(result: GpgResult) -> None:
 
 def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     ensure_gpg()
+    assert Gpg is not None  # for mypy
+
     RFC4880_HASH_ALGO = {'1': "MD5", '2': "SHA1", '3': "RIPEMD160",
                          '8': "SHA256", '9': "SHA384", '10': "SHA512",
                          '11': "SHA224"}
@@ -91,6 +94,8 @@ def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
 
 def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     ensure_gpg()
+    assert Gpg is not None  # for mypy
+
     # Always also encrypt with the key corresponding to the From address in order to
     # be able to decrypt the mail that has been sent.
     recipients = [
