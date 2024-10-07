@@ -19,6 +19,7 @@
 import email
 import email.utils
 from . import settings
+from . import util
 
 # gnupg is only needed for pgp/mime support, do not throw when not present
 try:
@@ -79,11 +80,8 @@ def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
             val for key, val in msg.items() if key in ['From', 'To', 'Cc']
         ])
     ]
-    # set strict=False for parseaddr, otherwise keys with a uid such as
-    # "mail@example.org <mail@example.org>" are skipped. These uids are considered
-    # malformed, but they occur.
     recipients_keys = [key['fingerprint'] for key in Gpg.list_keys()
-                       if any(addr == email.utils.parseaddr(uid, strict=False)[1]
+                       if any(addr == util.strip_email_address(uid)
                            for uid in key['uids'] for addr in recipients)]
     # Generate a copy of the message, by working on the copy we leave
     # the original message (msg) unaltered.
