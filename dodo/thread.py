@@ -91,6 +91,7 @@ class MessagePage(QWebEnginePage):
                     self.app.open_compose(mode='mailto', msg=msg)
                 else:
                     if (not settings.html_confirm_open_links or
+                        url.host() in settings.html_confirm_open_links_trusted_hosts or
                         QMessageBox.question(None, 'Open link',
                             f'Open the following URL in browser?\n\n  {url.toString()}') == QMessageBox.StandardButton.Yes):
                         if settings.web_browser_command == '':
