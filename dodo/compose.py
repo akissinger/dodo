@@ -453,6 +453,8 @@ class SendmailThread(QThread):
                 self.panel.set_status("error", color="fg_bad")
         except TimeoutExpired:
             self.panel.set_status("timed out", color="fg_bad")
+        except pgp_util.GpgError as e:
+            self.panel.set_status(f"GPG error: {e}", color="fg_bad")
         except Exception as e:
             self.panel.set_status(f"exception {e} (traceback on stderr)", color="fg_bad")
             traceback.print_exc()

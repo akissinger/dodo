@@ -32,9 +32,13 @@ except (ImportError, NameError):
     Gpg = None
 
 
+class GpgError(Exception):
+    pass
+
+
 def ensure_gpg():
     if Gpg is None:
-        raise Exception("python-gnupg is needed to sign/encrypt")
+        raise GpgError("python-gnupg is needed to sign/encrypt")
 
 
 class GpgResult(Protocol):
@@ -49,7 +53,11 @@ def raise_for_status(result: GpgResult) -> None:
         return
 
     print(result.stderr, file=sys.stderr)
-    raise Exception(f"GPG failed with exit status {result.returncode}: {result.status}")
+
+    message = f"Failed with exit status {result.returncode}, see stderr for details"
+    if result.status:
+        message += f" ({result.status})"
+    raise GpgError(message)
 
 
 def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
