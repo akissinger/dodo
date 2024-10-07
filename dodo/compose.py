@@ -324,6 +324,10 @@ class ComposePanel(panel.Panel):
             self.sendmail_thread.finished.connect(done)
             self.sendmail_thread.start()
 
+    def set_status(self, status: str, color: str) -> None:
+        html_status = util.simple_escape(status)
+        self.status = f'<i style="color:{settings.theme[color]}">{html_status}</i>'
+
 
 class EditorThread(QThread):
     """A QThread used for editing mail with the external editor
@@ -444,12 +448,13 @@ class SendmailThread(QThread):
                 if ((self.panel.mode == 'reply' or self.panel.mode == 'replyall') and
                         self.panel.msg and 'id' in self.panel.msg):
                     subprocess.run(['notmuch', 'tag', '+replied', '--', 'id:' + self.panel.msg['id']])
-                self.panel.status = f'<i style="color:{settings.theme["fg_good"]}">sent</i>'
+                self.panel.set_status("sent", color="fg_good")
             else:
-                self.panel.status = f'<i style="color:{settings.theme["fg_bad"]}">error</i>'
+                self.panel.set_status("error", color="fg_bad")
         except TimeoutExpired:
-            self.panel.status = f'<i style="color:{settings.theme["fg_bad"]}">timed out</i>'
+            self.panel.set_status("timed out", color="fg_bad")
+        except pgp_util.GpgError as e:
+            self.panel.set_status(f"GPG error: {e}", color="fg_bad")
         except Exception as e:
-            msg = util.simple_escape(str(e))
-            self.panel.status = f'<i style="color:{settings.theme["fg_bad"]}">exception {msg} (traceback on stderr)</i>'
+            self.panel.set_status(f"exception {e} (traceback on stderr)", color="fg_bad")
             traceback.print_exc()

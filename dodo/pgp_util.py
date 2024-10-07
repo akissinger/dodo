@@ -18,6 +18,7 @@
 
 import email
 import email.utils
+import email.message
 import re
 import sys
 from typing import Protocol
@@ -31,9 +32,13 @@ except (ImportError, NameError):
     Gpg = None
 
 
+class GpgError(Exception):
+    pass
+
+
 def ensure_gpg():
     if Gpg is None:
-        raise Exception("python-gnupg is needed to sign/encrypt")
+        raise GpgError("python-gnupg is needed to sign/encrypt")
 
 
 class GpgResult(Protocol):
@@ -48,11 +53,17 @@ def raise_for_status(result: GpgResult) -> None:
         return
 
     print(result.stderr, file=sys.stderr)
-    raise Exception(f"GPG failed with exit status {result.returncode}: {result.status}")
+
+    message = f"Failed with exit status {result.returncode}, see stderr for details"
+    if result.status:
+        message += f" ({result.status})"
+    raise GpgError(message)
 
 
 def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     ensure_gpg()
+    assert Gpg is not None  # for mypy
+
     RFC4880_HASH_ALGO = {'1': "MD5", '2': "SHA1", '3': "RIPEMD160",
                          '8': "SHA256", '9': "SHA384", '10': "SHA512",
                          '11': "SHA224"}
@@ -91,6 +102,8 @@ def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
 
 def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     ensure_gpg()
+    assert Gpg is not None  # for mypy
+
     # Always also encrypt with the key corresponding to the From address in order to
     # be able to decrypt the mail that has been sent.
     recipients = [
