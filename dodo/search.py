@@ -258,9 +258,10 @@ class SearchPanel(panel.Panel):
                 self.refresh()
 
     def title(self) -> str:
-        """Give the query as the tab title"""
-
-        return self.q
+        """Use the configured tab title"""
+        return settings.search_title_format.format(
+            query=self.q, num_threads=self.model.num_threads()
+        )
 
     def next_thread(self, unread: bool=False) -> None:
         """Select the next thread in the search
