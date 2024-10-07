@@ -147,6 +147,8 @@ class SearchModel(QAbstractItemModel):
                 return QColor(settings.theme[color])
             else:
                 return QColor(settings.theme['fg'])
+        elif role == Qt.ItemDataRole.ToolTipRole and col == 'tags':
+            return ' '.join(thread_d['tags'])
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int=Qt.ItemDataRole.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.headerData` to populate a view with column names"""
