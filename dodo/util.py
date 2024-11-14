@@ -312,7 +312,7 @@ def email_smtp_account_index(e: str) -> Optional[int]:
     select the account to be used when replying to a mail. It returns the index
     of first matching account or None if provided email does not match
     any smtp account.  """
-    assert isinstance(settings.email_address, dict)
+    assert isinstance(settings.email_address, dict), settings.email_address
     return next(
             (i for i, acc in enumerate(settings.smtp_accounts) if
              strip_email_address(e) ==

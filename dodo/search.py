@@ -62,7 +62,7 @@ class SearchModel(QAbstractItemModel):
         else:
             thread_id = self.thread_id(thread)
             row = thread.row()
-            assert(thread_id is not None)
+            assert thread_id is not None
 
         r = subprocess.run(['notmuch', 'search', '--format=json', f'{self.q} AND thread:{thread_id}'],
                 stdout=subprocess.PIPE)

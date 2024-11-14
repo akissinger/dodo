@@ -304,7 +304,7 @@ class ThreadModel(QAbstractItemModel):
         logger.info("Full thread refresh")
         matches = self._fetch_matching_ids()
         data = self._fetch_full_thread()
-        assert(len(data) == 1)
+        assert len(data) == 1, data
         data = data[0]
         roots = self.compute_roots(data)
         self.beginResetModel()
@@ -315,7 +315,7 @@ class ThreadModel(QAbstractItemModel):
 
     def refresh_message(self, msg_id: str):
         idx = self.find(msg_id)
-        assert idx.isValid()
+        assert idx.isValid(), msg_id
         logger.info("Single message refresh: %s", msg_id)
         r = subprocess.run(['notmuch', 'show', '--entire-thread=false', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', f'id:{msg_id}'],
                 stdout=subprocess.PIPE, encoding='utf8')
@@ -366,7 +366,7 @@ class ThreadModel(QAbstractItemModel):
 
     def message_at(self, idx: QModelIndex) -> dict:
         """A JSON object describing the i-th message in the (flattened) thread"""
-        assert idx.isValid()
+        assert idx.isValid(), idx
         return idx.internalPointer().msg
 
     def _children_at(self, idx: QModelIndex) -> list[ThreadItem]:
