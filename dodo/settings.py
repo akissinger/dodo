@@ -194,6 +194,13 @@ the web browser will request before opening. This is an extra measure against ph
 or emails opening your web browser without your permission.
 """
 
+html_confirm_open_links_trusted_hosts = []
+"""A list of trusted hosts for HTML links.
+
+If a link is to a host in this list, it will be opened without confirmation, even if
+:func:`~dodo.settings.html_confirm_open_links` is True.
+"""
+
 # visual
 theme = themes.nord
 """The GUI theme
@@ -223,6 +230,15 @@ message_font_size = 12
 
 search_view_padding = 1
 """A bit of spacing around each line in the search panel"""
+
+search_title_format = "{query} [{num_threads}]"
+"""A Python format string for the tab title of search panels
+
+The following placeholders can be used:
+
+- {query}: the current search query
+- {num_threads}: the number of threads returned by the search
+"""
 
 tag_icons = {
   'inbox': '',

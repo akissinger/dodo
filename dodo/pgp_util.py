@@ -18,6 +18,10 @@
 
 import email
 import email.utils
+import email.message
+import re
+import sys
+from typing import Protocol
 from . import settings
 from . import util
 
@@ -29,13 +33,38 @@ except (ImportError, NameError):
     Gpg = None
 
 
+class GpgError(Exception):
+    pass
+
+
 def ensure_gpg():
     if Gpg is None:
-        raise Exception("python-gnupg is needed to sign/encrypt")
+        raise GpgError("python-gnupg is needed to sign/encrypt")
+
+
+class GpgResult(Protocol):
+    returncode: int
+    status: str
+    status_detail: str
+    stderr: str
+
+
+def raise_for_status(result: GpgResult) -> None:
+    if result.returncode == 0:
+        return
+
+    print(result.stderr, file=sys.stderr)
+
+    message = f"Failed with exit status {result.returncode}, see stderr for details"
+    if result.status:
+        message += f" ({result.status})"
+    raise GpgError(message)
 
 
 def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     ensure_gpg()
+    assert Gpg is not None  # for mypy
+
     RFC4880_HASH_ALGO = {'1': "MD5", '2': "SHA1", '3': "RIPEMD160",
                          '8': "SHA256", '9': "SHA384", '10': "SHA512",
                          '11': "SHA224"}
@@ -61,6 +90,7 @@ def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     signed_mail.attach(msg_to_sign)
     # Create the signature
     sig = Gpg.sign(msg_to_sign.as_string(), keyid=settings.gnupg_keyid, detach=True)
+    raise_for_status(sig)
     # Attach the ASCII representation (as per rfc) of the signature, note that
     # set_content with contaent-type other then text requires a bytes object
     sigpart = email.message.EmailMessage()
@@ -73,6 +103,8 @@ def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
 
 def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     ensure_gpg()
+    assert Gpg is not None  # for mypy
+
     # Always also encrypt with the key corresponding to the From address in order to
     # be able to decrypt the mail that has been sent.
     recipients = [
@@ -106,6 +138,7 @@ def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     # Encrypt the parts of the original message (with non-content headers removed)
     encrypted_contents = Gpg.encrypt(msg_to_encrypt.as_bytes(), recipients_keys,
                                      extra_args=['--emit-version'])
+    raise_for_status(encrypted_contents)
 
     # attach the ASCII representation of the encrypted test, note that
     # set_content with contaent-type other then text requires a bytes object

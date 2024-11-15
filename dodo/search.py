@@ -62,7 +62,7 @@ class SearchModel(QAbstractItemModel):
         else:
             thread_id = self.thread_id(thread)
             row = thread.row()
-            assert(thread_id is not None)
+            assert thread_id is not None
 
         r = subprocess.run(['notmuch', 'search', '--format=json', f'{self.q} AND thread:{thread_id}'],
                 stdout=subprocess.PIPE)
@@ -147,6 +147,8 @@ class SearchModel(QAbstractItemModel):
                 return QColor(settings.theme[color])
             else:
                 return QColor(settings.theme['fg'])
+        elif role == Qt.ItemDataRole.ToolTipRole and col == 'tags':
+            return ' '.join(thread_d['tags'])
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int=Qt.ItemDataRole.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.headerData` to populate a view with column names"""
@@ -258,9 +260,10 @@ class SearchPanel(panel.Panel):
                 self.refresh()
 
     def title(self) -> str:
-        """Give the query as the tab title"""
-
-        return self.q
+        """Use the configured tab title"""
+        return settings.search_title_format.format(
+            query=self.q, num_threads=self.model.num_threads()
+        )
 
     def next_thread(self, unread: bool=False) -> None:
         """Select the next thread in the search
