@@ -23,6 +23,7 @@ import re
 import sys
 from typing import Protocol
 from . import settings
+from . import util
 
 # gnupg is only needed for pgp/mime support, do not throw when not present
 try:
@@ -111,9 +112,9 @@ def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
             val for key, val in msg.items() if key in ['From', 'To', 'Cc']
         ])
     ]
-    recipients_keys = [k['fingerprint'] for k in Gpg.list_keys()
-                       if any(re.search(addr, u) for u in k['uids']
-                              for addr in recipients)]
+    recipients_keys = [key['fingerprint'] for key in Gpg.list_keys()
+                       if any(addr == util.strip_email_address(uid)
+                           for uid in key['uids'] for addr in recipients)]
     # Generate a copy of the message, by working on the copy we leave
     # the original message (msg) unaltered.
     msg_to_encrypt = email.message_from_bytes(msg.as_bytes(), policy=msg.policy.clone())
