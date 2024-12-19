@@ -374,6 +374,10 @@ class SendmailThread(QThread):
             attachments: List[str] = eml.get_all('A', [])
             del eml['A']
 
+            # Reset the proper content headers for the body, otherwise we'll lose it
+            # if/when switching to multipart.
+            eml.set_content(eml.get_payload())
+
             eml['Message-ID'] = email.utils.make_msgid()
             eml['User-Agent'] = 'Dodo'
 
