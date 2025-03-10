@@ -23,6 +23,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeyEvent
 import re
 import os
+import os.path
 import tempfile
 import subprocess
 import email
@@ -257,13 +258,18 @@ def write_attachments(m: dict) -> Tuple[str, List[str]]:
     file_paths = []
 
     for part in message_parts(m):
-        if part.get("content-disposition") == "attachment":
+        if part.get("content-disposition") == "attachment" and part.get("content-type") != "application/pgp-signature":
             proc = subprocess.run(
-                ["notmuch", "show", "--part", str(part["id"]), "--", "id:" + m["id"]],
-                capture_output=True,
+                ["notmuch", "show", "--part", str(part["id"]), "--decrypt=true", "--", "id:" + m["id"]],
+                stdout=subprocess.PIPE,
                 check=True,
             )
-            p = temp_dir + '/' + part["filename"]
+            filename = part["filename"]
+            if not proc.stdout:
+                print(f"Ignoring attachment {filename}: Got empty contents from notmuch")
+                continue
+
+            p = os.path.join(temp_dir, filename)
             with open(p, 'wb') as att:
                 att.write(proc.stdout)
             file_paths.append(p)
