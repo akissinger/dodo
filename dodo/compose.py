@@ -414,11 +414,11 @@ class SendmailThread(QThread):
                 except IOError:
                     print("Can't read attachment: " + att)
 
-            if self.panel.pgp_encrypt:
-                eml = pgp_util.encrypt(eml)
-
             if self.panel.pgp_sign:
                 eml = pgp_util.sign(eml)
+
+            if self.panel.pgp_encrypt:
+                eml = pgp_util.encrypt(eml)
 
             cmd = settings.send_mail_command.replace('{account}', account)
             sendmail = Popen(cmd, stdin=PIPE, encoding='utf8', shell=True)

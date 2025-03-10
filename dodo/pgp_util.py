@@ -77,7 +77,7 @@ def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     msg_to_sign = email.message_from_string(msg.as_string(), policy=gpg_policy)
     # Create a new mail that will contain the original message and its signature
     signed_mail = email.message.EmailMessage(policy=msg.policy.clone(linesep='\r\n'))
-    # copy the non Content-* headers to the new mail and remove them form the
+    # copy the non Content-* headers to the new mail and remove them from the
     # message that will be signed
     for k, v in msg.items():
         if not k.lower().startswith('content-'):
@@ -119,7 +119,7 @@ def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     # the original message (msg) unaltered.
     msg_to_encrypt = email.message_from_bytes(msg.as_bytes(), policy=msg.policy.clone())
     # Create a new message that will contain the control part and the encrypted
-    # message. Copy the non Content-* headers and remove them form the
+    # message. Copy the non Content-* headers and remove them from the
     # message that will be encrypted
     encrypted_mail = email.message.EmailMessage(policy=msg.policy.clone())
     for k, v in msg.items():
@@ -141,10 +141,10 @@ def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     raise_for_status(encrypted_contents)
 
     # attach the ASCII representation of the encrypted test, note that
-    # set_content with contaent-type other then text requires a bytes object
+    # set_content with content-type other then text requires a bytes object
     pgp_encrypted_part = email.message.EmailMessage()
     pgp_encrypted_part.set_content(str(encrypted_contents).encode(), 'application',
                                    'octet-stream', disposition='inline',
-                                   filename='encrypred.asc', cte='7bit')
+                                   filename='encrypted.asc', cte='7bit')
     encrypted_mail.attach(pgp_encrypted_part)
     return encrypted_mail
