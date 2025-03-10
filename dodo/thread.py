@@ -44,6 +44,7 @@ from . import settings
 from . import util
 from . import keymap
 from . import panel
+from . import pgp_util
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +146,9 @@ class MessageHandler(QWebEngineUrlSchemeHandler):
                     if text is not None:
                         break
                 else:
-                    text = util.simple_escape(util.body_text(self.message_json))
+                    text = util.body_text(self.message_json)
+                    text = pgp_util.maybe_decrypt_inline(text)
+                    text = util.simple_escape(text)
                     text = util.colorize_text(text)
                     text = util.linkify(text)
 
