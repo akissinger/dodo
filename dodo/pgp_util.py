@@ -164,3 +164,13 @@ def maybe_decrypt_inline(contents: str) -> str:
     decrypted = Gpg.decrypt(contents)
     raise_for_status(decrypted)
     return decrypted.data.decode()
+
+
+def decrypt_inline_attachment(data: bytes) -> bytes:
+    ensure_gpg()
+    assert Gpg is not None  # for mypy
+
+    assert data.startswith(INLINE_BEGIN.encode()) and data.endswith(INLINE_END.encode())
+    decrypted = Gpg.decrypt(data)
+    raise_for_status(decrypted)
+    return decrypted.data
