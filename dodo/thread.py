@@ -646,8 +646,11 @@ class ThreadPanel(panel.Panel):
                   <td><b style="color: {settings.theme["fg_bright"]}">Tags:&nbsp;</b></td>
                   <td><span style="color: {settings.theme["fg_tags"]}; font-family: {settings.tag_font}; font-size: {settings.tag_font_size}">{tags}</span></td>
                 </tr>"""
-            attachments = [f'[{part["filename"]}]' for part in util.message_parts(m)
-                    if part.get('content-disposition') == 'attachment' and 'filename' in part]
+            attachments = [
+                f"[{part['filename']}]"
+                for part in util.message_parts(m)
+                if util.is_attachment(part)
+            ]
 
             if len(attachments) != 0:
                 header_html += f"""<tr>

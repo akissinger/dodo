@@ -192,6 +192,29 @@ def message_parts(m: dict) -> Iterator[dict]:
     else:
         yield m
 
+def is_attachment(part: dict) -> bool:
+    """Check whether a message part should be shown an attachment.
+
+    All parts with content-disposition equal to "attachment" are considered
+    attachments, except for PGP signatures and parts without a filename.
+
+    Some clients also send attachments without a Content-Disposition header.
+    We consider any unknown binary part an attachment.
+    """
+    content_disposition = part.get("content-disposition")
+    content_type = part.get("content-type")
+    return (
+        "filename" in part
+        and content_type != "application/pgp-signature"
+        and (
+            content_disposition == "attachment"
+            or (
+                content_disposition is None
+                and content_type == "application/octet-stream"
+            )
+        )
+    )
+
 def find_content(m: dict, content_type: str) -> List[str]:
     """Return a flat list consisting of the 'content' field of each message
     part with the given content-type."""
@@ -258,7 +281,7 @@ def write_attachments(m: dict) -> Tuple[str, List[str]]:
     file_paths = []
 
     for part in message_parts(m):
-        if part.get("content-disposition") == "attachment" and part.get("content-type") != "application/pgp-signature":
+        if is_attachment(part):
             proc = subprocess.run(
                 ["notmuch", "show", "--part", str(part["id"]), "--decrypt=true", "--", "id:" + m["id"]],
                 stdout=subprocess.PIPE,
