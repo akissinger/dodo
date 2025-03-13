@@ -507,7 +507,7 @@ class ThreadPanel(panel.Panel):
         self.thread_list.clicked.connect(self._select_index)
         self.model.modelAboutToBeReset.connect(self._prepare_reset)
         self.model.modelReset.connect(self._do_reset)
-        self.model.dataChanged.connect(lambda _a,_b: self.refresh_view())
+        self.model.dataChanged.connect(lambda _a,_b: self.refresh_info())
         self.model.messageChanged.connect(lambda idx: self.app.update_single_thread(self.thread_id, msg_id=self.model.message_at(idx)['id']))
 
         self.message_info = QTextBrowser()
@@ -577,9 +577,14 @@ class ThreadPanel(panel.Panel):
         if not index.isValid():
             return
         self.thread_list.setCurrentIndex(index)
-        # We only refresh the view if there was no tagging
+
+        previous_msg = self.message_handler.message_json
+        current_msg = self.current_message
+        if not previous_msg or current_msg['id'] != previous_msg['id']:
+            self.refresh_content()
+        # If the tags change the info view will be automatically refreshed.
         if not self.model.mark_as_read(index):
-            self.refresh_view()
+            self.refresh_info()
 
     def layout_panel(self):
         """Method for laying out various components in the ThreadPanel"""
@@ -617,12 +622,12 @@ class ThreadPanel(panel.Panel):
 
         Note the view of the message body is not refreshed, as this would pop the user back to
         the top of the message every time it happens. To refresh the current message body, use
-        :func:`show_message` wihtout any arguments."""
+        :func:`refresh_content` wihtout any arguments."""
 
         super().refresh()
         self.model.refresh()
 
-    def refresh_view(self):
+    def refresh_info(self):
         """Refresh the UI, without refreshing the underlying content"""
         m = self.current_message
 
@@ -683,7 +688,11 @@ class ThreadPanel(panel.Panel):
             </tr>"""
             header_html += '</table>'
             self.message_info.setHtml(header_html)
+        self.has_refreshed.emit()
 
+    def refresh_content(self):
+        """Refresh the message content UI."""
+        m = self.current_message
         self.message_handler.message_json = m
 
         if self.html_mode:
@@ -693,8 +702,6 @@ class ThreadPanel(panel.Panel):
         else:
             self.message_view.page().setUrl(QUrl('message:plain'))
         self.scroll_message(pos = 'top')
-        self.has_refreshed.emit()
-
 
     def update_thread(self, thread_id: str, msg_id: str|None=None):
         if self.model.thread_id == thread_id:
@@ -758,7 +765,7 @@ class ThreadPanel(panel.Panel):
         """Toggle between HTML and plain text message view"""
 
         self.html_mode = not self.html_mode
-        self.refresh_view()
+        self.refresh_content()
 
     def reply(self, to_all: bool=True) -> None:
         """Open a :class:`~dodo.compose.ComposePanel` populated with a reply
