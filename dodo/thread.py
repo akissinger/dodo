@@ -290,8 +290,9 @@ class ThreadModel(QAbstractItemModel):
                 return make_thread_trees(raw_data)
 
     def _fetch_full_thread(self) -> list:
-        r = subprocess.run(['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', self.thread_id],
-                stdout=subprocess.PIPE, encoding='utf8')
+        cmd = ['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', f'thread:{self.thread_id}']
+        logger.info("Full thread refresh: %s", cmd)
+        r = subprocess.run(cmd, stdout=subprocess.PIPE, encoding='utf8')
         return json.loads(r.stdout)
 
     def _fetch_matching_ids(self) -> set[str]:
