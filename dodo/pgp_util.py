@@ -21,7 +21,7 @@ import email.utils
 import email.message
 import re
 import sys
-from typing import Protocol
+from typing import Protocol, Any
 from . import settings
 from . import util
 
@@ -101,20 +101,26 @@ def sign(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     return signed_mail
 
 
+def _find_keys(keys: list[dict[str, Any]], addr: str) -> set[str]:
+    assert addr
+    keys = {key['fingerprint'] for key in keys if any(addr == util.strip_email_address(uid) for uid in key['uids'])}
+    if not keys:
+        raise GpgError(f"Didn't find key for {addr}")
+    return keys
+
+
 def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     ensure_gpg()
     assert Gpg is not None  # for mypy
 
     # Always also encrypt with the key corresponding to the From address in order to
     # be able to decrypt the mail that has been sent.
-    recipients = [
-        addr[1] for addr in email.utils.getaddresses([
-            val for key, val in msg.items() if key in ['From', 'To', 'Cc']
-        ])
-    ]
-    recipients_keys = [key['fingerprint'] for key in Gpg.list_keys()
-                       if any(addr == util.strip_email_address(uid)
-                           for uid in key['uids'] for addr in recipients)]
+    all_keys = Gpg.list_keys()
+    recipients_keys = set()
+    for _, addr in email.utils.getaddresses([msg[key] for key in ['From', 'To', 'Cc']]):
+        if addr:  # emails.utils.getaddresses returns ('', '') on parse errors
+            recipients_keys |= _find_keys(all_keys, addr)
+
     # Generate a copy of the message, by working on the copy we leave
     # the original message (msg) unaltered.
     msg_to_encrypt = email.message_from_bytes(msg.as_bytes(), policy=msg.policy.clone())
