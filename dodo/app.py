@@ -131,7 +131,7 @@ class Dodo(QApplication):
         from key mappings."""
 
         self.tabs.addTab(p, p.title())
-        p.has_refreshed.connect(lambda: self.tabs.setTabText(self.tabs.indexOf(p), p.title()))
+        p.has_refreshed.connect(self.refresh_tab_titles)
 
         if focus:
             self.tabs.setCurrentWidget(p)
@@ -276,6 +276,12 @@ class Dodo(QApplication):
         """Returns the number of panels (i.e. tabs) currently open"""
 
         return self.tabs.count()
+
+    def refresh_tab_titles(self) -> None:
+        for i in range(self.num_panels()):
+            w = self.tabs.widget(i)
+            if isinstance(w, panel.Panel):
+                self.tabs.setTabText(i, w.title())
 
     def refresh_panels(self) -> None:
         """Refresh current panel and mark the others as out of date
