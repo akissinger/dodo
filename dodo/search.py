@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import Optional, Any, overload, Literal
 
 from PyQt6.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject, QSettings
-from PyQt6.QtWidgets import QTreeView, QWidget, QAbstractSlider
+from PyQt6.QtWidgets import QTreeView, QWidget, QAbstractSlider, QVBoxLayout, QLabel
 from PyQt6.QtGui import QFont, QColor
 import subprocess
 import json
@@ -42,16 +42,24 @@ class SearchModel(QAbstractItemModel):
     def __init__(self, q: str) -> None:
         super().__init__()
         self.q = q
+        self.d = []
+        self.json_str = ""
+        self.error_msg = None
         self.refresh()
 
     def refresh(self) -> None:
         """Refresh the model by (re-) running "notmuch search"."""
         logger.info("Beginning search refresh for '%s'", self.q)
         self.beginResetModel()
-        r = subprocess.run(['notmuch', 'search', '--format=json', self.q],
-                stdout=subprocess.PIPE)
-        self.json_str = r.stdout.decode('utf-8')
-        self.d = json.loads(self.json_str)
+        try:
+            r = subprocess.run(['notmuch', 'search', '--format=json', self.q],
+                    capture_output=True, text=True, check=True)
+            self.json_str = r.stdout
+            self.d = json.loads(self.json_str)
+            self.error_msg = None
+        except subprocess.CalledProcessError as e:
+            # We keep the previous data, just add an error message on top.
+            self.error_msg = e.stderr.decode()
         self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
         self.endResetModel()
 
@@ -64,13 +72,22 @@ class SearchModel(QAbstractItemModel):
             row = thread.row()
             assert thread_id is not None
 
-        r = subprocess.run(['notmuch', 'search', '--format=json', f'{self.q} AND thread:{thread_id}'],
-                stdout=subprocess.PIPE)
-        contents = json.loads(r.stdout.decode('utf-8'))
-
+        logger.info("Search '%s': refreshing thread %s", self.q, thread_id)
         self.beginResetModel()
-        self.d[row:row+1] = contents
-        self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
+        try:
+            r = subprocess.run(
+                    ['notmuch', 'search', '--format=json', f'{self.q} AND thread:{thread_id}'],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    )
+            contents = json.loads(r.stdout)
+
+            self.d[row:row+1] = contents
+            self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
+            self._count = len(self.d)
+        except subprocess.CalledProcessError as e:
+            self.error_msg = e.stderr.decode()
         self.endResetModel()
         logger.info("Model refreshed for '%s'", self.q)
 
@@ -197,16 +214,27 @@ class SearchPanel(panel.Panel):
         self.q = q
         self.conf = QSettings("dodo", "dodo")
         self.tree = QTreeView()
+        self.error_view = QLabel()
         self.tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setStyleSheet(f'QTreeView::item {{ padding: {settings.search_view_padding}px }}')
         self.model = SearchModel(q)
         self.tree.setModel(self.model)
+        self.model.modelReset.connect(self.on_data_refresh)
+        self.layout().addWidget(self.error_view)
         self.layout().addWidget(self.tree)
         self.tree.doubleClicked.connect(self.open_current_thread)
         self.updated_threads = set()
         if self.tree.model().rowCount() > 0:
             self.tree.setCurrentIndex(self.tree.model().index(0,0))
+        self.on_data_refresh()
         self.restore_tree_geometry()
+
+    def on_data_refresh(self):
+        if self.model.error_msg is None:
+            self.error_view.hide()
+        else:
+            self.error_view.setText(self.model.error_msg)
+            self.error_view.show()
 
     def before_close(self) -> bool:
         self.save_tree_geometry()
@@ -237,8 +265,10 @@ class SearchPanel(panel.Panel):
         super().focusInEvent(event)
 
     def refresh_threads(self):
+        logger.info("Search '%s': refreshing threads", self.q)
         # If any thread is unknown to the current search, just do a full refresh
         if self.updated_threads.difference(self.model.threads.keys()):
+            logger.info("Search '%s': Unknown thread, marking as dirty", self.q)
             self.dirty = True
         else:
             current_id, current_row = self.snapshot_index()
@@ -377,8 +407,4 @@ class SearchPanel(panel.Panel):
         elif mode == 'tag marked':
             subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['-marked','--', f'tag:marked AND ({self.q})'])
             self.app.refresh_panels()
-
-
-
-
 
