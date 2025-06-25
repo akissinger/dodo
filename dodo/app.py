@@ -261,11 +261,13 @@ class Dodo(QApplication):
             if not quiet:
                 title = self.main_window.windowTitle()
                 self.main_window.setWindowTitle(title.replace(' [syncing]', ''))
+                self.main_window.update()
             t.deleteLater()
 
         if not quiet:
             title = self.main_window.windowTitle()
             self.main_window.setWindowTitle(title + ' [syncing]')
+            self.main_window.update()
 
         t.finished.connect(done)
         t.start()
