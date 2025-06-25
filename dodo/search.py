@@ -240,6 +240,17 @@ class SearchPanel(panel.Panel):
         self.on_data_refresh()
         self.restore_tree_geometry()
 
+    # We want to split dirtyness into title-level and content-level
+    # as updating the title data is much cheaper.
+    @property
+    def dirty(self) -> bool:
+        return self._dirty_content
+
+    @dirty.setter
+    def dirty(self, value: bool) -> None:
+        self._dirty_content = value
+        self._dirty_title = value
+
     def on_data_refresh(self):
         if self.model.error_msg is None:
             self.error_view.hide()
@@ -300,6 +311,10 @@ class SearchPanel(panel.Panel):
 
     def title(self) -> str:
         """Use the configured tab title"""
+        logger.info("Search '%s': updating title", self.q)
+        if self._dirty_title:
+            self.model.refresh_num_threads()
+            self._dirty_title = False
         return settings.search_title_format.format(
             query=self.q, num_threads=self.model.num_threads
         )
