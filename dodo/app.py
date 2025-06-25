@@ -258,6 +258,7 @@ class Dodo(QApplication):
 
         def done() -> None:
             self.refresh_panels()
+            self.refresh_tab_titles()
             if not quiet:
                 title = self.main_window.windowTitle()
                 self.main_window.setWindowTitle(title.replace(' [syncing]', ''))
