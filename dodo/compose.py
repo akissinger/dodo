@@ -424,7 +424,11 @@ class SendmailThread(QThread):
             if self.panel.pgp_encrypt:
                 eml = pgp_util.encrypt(eml)
 
-            cmd = settings.send_mail_command.replace('{account}', account)
+            if isinstance(settings.send_mail_command, dict):
+                cmd = settings.send_mail_command[account]
+            else:
+                cmd = settings.send_mail_command
+            cmd = cmd.replace('{account}', account)
             sendmail = Popen(cmd, stdin=PIPE, encoding='utf8', shell=True)
             if sendmail.stdin:
                 sendmail.stdin.write(eml.as_string())
