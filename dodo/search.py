@@ -220,6 +220,18 @@ class SearchPanel(panel.Panel):
     def save_tree_geometry(self):
         self.conf.setValue("search_tree_geometry", self.tree.header().saveState())
 
+    def snapshot_index(self) -> tuple[str|None, int]:
+        current = self.tree.currentIndex()
+        return self.model.thread_id(current), current.row()
+
+    def restore_index(self, thread_id:str|None, fallback_row: int):
+        thread_row = self.model.threads.get(thread_id, None)
+        if thread_row is not None:
+            index = self.model.index(thread_row, 0)
+        else:
+            index = self.model.index(max(0, min(self.model.num_threads()-1, fallback_row)), 0)
+        self.tree.setCurrentIndex(index)
+
     def focusInEvent(self, event: PyQt6.QWidget.QFocusEvent):
         self.refresh_threads()
         super().focusInEvent(event)
@@ -229,26 +241,18 @@ class SearchPanel(panel.Panel):
         if self.updated_threads.difference(self.model.threads.keys()):
             self.dirty = True
         else:
-            current = self.tree.currentIndex()
+            current_id, current_row = self.snapshot_index()
             for tid in self.updated_threads:
                 self.model.refresh_thread(tid)
-            if current.row() >= self.model.num_threads():
-                self.last_thread()
-            else:
-                self.tree.setCurrentIndex(current)
+            self.restore_index(current_id, current_row)
         self.updated_threads.clear()
 
     def refresh(self) -> None:
         """Refresh the search listing and restore the selection, if possible."""
-
-        current = self.tree.currentIndex()
+        current_id, current_row = self.snapshot_index()
         self.model.refresh()
         self.restore_tree_geometry()
-        
-        if current.row() >= self.model.num_threads():
-            self.last_thread()
-        else:
-            self.tree.setCurrentIndex(current)
+        self.restore_index(current_id, current_row)
 
         super().refresh()
 
