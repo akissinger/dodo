@@ -1,4 +1,5 @@
 sphinx-autodoc-typehints
+sphinx_rtd_theme
 PyQt6
 PyQt6-WebEngine
 bleach

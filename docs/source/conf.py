@@ -14,8 +14,6 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
 
-import dodo
-
 
 # -- Project information -----------------------------------------------------
 
@@ -37,6 +35,17 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx_rtd_theme',
               'sphinx_autodoc_typehints'
+]
+
+# Mock imports for modules that are not available during documentation build
+autodoc_mock_imports = [
+    'PyQt6',
+    'PyQt6.QtCore',
+    'PyQt6.QtWidgets',
+    'PyQt6.QtWebEngineCore',
+    'PyQt6.QtWebEngineWidgets',
+    'PyQt6.QtGui',
+    'PyQt6.QtPrintSupport',
 ]
 
 add_function_parentheses = False
