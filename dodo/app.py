@@ -197,7 +197,7 @@ class Dodo(QApplication):
 
         for i in range(self.num_panels()):
             w = self.tabs.widget(i)
-            if isinstance(w, thread.ThreadPanel) and w.thread_id == thread_id:
+            if isinstance(w, thread.ThreadPanel) and (w.thread_id, w.query) == (thread_id, query):
                 self.tabs.setCurrentIndex(i)
                 return
 

@@ -492,6 +492,7 @@ class ThreadPanel(panel.Panel):
         self.set_keymap(keymap.thread_keymap)
         self.model = ThreadModel(thread_id, search_query, settings.default_thread_list_mode)
         self.thread_id = thread_id
+        self.query = search_query
         self.html_mode = settings.default_to_html
         self._saved_msg = None
         self._saved_collapsed = None
