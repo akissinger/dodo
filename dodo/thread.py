@@ -216,7 +216,10 @@ class ThreadItem:
         from_hdr = self.msg.get('headers', {}).get('From', '(message) <>')
         name, addr = email.utils.parseaddr(from_hdr)
         if not name:
-            name = addr
+            if addr:
+                name = addr
+            else: # notmuch preprocesses headers, making parseaddr choke on edge cases
+                name = from_hdr
         if not self.parent:
             return name
 
