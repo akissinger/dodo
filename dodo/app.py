@@ -151,14 +151,19 @@ class Dodo(QApplication):
         if i >= 0:
             self.tabs.setCurrentIndex(i)
 
-    def close_panel(self, index: Optional[int]=None) -> None:
+    def close_panel(self, to_close: int|panel.Panel|None=None) -> None:
         """Close the panel at `index` (if provided) or the current panel
 
         If `index` is not provided, close the current panel. This will only close
         panels whose `keep_open` property is False."""
 
-        if not index:
+        if not to_close:
             index = self.tabs.currentIndex()
+        elif isinstance(to_close, int):
+            index = to_close
+        else:
+            index = self.tabs.indexOf(to_close)
+
         w = self.tabs.widget(index)
         if w and isinstance(w, panel.Panel) and not w.keep_open:
             if w.before_close():

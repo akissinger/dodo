@@ -245,6 +245,9 @@ def make_thread_trees(raw_thread_data: list) -> list[ThreadItem]:
     else:
         return [ThreadItem([msg, []], None) for msg in flatten(raw_thread_data)]
 
+class EmptyThreadError(Exception):
+    pass
+
 class ThreadModel(QAbstractItemModel):
     """A model containing a thread, its messages, and some metadata
 
@@ -292,12 +295,12 @@ class ThreadModel(QAbstractItemModel):
     def _fetch_full_thread(self) -> list:
         cmd = ['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', f'thread:{self.thread_id}']
         logger.info("Full thread refresh: %s", cmd)
-        r = subprocess.run(cmd, stdout=subprocess.PIPE, encoding='utf8')
+        r = subprocess.run(cmd, stdout=subprocess.PIPE, encoding='utf8', check=True)
         return json.loads(r.stdout)
 
     def _fetch_matching_ids(self) -> set[str]:
         r = subprocess.run(['notmuch', 'search', '--exclude=false', '--format=json', '--output=messages', f'thread:{self.thread_id} AND {self.query}'],
-                stdout=subprocess.PIPE, encoding='utf8')
+                stdout=subprocess.PIPE, encoding='utf8', check=True)
         return set(json.loads(r.stdout))
 
     def get_last_msg_idx(self, parent: QModelIndex=QModelIndex()) -> QModelIndex:
@@ -310,8 +313,16 @@ class ThreadModel(QAbstractItemModel):
         """Refresh the model by calling "notmuch show"."""
 
         logger.info("Full thread refresh")
-        matches = self._fetch_matching_ids()
-        data = self._fetch_full_thread()
+        try:
+            matches = self._fetch_matching_ids()
+            data = self._fetch_full_thread()
+        except subprocess.CalledProcessError:
+            logger.exception("Refresh failed: %s", self.thread_id)
+            return
+
+        if not data:
+            raise EmptyThreadError()
+
         assert len(data) == 1, data
         data = data[0]
         roots = self.compute_roots(data)
@@ -325,12 +336,23 @@ class ThreadModel(QAbstractItemModel):
         idx = self.find(msg_id)
         assert idx.isValid(), msg_id
         logger.info("Single message refresh: %s", msg_id)
-        r = subprocess.run(['notmuch', 'show', '--entire-thread=false', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', f'id:{msg_id}'],
-                stdout=subprocess.PIPE, encoding='utf8')
-        msg = next(m for m in flatten(json.loads(r.stdout)) if m is not None)
+
+        try:
+            r = subprocess.run(['notmuch', 'show', '--entire-thread=false', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', f'id:{msg_id}'],
+                    stdout=subprocess.PIPE, encoding='utf8', check=True)
+            matches = self._fetch_matching_ids()
+        except subprocess.CalledProcessError:
+            logger.exception("Single refresh failed: %s", msg_id)
+            return
+
+        msg = next((m for m in flatten(json.loads(r.stdout)) if m is not None), None)
+        if msg is None:  # Pretty unlikely to happen, but *possible*
+            logger.info("Message deleted, calling full refresh", msg_id)
+            self.refresh()
+            return
+
         logger.info("refreshed tags: %s", str(msg['tags']))
         # We need to refresh the matches in case the message dropped out of the set
-        matches = self._fetch_matching_ids()
         # Update the old message in-place to not invalidate existing indices
         old_msg = self.message_at(idx)
         old_msg.clear()
@@ -626,7 +648,10 @@ class ThreadPanel(panel.Panel):
         :func:`refresh_content` wihtout any arguments."""
 
         super().refresh()
-        self.model.refresh()
+        try:
+            self.model.refresh()
+        except EmptyThreadError:
+            self.app.close_panel(self)
 
     def refresh_info(self):
         """Refresh the UI, without refreshing the underlying content"""
@@ -710,7 +735,10 @@ class ThreadPanel(panel.Panel):
     def update_thread(self, thread_id: str, msg_id: str|None=None):
         if self.model.thread_id == thread_id:
             if msg_id and self.model.find(msg_id).isValid():
-                self.model.refresh_message(msg_id)
+                try:
+                    self.model.refresh_message(msg_id)
+                except EmptyThreadError:
+                    self.app.close_panel(self)
             else:
                 self.dirty = True
 
