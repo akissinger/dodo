@@ -450,7 +450,7 @@ class ThreadModel(QAbstractItemModel):
             msg = self.message_at(idx)
             if msg['id'] in self.matches and 'unread' in msg['tags']:
                 return idx
-        return QModelIndex()
+        return current
 
     def data(self, index: QModelIndex, role: int=Qt.ItemDataRole.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.data` to populate a list view with short descriptions of
