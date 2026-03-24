@@ -75,7 +75,6 @@ class SearchModel(QAbstractItemModel):
             assert thread_id is not None
 
         logger.info("Search '%s': refreshing thread %s", self.q, thread_id)
-        self.beginResetModel()
         try:
             r = subprocess.run(
                     ['notmuch', 'search', '--format=json', f'{self.q} AND thread:{thread_id}'],
@@ -85,13 +84,23 @@ class SearchModel(QAbstractItemModel):
                     )
             contents = json.loads(r.stdout)
 
-            self.d[row:row+1] = contents
-            self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
-            self.num_threads = len(self.d)
+            if contents:
+                # Update in place — no need to rebuild self.threads since
+                # thread IDs are stable in notmuch and cannot change.
+                self.d[row] = contents[0]
+                left = self.index(row, 0)
+                right = self.index(row, self.columnCount() - 1)
+                self.dataChanged.emit(left, right)
+                logger.info("Search '%s': thread %s updated at row %d", self.q, thread_id, row)
+            else:
+                self.beginRemoveRows(QModelIndex(), row, row)
+                del self.d[row]
+                self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
+                self.num_threads = len(self.d)
+                self.endRemoveRows()
+                logger.info("Search '%s': thread %s removed from row %d", self.q, thread_id, row)
         except subprocess.CalledProcessError as e:
             self.error_msg = f"notmuch: {e.stderr}"
-        self.endResetModel()
-        logger.info("Model refreshed for '%s'", self.q)
 
     def refresh_num_threads(self):
         """Only refresh the number of threads in the search, not the underlying data"""
