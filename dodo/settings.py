@@ -244,14 +244,14 @@ The following placeholders can be used:
 """
 
 tag_icons = {
-  'inbox': '',
-  'unread': '',
-  'attachment': '',
+  'inbox': '📥',
+  'unread': '✉',
+  'attachment': '📎',
   'sent': '>',
-  'replied': '',
-  'flagged': '',
-  'marked': '',
-  'signed': '',
+  'replied': '↩',
+  'flagged': '⚐',
+  'marked': '⏺',
+  'signed': '✎',
 }
 """Tag icons
 
