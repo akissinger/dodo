@@ -35,6 +35,7 @@ defaults, as detailed below.
 
 from . import themes
 from typing import Literal, Dict, Union
+import sys
 
 # functional
 email_address: Union[str, Dict[str, str]] = ''
@@ -67,7 +68,8 @@ This is a shell command, which additionally takes the `{file}` placeholder,
 which is passed the name of a temp file being edited while composing an email.
 """
 
-file_browser_command = "nautilus '{dir}'"
+_open_command = "open" if sys.platform == "darwin" else "xdg-open"
+file_browser_command = f"{_open_command} '{dir}'"
 """Command used to launch external file browser
 
 This is a shell command, which additionally takes the `{dir}` placeholder. This
