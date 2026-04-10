@@ -557,7 +557,7 @@ class ThreadPanel(panel.Panel):
         self.message_view = QWebEngineView(self)
         page = MessagePage(self.app, self.message_profile, self.message_view)
         self.message_view.setPage(page)
-        self.message_view.setZoomFactor(1.2)
+        self.message_view.setZoomFactor(settings.message_zoom)
 
         self.layout_panel()
 

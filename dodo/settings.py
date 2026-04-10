@@ -231,6 +231,17 @@ message_font = 'DejaVu Sans Mono'
 message_font_size = 12
 """The font size used for plaintext messages"""
 
+message_zoom = 1.2
+"""Zoom factor for the message and compose web views
+
+QWebEngineView renders CSS ``pt`` sizes larger than QFont uses for the same
+point value in native Qt widgets (QTreeView, etc.), particularly on macOS
+Retina displays. This means the message body appears bigger than the thread
+list and header panels even when the configured font sizes match. Adjust
+this factor to compensate — values below 1.0 shrink the web view to better
+match the surrounding Qt widgets.
+"""
+
 search_view_padding = 1
 """A bit of spacing around each line in the search panel"""
 

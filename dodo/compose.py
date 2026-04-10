@@ -66,7 +66,7 @@ class ComposePanel(panel.Panel):
         self.mode = mode
         self.msg = msg
         self.message_view = QWebEngineView()
-        self.message_view.setZoomFactor(1.2)
+        self.message_view.setZoomFactor(settings.message_zoom)
         self.layout().addWidget(self.message_view)
         self.status = f'<i style="color:{settings.theme["fg"]}">draft</i>'
         self.current_account = 0
