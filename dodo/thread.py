@@ -558,6 +558,7 @@ class ThreadPanel(panel.Panel):
         page = MessagePage(self.app, self.message_profile, self.message_view)
         self.message_view.setPage(page)
         self.message_view.setZoomFactor(1.2)
+        self.message_view.page().setBackgroundColor(QColor(settings.theme['bg']))
 
         self.layout_panel()
 
