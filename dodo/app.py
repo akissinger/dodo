@@ -150,6 +150,9 @@ class Dodo(QApplication):
 
         signal.signal(signal.SIGINT, lambda *_: None)
 
+        # revision counter used to skip unnecessary refreshes after sync
+        self._last_revision: int = -1
+
         # open init_queries and make un-closeable
         #
         for query in settings.init_queries:
@@ -321,8 +324,11 @@ class Dodo(QApplication):
         self.sync_thread = t
 
         def done() -> None:
-            self.refresh_panels()
-            self.refresh_tab_titles()
+            rev = self._get_notmuch_revision()
+            if rev != self._last_revision:
+                self._last_revision = rev
+                self.refresh_panels_async()
+                self.refresh_tab_titles()
             if not quiet:
                 title = self.main_window.windowTitle()
                 self.main_window.setWindowTitle(title.replace(' [syncing]', ''))
@@ -348,6 +354,38 @@ class Dodo(QApplication):
             w = self.tabs.widget(i)
             if isinstance(w, panel.Panel):
                 self.tabs.setTabText(i, w.title())
+
+    def _get_notmuch_revision(self) -> int:
+        """Return the current notmuch database revision number.
+
+        ``notmuch count --lastmod`` outputs COUNT\\tUUID\\tREVISION.  The revision
+        increments on every database write, so comparing it before and after a
+        sync tells us whether any mail actually changed."""
+        try:
+            r = subprocess.run(['notmuch', 'count', '--lastmod'],
+                    capture_output=True, text=True, check=True)
+            return int(r.stdout.split()[2])
+        except Exception:
+            return -1
+
+    def refresh_panels_async(self) -> None:
+        """Mark all panels dirty and start background async refreshes for search panels.
+
+        Called after a sync that produced a database change.  Search panels
+        refresh in the background so the UI is never blocked; other panel types
+        (thread, compose) stay dirty and refresh lazily on next focus."""
+
+        for i in range(self.num_panels()):
+            w = self.tabs.widget(i)
+            if isinstance(w, panel.Panel):
+                w.dirty = True
+
+        for i in range(self.num_panels()):
+            w = self.tabs.widget(i)
+            if isinstance(w, search.SearchPanel):
+                w.refresh()  # async — returns immediately, updates when done
+
+        self.update_dock_badge()
 
     def refresh_panels(self) -> None:
         """Refresh current panel and mark the others as out of date
