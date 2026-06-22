@@ -19,9 +19,9 @@
 from __future__ import annotations
 from typing import Optional, Any, overload, Literal
 
-from PyQt6.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject, QSettings
-from PyQt6.QtWidgets import QTreeView, QWidget, QAbstractSlider, QVBoxLayout, QLabel
-from PyQt6.QtGui import QFont, QColor
+from PyQt6.QtCore import Qt, QSize, QAbstractItemModel, QModelIndex, QObject, QSettings
+from PyQt6.QtWidgets import QTreeView, QHeaderView, QWidget, QAbstractSlider, QVBoxLayout, QLabel
+from PyQt6.QtGui import QFont, QFontMetrics, QColor
 import subprocess
 import json
 import logging
@@ -35,6 +35,15 @@ from . import panel
 logger = logging.getLogger(__name__)
 
 columns = ['date', 'from', 'subject', 'tags']
+
+class HeaderView(QHeaderView):
+    def sizeHint(self) -> QSize:
+        size = super().sizeHint()
+        fm = QFontMetrics(self.font())
+        min_height = fm.height() + 8
+        if size.height() < min_height:
+            size.setHeight(min_height)
+        return size
 
 class SearchModel(QAbstractItemModel):
     """A model containing the results of a search"""
@@ -226,8 +235,17 @@ class SearchPanel(panel.Panel):
         self.q = q
         self.conf = QSettings("dodo", "dodo")
         self.tree = QTreeView()
+        header = HeaderView(Qt.Orientation.Horizontal, self.tree)
+        self.tree.setHeader(header)
         self.error_view = QLabel()
         self.tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        if settings.header_font or settings.header_font_size:
+            f = header.font()
+            if settings.header_font:
+                f.setFamily(settings.header_font)
+            if settings.header_font_size:
+                f.setPointSize(settings.header_font_size)
+            header.setFont(f)
         self.setStyleSheet(f'QTreeView::item {{ padding: {settings.search_view_padding}px }}')
         self.model = SearchModel(q)
         self.tree.setModel(self.model)

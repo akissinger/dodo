@@ -213,6 +213,30 @@ Several themes are defined in `dodo.themes`, based on the popular Nord,
 Solarized and Gruvbox color palettes.
 """
 
+tab_font = ''
+"""The font used for tab titles
+
+If empty, the system default is used.
+"""
+
+tab_font_size = 0
+"""The font size used for tab titles
+
+If 0, the system default is used.
+"""
+
+header_font = ''
+"""The font used for column headers in the search panel (date, from, subject, tags)
+
+If empty, the system default is used.
+"""
+
+header_font_size = 0
+"""The font size used for column headers in the search panel
+
+If 0, the system default is used.
+"""
+
 search_font = 'DejaVu Sans Mono'
 """The font used for search output and various other list-boxes"""
 
