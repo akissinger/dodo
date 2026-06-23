@@ -220,10 +220,11 @@ class SearchPanel(panel.Panel):
 
     This is used as the main entry point for the GUI, i.e. a search for "tag:inbox"."""
 
-    def __init__(self, a: app.Dodo, q: str, keep_open: bool=False, parent: Optional[QWidget]=None):
+    def __init__(self, a: app.Dodo, q: str, keep_open: bool=False, custom_title: str='', parent: Optional[QWidget]=None):
         super().__init__(a, keep_open, parent)
         self.set_keymap(keymap.search_keymap)
         self.q = q
+        self.custom_title = custom_title
         self.conf = QSettings("dodo", "dodo")
         self.tree = QTreeView()
         self.error_view = QLabel()
@@ -316,7 +317,7 @@ class SearchPanel(panel.Panel):
             self.model.refresh_num_threads()
             self._dirty_title = False
         return settings.search_title_format.format(
-            query=self.q, num_threads=self.model.num_threads
+            query=self.custom_title or self.q, num_threads=self.model.num_threads
         )
 
     def next_thread(self, unread: bool=False) -> None:
