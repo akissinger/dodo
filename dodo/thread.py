@@ -807,8 +807,7 @@ class ThreadPanel(panel.Panel):
     def reply(self, to_all: bool=True) -> None:
         """Open a :class:`~dodo.compose.ComposePanel` populated with a reply
 
-        This uses the current message as the message to reply to. This should probably do something
-        smarter if the current message is from the user (e.g. reply to the previous one instead).
+        This uses the current message as the message to reply to.
 
         :param to_all: if True, do a reply to all instead (see `~dodo.compose.ComposePanel`)
         """
