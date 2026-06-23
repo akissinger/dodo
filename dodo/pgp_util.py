@@ -33,6 +33,10 @@ except (ImportError, NameError):
     Gpg = None
 
 
+INLINE_BEGIN = "-----BEGIN PGP MESSAGE-----\n"
+INLINE_END = "\n-----END PGP MESSAGE-----"
+
+
 class GpgError(Exception):
     pass
 
@@ -148,3 +152,25 @@ def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
                                    filename='encrypted.asc', cte='7bit')
     encrypted_mail.attach(pgp_encrypted_part)
     return encrypted_mail
+
+
+def maybe_decrypt_inline(contents: str) -> str:
+    stripped = contents.strip("\n")
+    if not (stripped.startswith(INLINE_BEGIN) and stripped.endswith(INLINE_END)):
+        return contents
+
+    ensure_gpg()
+    assert Gpg is not None  # for mypy
+    decrypted = Gpg.decrypt(contents)
+    raise_for_status(decrypted)
+    return decrypted.data.decode()
+
+
+def decrypt_inline_attachment(data: bytes) -> bytes:
+    ensure_gpg()
+    assert Gpg is not None  # for mypy
+
+    assert data.startswith(INLINE_BEGIN.encode()) and data.endswith(INLINE_END.encode())
+    decrypted = Gpg.decrypt(data)
+    raise_for_status(decrypted)
+    return decrypted.data
