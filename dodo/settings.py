@@ -173,6 +173,15 @@ You can save query with `notmuch config set query:inbox "tag:inbox and not
 tag:trash"` and use `query:inbox` as a search term.
 """
 
+macos_dock_badge_query = 'tag:unread AND tag:inbox'
+"""Notmuch query whose thread count is shown as the macOS dock badge
+
+Set this to a notmuch search query. The number of matching threads will be
+displayed as a badge on the dock icon. Set to an empty string to disable.
+
+Requires the ``pyobjc-framework-Cocoa`` package on macOS.
+"""
+
 no_hooks_on_send = True
 """disable/enable calling notmuch hooks when sending email
 
