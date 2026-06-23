@@ -121,6 +121,12 @@ sync_mail_interval = 300
 Set this to -1 to disable automatic syncing.
 """
 
+message_headers = ['Subject', 'Date', 'From', 'To', 'Cc', 'Reply-To']
+"""List of headers to display in the message panel.
+
+Supports fnmatch-style patterns (e.g. 'X-*' to show all X-headers).
+"""
+
 default_to_html = False
 """Open messages in HTML mode by default, rather than plaintext"""
 

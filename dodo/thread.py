@@ -37,6 +37,7 @@ import email.utils
 import email.message
 import itertools
 import tempfile
+import fnmatch
 import logging
 
 from . import app
@@ -670,12 +671,13 @@ class ThreadPanel(panel.Panel):
         if 'headers' in m:
             header_html = ''
             header_html += f'<table style="background-color: {settings.theme["bg"]}; color: {settings.theme["fg"]}; font-family: {settings.search_font}; font-size: {settings.search_font_size}pt; width:100%">'
-            for name in ['Subject', 'Date', 'From', 'To', 'Cc']:
-                if name in m['headers']:
-                    header_html += f"""<tr>
-                      <td><b style="color: {settings.theme["fg_bright"]}">{name}:&nbsp;</b></td>
-                      <td>{util.simple_escape(m["headers"][name])}</td>
-                    </tr>"""
+            for pattern in settings.message_headers:
+                for name in m['headers']:
+                    if fnmatch.fnmatch(name, pattern) and m['headers'][name]:
+                        header_html += f"""<tr>
+                          <td><b style="color: {settings.theme["fg_bright"]}">{name}:&nbsp;</b></td>
+                          <td>{util.simple_escape(m["headers"][name])}</td>
+                        </tr>"""
             if 'tags' in m:
                 tags = ' '.join([settings.tag_icons[t] if t in settings.tag_icons else f'[{t}]' for t in m['tags']])
                 header_html += f"""<tr>
