@@ -17,8 +17,8 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import List, Optional, Any, Union, Literal
-from collections.abc import Generator, Iterable
+from typing import List, Optional, Any, Union, Literal, TypeAlias
+from collections.abc import Generator, Iterable, Callable
 
 from PyQt6.QtCore import *
 from PyQt6.QtGui import QFont, QColor, QDesktopServices
@@ -450,7 +450,7 @@ class ThreadModel(QAbstractItemModel):
             msg = self.message_at(idx)
             if msg['id'] in self.matches and 'unread' in msg['tags']:
                 return idx
-        return QModelIndex()
+        return current
 
     def data(self, index: QModelIndex, role: int=Qt.ItemDataRole.DisplayRole) -> Any:
         """Overrides `QAbstractItemModel.data` to populate a list view with short descriptions of
@@ -502,6 +502,7 @@ class ThreadModel(QAbstractItemModel):
         """The number of rows (for a given parent)"""
         return len(self._children_at(parent))
 
+MessageSelector: TypeAlias = Callable[[ThreadModel], QModelIndex]
 
 class ThreadPanel(panel.Panel):
     """A panel showing an email thread
@@ -512,7 +513,7 @@ class ThreadPanel(panel.Panel):
     :param thread_id: the unique ID notmuch uses to identify this thread
     """
 
-    def __init__(self, a: app.Dodo, thread_id: str, search_query: str, parent: Optional[QWidget]=None):
+    def __init__(self, a: app.Dodo, thread_id: str, search_query: str, parent: Optional[QWidget]=None, default_message: MessageSelector|None=None):
         super().__init__(a, parent=parent)
         self.set_keymap(keymap.thread_keymap)
         self.model = ThreadModel(thread_id, search_query, settings.default_thread_list_mode)
@@ -521,6 +522,7 @@ class ThreadPanel(panel.Panel):
         self.html_mode = settings.default_to_html
         self._saved_msg = None
         self._saved_collapsed = None
+        self._default_message = default_message or (lambda m: m.default_message())
 
         self.subject = '(no subject)'
 
@@ -596,7 +598,7 @@ class ThreadPanel(panel.Panel):
         if idx.isValid():
             self._select_index(idx)
         else:
-            self._select_index(self.model.default_message())
+            self._select_index(self._default_message(self.model))
 
     def toggle_list_mode(self):
         self.model.toggle_mode()
