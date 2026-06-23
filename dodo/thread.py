@@ -307,6 +307,10 @@ class ThreadModel(QAbstractItemModel):
         return set(json.loads(r.stdout))
 
     def get_last_msg_idx(self, parent: QModelIndex=QModelIndex()) -> QModelIndex:
+        if not parent.isValid():
+            if not self.roots:
+                return QModelIndex()
+            return self.get_last_msg_idx(self.createIndex(len(self.roots)-1, 0, self.roots[-1]))
         children = parent.internalPointer().children
         if children:
             return self.get_last_msg_idx(self.index(len(children)-1, 0, parent))
