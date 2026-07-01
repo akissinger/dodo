@@ -560,7 +560,7 @@ class ThreadPanel(panel.Panel):
         page = MessagePage(self.app, self.message_profile, self.message_view)
         self.message_view.setPage(page)
         self.message_view.setZoomFactor(1.2)
-        self.message_view.page().setBackgroundColor(QColor(settings.theme['bg']))
+        self._update_background()
 
         self.layout_panel()
 
@@ -570,6 +570,16 @@ class ThreadPanel(panel.Panel):
             if not self.thread_list.isExpanded(idx):
                 collapsed.add(self.model.message_at(idx)['id'])
         return collapsed
+
+    def _update_background(self):
+        if self.html_mode:
+            if settings.html_dark_mode:
+                color = 0
+            else:
+                color = 0xFFFFFF
+        else:
+            color = QColor(settings.theme['bg'])
+        self.message_view.page().setBackgroundColor(color)
 
     def _restore_collapsed(self, collapsed: set[str]):
         self.thread_list.expandAll()
@@ -804,6 +814,7 @@ class ThreadPanel(panel.Panel):
         """Toggle between HTML and plain text message view"""
 
         self.html_mode = not self.html_mode
+        self._update_background()
         self.refresh_content()
 
     def reply(self, to_all: bool=True) -> None:
