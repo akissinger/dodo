@@ -549,6 +549,8 @@ class ThreadPanel(panel.Panel):
         self.message_profile.installUrlSchemeHandler(b'message', self.message_handler)
         self.message_profile.settings().setAttribute(
                 QWebEngineSettings.WebAttribute.JavascriptEnabled, False)
+        self.message_profile.settings().setAttribute(
+                QWebEngineSettings.WebAttribute.ForceDarkMode, settings.html_dark_mode)
 
         # The interceptor must not be garbage collected, so keep a reference
         self.url_interceptor = RemoteBlockingUrlRequestInterceptor()
