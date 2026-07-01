@@ -202,8 +202,13 @@ class EmbeddedImageHandler(QWebEngineUrlSchemeHandler):
 
 class RemoteBlockingUrlRequestInterceptor(QWebEngineUrlRequestInterceptor):
     def interceptRequest(self, info):
-        if info.requestUrl().scheme() not in app.LOCAL_PROTOCOLS:
-            info.block(settings.html_block_remote_requests)
+        url = info.requestUrl()
+        if url.scheme() not in app.LOCAL_PROTOCOLS:
+            trusted_hosts = settings.html_block_remote_requests_trusted_hosts
+            info.block(
+                    settings.html_block_remote_requests
+                    and url.host() not in trusted_hosts
+                    )
 
 RE_REGEX = re.compile(r'^R[Ee]: ')
 class ThreadItem:
