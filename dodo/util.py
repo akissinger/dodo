@@ -37,6 +37,7 @@ from bleach.sanitizer import Cleaner
 from bleach.linkifier import Linker
 
 from . import settings
+from . import pgp_util
 
 def clean_html2html(s: str) -> str:
     """Sanitize the given HTML string
@@ -341,13 +342,19 @@ def write_attachments(m: dict) -> Tuple[str, List[str]]:
                 check=True,
             )
             filename = part["filename"]
-            if not proc.stdout:
+            data = proc.stdout
+
+            if not data:
                 print(f"Ignoring attachment {filename}: Got empty contents from notmuch")
                 continue
 
+            if filename.endswith(".pgp"):
+                filename = os.path.splitext(filename)[0]
+                data = pgp_util.decrypt_inline_attachment(data)
+
             p = os.path.join(temp_dir, sanitize_filename(filename))
             with open(p, 'wb') as att:
-                att.write(proc.stdout)
+                att.write(data)
             file_paths.append(p)
 
     if len(file_paths) == 0:
