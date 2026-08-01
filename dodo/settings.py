@@ -204,6 +204,14 @@ If a link is to a host in this list, it will be opened without confirmation, eve
 :func:`~dodo.settings.html_confirm_open_links` is True.
 """
 
+"""Force the HTML view to use dark mode
+
+By default the HTML view of an email will use black text on a white background, which might
+clash hard with your selected theme. This toggle forces the use of the engine's dark mode
+instead.
+"""
+html_dark_mode = False
+
 # visual
 theme = themes.nord
 """The GUI theme
