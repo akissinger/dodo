@@ -169,6 +169,14 @@ should be installed and configured.  Requires python-gnupg
 init_queries = [ 'tag:inbox' ]
 """List of non closable queries open at startup
 
+Each entry can be a plain query string or a ``(query, title)`` tuple to
+set a custom tab title. For example::
+
+    init_queries = [
+        'tag:inbox',
+        ('tag:flagged', 'Flagged'),
+    ]
+
 You can save query with `notmuch config set query:inbox "tag:inbox and not
 tag:trash"` and use `query:inbox` as a search term.
 """
