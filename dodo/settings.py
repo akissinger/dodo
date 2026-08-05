@@ -189,6 +189,13 @@ HTML messages, especially from dodgy senders, can display remote content or 'cal
 from embedded image tags or iframes. If set to True, Dodo will not allow these requests.
 """
 
+html_block_remote_requests_trusted_hosts = []
+"""A list of trusted hosts for HTML remote requests.
+
+Dodo will let any request to those hosts through, even if
+:func:`~dodo.settings.html_block_remote_requests` is True.
+"""
+
 html_confirm_open_links = True
 """Display a confirmation dialog before opening a link in browser
 
