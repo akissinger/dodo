@@ -172,6 +172,9 @@ class Dodo(QApplication):
 
     def raise_panel(self, p: panel.Panel) -> None:
         self.tabs.setCurrentWidget(p)
+        # raise_() brings the window to the front; activateWindow() gives it
+        # keyboard focus.  On macOS activateWindow() alone is not enough.
+        self.main_window.raise_()
         self.main_window.activateWindow()
         # self.main_window.setWindowState(self.main_window.windowState() ^ Qt.WindowActive)
 
