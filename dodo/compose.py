@@ -30,6 +30,7 @@ import email.generator
 import email.policy
 import email.message
 import mimetypes
+import json
 import subprocess
 import traceback
 from subprocess import PIPE, Popen, TimeoutExpired
@@ -77,14 +78,14 @@ class ComposePanel(panel.Panel):
         self.message_string = ''
 
         if msg:
-            senders = util.get_header_addresses(msg['headers'], ['From', 'Reply-To'])
-            recipients = util.get_header_addresses(msg['headers'], ['To', 'Cc'])
-
-            # Select current_account by checking which smtp_account's address
-            # is found first in the headers. Start with the recipient headers
-            # and continus in the senders. Select account with index 0 if none
-            # of the smtp_accounts matches.
             if isinstance(settings.email_address, dict):
+                senders = util.get_header_addresses(msg['headers'], ['From', 'Reply-To'])
+                recipients = util.get_header_addresses(msg['headers'], ['To', 'Cc'])
+
+                # Select current_account by checking which smtp_account's address
+                # is found first in the headers. Start with the recipient headers
+                # and continue in the senders. Select account with index 0 if none
+                # of the smtp_accounts matches.
                 self.current_account = next(
                         (
                          util.email_smtp_account_index(m) for _, m in
@@ -111,27 +112,37 @@ class ComposePanel(panel.Panel):
             self.raw_message_string += '\n\n\n'
 
         elif msg and (mode == 'reply' or mode == 'replyall'):
-            send_to = [(name, e) for name, e in senders + recipients if not util.email_is_me(e)]
+            reply_to = 'all' if mode == 'replyall' else 'sender'
+            reply_headers = util.notmuch_reply_headers(msg['id'], reply_to)
 
-            # put the first non-me email in To
-            if len(send_to) != 0:
-                to_value = email.utils.formataddr(send_to.pop(0))
-                self.raw_message_string += f'To: {to_value}\n'
+            if reply_headers:
+                # Use From from notmuch reply if available, and update account
+                if 'From' in reply_headers:
+                    self.raw_message_string = f'From: {reply_headers["From"]}\n'
+                    if isinstance(settings.email_address, dict):
+                        from_email = email.utils.parseaddr(reply_headers['From'])[1]
+                        idx = util.email_smtp_account_index(from_email)
+                        if idx is not None:
+                            self.current_account = idx
 
-            # for replyall, put the rest of the emails in Cc
-            if len(send_to) != 0 and mode == 'replyall':
-                cc_values = [email.utils.formataddr(pair) for pair in send_to]
-                self.raw_message_string += f'Cc: {", ".join(cc_values)}\n'
+                if 'To' in reply_headers:
+                    self.raw_message_string += f'To: {reply_headers["To"]}\n'
+                if 'Cc' in reply_headers:
+                    self.raw_message_string += f'Cc: {reply_headers["Cc"]}\n'
+                if 'Subject' in reply_headers:
+                    self.raw_message_string += f'Subject: {reply_headers["Subject"]}\n'
 
-            if 'Subject' in msg['headers']:
-                subject = msg['headers']['Subject']
-                if subject[0:3].upper() != 'RE:':
-                    subject = 'RE: ' + subject
-                self.raw_message_string += f'Subject: {subject}\n'
+                # Store In-Reply-To and References for use at send time
+                self.reply_headers = reply_headers
+            else:
+                # Fallback if notmuch reply fails
+                self.raw_message_string += f'To: \nSubject: \n'
+                self.reply_headers = {}
 
             self.raw_message_string += '\n\n\n' + util.quote_body_text(msg)
 
         elif msg and mode == 'forward':
+            self.reply_headers = {}
             self.raw_message_string += f'To: \n'
 
             if 'Subject' in msg['headers']:
@@ -153,6 +164,7 @@ class ComposePanel(panel.Panel):
             self.raw_message_string += '\n' + util.body_text(msg) + '\n'
 
         else:
+            self.reply_headers = {}
             self.raw_message_string += 'To: \nSubject: \n\n'
 
         self.editor_thread: Optional[EditorThread] = None
@@ -394,23 +406,13 @@ class SendmailThread(QThread):
             if not "Date" in eml:
                 eml["Date"] = email.utils.formatdate(localtime=True)
 
-            # add "In-Reply-To" and "References" headers if there's an old message
-            if self.panel.msg and 'id' in self.panel.msg:
-                msg_id = f'<{self.panel.msg["id"]}>'
-                eml["In-Reply-To"] = msg_id
-
-                refs = [msg_id]
-                if 'filename' in self.panel.msg and len(self.panel.msg['filename']) != 0:
-                    try:
-                        with open(self.panel.msg['filename'][0]) as f:
-                            old_msg = email.parser.Parser().parse(f, headersonly=True)
-
-                            if "References" in old_msg:
-                                refs = old_msg["References"].split() + refs
-                    except IOError:
-                        print("Couldn't open message to get References")
-
-                eml["References"] = ' '.join(refs)
+            # add "In-Reply-To" and "References" headers from notmuch reply
+            reply_headers = self.panel.reply_headers
+            if reply_headers:
+                if 'In-reply-to' in reply_headers:
+                    eml["In-Reply-To"] = reply_headers['In-reply-to']
+                if 'References' in reply_headers:
+                    eml["References"] = reply_headers['References']
 
 
             for att in attachments:
