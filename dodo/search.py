@@ -19,7 +19,7 @@
 from __future__ import annotations
 from typing import Optional, Any, overload, Literal
 
-from PyQt6.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject, QSettings
+from PyQt6.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject, QSettings, QProcess
 from PyQt6.QtWidgets import QTreeView, QWidget, QAbstractSlider, QVBoxLayout, QLabel
 from PyQt6.QtGui import QFont, QColor
 import subprocess
@@ -46,6 +46,7 @@ class SearchModel(QAbstractItemModel):
         self.json_str = ""
         self.num_threads = 0
         self.error_msg = None
+        self._process: QProcess | None = None
         self.refresh()
 
     def refresh(self) -> None:
@@ -65,6 +66,46 @@ class SearchModel(QAbstractItemModel):
         self.num_threads = len(self.d)
         self.endResetModel()
 
+    def refresh_async(self, callback=None) -> None:
+        """Refresh the model asynchronously using QProcess.
+
+        If a refresh is already in progress the call is ignored; the in-flight
+        process will still invoke *callback* once it finishes."""
+        if self._process is not None:
+            # Already running — attach the new callback so the caller still
+            # gets notified when the current process finishes.
+            if callback is not None:
+                self._process.finished.connect(lambda *_: callback())
+            return
+
+        logger.info("Beginning async search refresh for '%s'", self.q)
+        proc = QProcess()
+        self._process = proc
+
+        def on_finished(exit_code: int, _exit_status) -> None:
+            self._process = None
+            if exit_code == 0:
+                output = bytes(proc.readAllStandardOutput()).decode('utf-8')
+                try:
+                    d = json.loads(output)
+                    self.error_msg = None
+                    self.beginResetModel()
+                    self.d = d
+                    self.threads = {t['thread']: i for i, t in enumerate(d)}
+                    self.num_threads = len(d)
+                    self.endResetModel()
+                except Exception as e:
+                    logger.error("Search '%s': error parsing async result: %s", self.q, e)
+            else:
+                stderr = bytes(proc.readAllStandardError()).decode('utf-8')
+                self.error_msg = f"notmuch: {stderr}"
+                logger.error("Search '%s': async refresh failed: %s", self.q, stderr)
+            if callback is not None:
+                callback()
+
+        proc.finished.connect(on_finished)
+        proc.start('notmuch', ['search', '--format=json', self.q])
+
     def refresh_thread(self, thread: QModelIndex|str):
         if isinstance(thread, str):
             thread_id = thread
@@ -75,7 +116,6 @@ class SearchModel(QAbstractItemModel):
             assert thread_id is not None
 
         logger.info("Search '%s': refreshing thread %s", self.q, thread_id)
-        self.beginResetModel()
         try:
             r = subprocess.run(
                     ['notmuch', 'search', '--format=json', f'{self.q} AND thread:{thread_id}'],
@@ -85,13 +125,23 @@ class SearchModel(QAbstractItemModel):
                     )
             contents = json.loads(r.stdout)
 
-            self.d[row:row+1] = contents
-            self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
-            self.num_threads = len(self.d)
+            if contents:
+                # Update in place — no need to rebuild self.threads since
+                # thread IDs are stable in notmuch and cannot change.
+                self.d[row] = contents[0]
+                left = self.index(row, 0)
+                right = self.index(row, self.columnCount() - 1)
+                self.dataChanged.emit(left, right)
+                logger.info("Search '%s': thread %s updated at row %d", self.q, thread_id, row)
+            else:
+                self.beginRemoveRows(QModelIndex(), row, row)
+                del self.d[row]
+                self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
+                self.num_threads = len(self.d)
+                self.endRemoveRows()
+                logger.info("Search '%s': thread %s removed from row %d", self.q, thread_id, row)
         except subprocess.CalledProcessError as e:
             self.error_msg = f"notmuch: {e.stderr}"
-        self.endResetModel()
-        logger.info("Model refreshed for '%s'", self.q)
 
     def refresh_num_threads(self):
         """Only refresh the number of threads in the search, not the underlying data"""
@@ -230,6 +280,8 @@ class SearchPanel(panel.Panel):
         self.tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setStyleSheet(f'QTreeView::item {{ padding: {settings.search_view_padding}px }}')
         self.model = SearchModel(q)
+        self._refreshing = False
+        self._refresh_pending = False
         self.tree.setModel(self.model)
         self.model.modelReset.connect(self.on_data_refresh)
         self.layout().addWidget(self.error_view)
@@ -284,13 +336,28 @@ class SearchPanel(panel.Panel):
         self.tree.setCurrentIndex(index)
 
     def refresh(self) -> None:
-        """Refresh the search listing and restore the selection, if possible."""
-        current_id, current_row = self.snapshot_index()
-        self.model.refresh()
-        self.restore_tree_geometry()
-        self.restore_index(current_id, current_row)
+        """Refresh the search listing and restore the selection, if possible.
 
-        super().refresh()
+        The underlying notmuch query runs asynchronously so the UI is never
+        blocked.  A second call while a refresh is already in progress is
+        coalesced: the in-flight query finishes, then a fresh one starts
+        automatically so that the latest database state is picked up."""
+        if self._refreshing:
+            self._refresh_pending = True
+            return
+        self._refreshing = True
+        current_id, current_row = self.snapshot_index()
+
+        def on_done() -> None:
+            self._refreshing = False
+            self.restore_tree_geometry()
+            self.restore_index(current_id, current_row)
+            super(SearchPanel, self).refresh()  # sets dirty=False, emits has_refreshed
+            if self._refresh_pending:
+                self._refresh_pending = False
+                self.refresh()
+
+        self.model.refresh_async(callback=on_done)
 
     def update_thread(self, thread_id: str, msg_id: str|None= None) -> None:
         logger.info("Search '%s': updating thread '%s'", self.q, thread_id)
