@@ -24,6 +24,7 @@ import sys
 import os
 import signal
 import fcntl
+import platform
 import subprocess
 from typing import Optional, Literal
 import logging
@@ -164,6 +165,8 @@ class Dodo(QApplication):
             pass
         self._cleanup_sync()
         self.quit()
+
+        self.update_dock_badge()
 
     def show_help(self) -> None:
         """Show help window"""
@@ -363,6 +366,8 @@ class Dodo(QApplication):
         w = self.tabs.currentWidget()
         if w and isinstance(w, panel.Panel): w.refresh()
 
+        self.update_dock_badge()
+
     def update_single_thread(self, thread_id: str, msg_id: str|None=None):
         current = self.tabs.currentWidget()
         for i in range(self.num_panels()):
@@ -371,6 +376,34 @@ class Dodo(QApplication):
                 w.update_thread(thread_id, msg_id=msg_id)
                 if w == current and w.dirty:
                     w.refresh()
+
+        self.update_dock_badge()
+
+    def update_dock_badge(self) -> None:
+        """Update the macOS dock icon badge with the unread count
+
+        Uses the query in :func:`~dodo.settings.macos_dock_badge_query` to count
+        unread threads and display the count as a native dock badge.
+        Requires ``pyobjc-framework-Cocoa`` on macOS; silently does nothing
+        on other platforms or if pyobjc is not installed."""
+
+        if platform.system() != 'Darwin' or not settings.macos_dock_badge_query:
+            return
+
+        try:
+            from AppKit import NSApp  # type: ignore[import-untyped]
+        except ImportError:
+            return
+
+        try:
+            r = subprocess.run(
+                ['notmuch', 'count', '--output=threads', '--', *settings.macos_dock_badge_query.split()],
+                stdout=subprocess.PIPE, timeout=5)
+            count = int(r.stdout.decode('utf-8').strip())
+            label = str(count) if count > 0 else ''
+            NSApp.dockTile().setBadgeLabel_(label)
+        except Exception:
+            pass
 
     def _cleanup_sync(self) -> None:
         """Stop the sync timer and terminate any running sync thread"""
