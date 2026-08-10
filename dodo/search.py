@@ -241,6 +241,7 @@ class SearchPanel(panel.Panel):
         self.model = SearchModel(q)
         self.tree.setModel(self.model)
         self.model.modelReset.connect(self.on_data_refresh)
+        self.model.rowsRemoved.connect(self.on_data_refresh)
         self.layout().addWidget(self.error_view)
         self.layout().addWidget(self.tree)
         self.tree.doubleClicked.connect(self.open_current_thread)
