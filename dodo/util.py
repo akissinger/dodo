@@ -703,3 +703,45 @@ def _flush_notmuch_queue():
         queue.pop(0)
         process, _ = async_notmuch._pending[args]
         process.start()
+
+def async_notmuch_combined(commands: list[list[str]], callback: Callable[[list[bytes]]], error: Callable[[bytes, bytes, int]]):
+    """Run a sequence of notmuch commands. The callback is given the outputs of
+    the commands, while the error handler is invoked at the first failure.
+    If a command fails, all subsequent commands are dropped, with one exception:
+    if any of the command happens to be coalesced (see async_notmuch), then it
+    will still run, but the callback will not be called.
+    """
+    payload: dict[int, bytes] = {}
+    # filter the queue on error to remove the pending commands if possible
+    def error_filter(elt, payload=payload):
+        args, _ = elt
+        # Irrelevant queue items stay.
+        if args not in commands:
+            return True
+        (process, callbacks) = async_notmuch._pending[args]
+        # If somehow it's already running (shouldn't be possible though?)
+        # then leave it be.
+        if process.state() != QProcess.ProcessState.NotRunning:
+            return True
+        # Finally, only discard queue items that haven't been coalesced.
+        if len(callbacks) == 1:
+            # Don't forget to also clean up the pending array!
+            del async_notmuch._pending[args]
+            return False
+        return True
+    def err(stdout: bytes, stderr: bytes, code: int, payload=payload):
+        # Filter out remaining calls if possible.
+        async_notmuch._queue[:] = filter(error_filter, async_notmuch._queue)
+        # Signal that we've errored out for coalesced callbacks
+        payload[-1] = stderr
+        # Actually call the provided error handler.
+        error(stdout, stderr, code)
+    for idx,cmd in enumerate(commands):
+        def done(stdout, payload=payload, index=idx):
+            if -1 in payload:
+                return
+            payload[index] = stdout
+            if len(payload) == len(commands):
+                outputs = [payload[i] for i in range(len(commands))]
+                callback(outputs)
+        async_notmuch(cmd, done, err)
