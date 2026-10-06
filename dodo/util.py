@@ -236,7 +236,7 @@ def body_text(m: dict) -> str:
     global html2text
     tc = find_content(m, 'text/plain')
     if len(tc) != 0:
-        return tc[0]
+        return pgp_util.maybe_decrypt_inline(tc[0])
     else:
         hc = find_content(m, 'text/html')
         if len(hc) != 0:
@@ -348,7 +348,7 @@ def write_attachments(m: dict) -> Tuple[str, List[str]]:
                 print(f"Ignoring attachment {filename}: Got empty contents from notmuch")
                 continue
 
-            if filename.endswith(".pgp"):
+            if pgp_util.is_inline_pgp(filename, data):
                 filename = os.path.splitext(filename)[0]
                 data = pgp_util.decrypt_inline_attachment(data)
 
