@@ -302,7 +302,7 @@ class ThreadModel(QAbstractItemModel):
     def _fetch_full_thread(self) -> list:
         cmd = ['notmuch', 'show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', f'thread:{self.thread_id}']
         logger.info("Full thread refresh: %s", cmd)
-        r = subprocess.run(cmd, stdout=subprocess.PIPE, encoding='utf8', check=True)
+        r = subprocess.run(cmd, stdout=subprocess.PIPE, encoding='utf8', errors='replace', check=True)
         return json.loads(r.stdout)
 
     def _fetch_matching_ids(self) -> set[str]:
@@ -329,7 +329,7 @@ class ThreadModel(QAbstractItemModel):
             data = self._fetch_full_thread()
         except subprocess.CalledProcessError:
             logger.exception("Refresh failed: %s", self.thread_id)
-            return
+            raise EmptyThreadError()
 
         if not data:
             raise EmptyThreadError()
