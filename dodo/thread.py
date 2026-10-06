@@ -245,7 +245,12 @@ def make_thread_trees(raw_thread_data: list) -> list[ThreadItem]:
         while forest:
             if len(forest) > 1:
                 return True
-            forest = forest[0][1]
+
+            try:
+                forest = forest[0][1]
+            except IndexError:
+                print(raw_thread_data)
+                raise
 
     if has_multiple_children(raw_thread_data):
         return [ThreadItem(root, None) for root in raw_thread_data]
