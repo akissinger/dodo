@@ -235,13 +235,12 @@ class ComposePanel(panel.Panel):
         if settings.file_picker_command == None:
             file_list, _filter = QFileDialog.getOpenFileNames()
         else:
-            fd, file = tempfile.mkstemp()
-            cmd = settings.file_picker_command.format(tempfile=file)
-            subprocess.run(cmd, shell=True)
+            with tempfile.NamedTemporaryFile(prefix="dodo-filepicker-") as f:
+                cmd = settings.file_picker_command.format(tempfile=file)
+                subprocess.run(cmd, shell=True)
 
-            with open(file, 'r') as f1:
-                file_list = f1.read().split('\n')
-            os.remove(file)
+                with open(file, 'r') as f1:
+                    file_list = f1.read().split('\n')
 
         for att in file_list:
             if att != '':
