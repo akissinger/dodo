@@ -329,7 +329,7 @@ class ThreadModel(QAbstractItemModel):
             data = self._fetch_full_thread()
         except subprocess.CalledProcessError:
             logger.exception("Refresh failed: %s", self.thread_id)
-            return
+            raise EmptyThreadError()
 
         if not data:
             raise EmptyThreadError()
