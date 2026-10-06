@@ -19,15 +19,25 @@
 from __future__ import annotations
 from PyQt6.QtCore import *
 from PyQt6.QtWidgets import *
-from PyQt6.QtGui import QIcon, QCloseEvent
+from PyQt6.QtGui import QFontMetrics, QIcon, QCloseEvent
 import logging
 import os
 
 from . import app
 from . import commandbar
 from . import panel
+from . import settings
 
 logger = logging.getLogger(__name__)
+
+class TabBar(QTabBar):
+    def tabSizeHint(self, index: int) -> QSize:
+        size = super().tabSizeHint(index)
+        fm = QFontMetrics(self.font())
+        min_height = fm.height() + 16
+        if size.height() < min_height:
+            size.setHeight(min_height)
+        return size
 
 class MainWindow(QMainWindow):
     def __init__(self, a: app.Dodo):
@@ -52,6 +62,15 @@ class MainWindow(QMainWindow):
 
         self.tabs = QTabWidget()
         self.tabs.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        tab_bar = TabBar()
+        self.tabs.setTabBar(tab_bar)
+        if settings.tab_font or settings.tab_font_size:
+            f = tab_bar.font()
+            if settings.tab_font:
+                f.setFamily(settings.tab_font)
+            if settings.tab_font_size:
+                f.setPointSize(settings.tab_font_size)
+            tab_bar.setFont(f)
         # self.tabs.resize(1600, 800)
         w.layout().addWidget(self.tabs)
 
