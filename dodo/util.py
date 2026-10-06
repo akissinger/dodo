@@ -348,7 +348,7 @@ def write_attachments(m: dict) -> Tuple[str, List[str]]:
                 print(f"Ignoring attachment {filename}: Got empty contents from notmuch")
                 continue
 
-            if filename.endswith(".pgp"):
+            if pgp_util.is_inline_pgp(filename, data):
                 filename = os.path.splitext(filename)[0]
                 data = pgp_util.decrypt_inline_attachment(data)
 
