@@ -391,12 +391,12 @@ class SearchPanel(panel.Panel):
         pos = self.tree.rect().topLeft()
         self.tree.setCurrentIndex(self.tree.indexAt(pos))
 
-    def open_current_thread(self) -> None:
+    def open_current_thread(self, *, default_message: thread.MessageSelector|None=None) -> None:
         """Open the selected thread"""
 
         thread_id = self.model.thread_id(self.tree.currentIndex())
         if thread_id:
-            self.app.open_thread(thread_id, self.model.q)
+            self.app.open_thread(thread_id, self.model.q, default_message=default_message)
     
     def toggle_thread_tag(self, tag: str) -> None:
         """Toggle the given thread tag"""
