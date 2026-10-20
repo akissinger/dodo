@@ -152,8 +152,12 @@ class Dodo(QApplication):
 
         # open init_queries and make un-closeable
         #
-        for query in settings.init_queries:
-            self.open_search(query, keep_open=True)
+        for entry in settings.init_queries:
+            if isinstance(entry, tuple):
+                query, custom_title = entry
+            else:
+                query, custom_title = entry, ''
+            self.open_search(query, keep_open=True, custom_title=custom_title)
 
     def _handle_signal_wakeup(self) -> None:
         """Called when a Unix signal wakes up the Qt event loop via the pipe"""
@@ -232,7 +236,7 @@ class Dodo(QApplication):
                 # remove the panel itself
                 self.tabs.removeTab(index)
 
-    def open_search(self, query: str, keep_open: bool=False) -> None:
+    def open_search(self, query: str, keep_open: bool=False, custom_title: str='') -> None:
         """Open a search panel with the given query
 
         If a panel with this query is already open, switch to it rather than
@@ -246,7 +250,7 @@ class Dodo(QApplication):
                 self.tabs.setCurrentIndex(i)
                 return
 
-        p = search.SearchPanel(self, query, keep_open=keep_open)
+        p = search.SearchPanel(self, query, keep_open=keep_open, custom_title=custom_title)
         self.add_panel(p)
 
     def open_thread(self, thread_id: str, query: str) -> None:
