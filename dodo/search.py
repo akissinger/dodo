@@ -19,18 +19,17 @@
 from __future__ import annotations
 from typing import Optional, Any, overload, Literal
 
-from PyQt6.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject, QSettings
+from PyQt6.QtCore import Qt, QAbstractItemModel, QModelIndex, QObject, QSettings, QProcess
 from PyQt6.QtWidgets import QTreeView, QWidget, QAbstractSlider, QVBoxLayout, QLabel
 from PyQt6.QtGui import QFont, QColor
-import subprocess
 import json
 import logging
 
 from . import app
 from . import settings
 from . import keymap
-from . import thread
 from . import panel
+from . import util
 
 logger = logging.getLogger(__name__)
 
@@ -46,24 +45,62 @@ class SearchModel(QAbstractItemModel):
         self.json_str = ""
         self.num_threads = 0
         self.error_msg = None
-        self.refresh()
+        self.refresh_async()
 
-    def refresh(self) -> None:
-        """Refresh the model by (re-) running "notmuch search"."""
-        logger.info("Beginning search refresh for '%s'", self.q)
+    def reset_model(self, data: bytes|str):
+        if isinstance(data, bytes):
+            str_data = data.decode()
+        else:
+            str_data = data
+        json_data = json.loads(str_data)
         self.beginResetModel()
-        try:
-            r = subprocess.run(['notmuch', 'search', '--format=json', self.q],
-                    capture_output=True, text=True, check=True)
-            self.json_str = r.stdout
-            self.d = json.loads(self.json_str)
-            self.error_msg = None
-        except subprocess.CalledProcessError as e:
-            # We keep the previous data, just add an error message on top.
-            self.error_msg = f"notmuch: {e.stderr}"
-        self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
-        self.num_threads = len(self.d)
+        self.json_str = str_data
+        self.d = json_data
+        self.threads = {t['thread']: i for i, t in enumerate(json_data)}
+        self.num_threads = len(json_data)
         self.endResetModel()
+
+    def log_error(self, error: str):
+        self.beginResetModel()
+        self.error_msg = error
+        self.endResetModel()
+
+    def refresh_async(self, callback=None) -> None:
+        """Refresh the model asynchronously using QProcess.
+
+        If a refresh is already in progress the call is ignored; the in-flight
+        process will still invoke *callback* once it finishes."""
+        logger.info("Beginning async search refresh for '%s'", self.q)
+        def done(stdout):
+            self.reset_model(stdout)
+            if callback:
+                callback()
+        def err(_out, stderr, _code):
+            self.log_error(stderr.decode())
+            if callback:
+                callback()
+        util.async_notmuch(['search', '--format=json', self.q], done, err)
+
+    def update_single_thread(self, row: int, thread_data: bytes):
+        contents = json.loads(thread_data.decode())
+        if contents:
+            # Update in place — no need to rebuild self.threads since
+            # thread IDs are stable in notmuch and cannot change.
+            self.d[row] = contents[0]
+            left = self.index(row, 0)
+            right = self.index(row, self.columnCount() - 1)
+            self.dataChanged.emit(left, right)
+            logger.info("Search '%s': thread updated at row %d", self.q, row)
+        else:
+            self.beginRemoveRows(QModelIndex(), row, row)
+            del self.d[row]
+            self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
+            self.num_threads = len(self.d)
+            self.endRemoveRows()
+            logger.info("Search '%s': thread removed from row %d", self.q, row)
+
+    def async_error_cb(self, _stdout, stderr, _code):
+        self.log_error(stderr.decode())
 
     def refresh_thread(self, thread: QModelIndex|str):
         if isinstance(thread, str):
@@ -75,38 +112,19 @@ class SearchModel(QAbstractItemModel):
             assert thread_id is not None
 
         logger.info("Search '%s': refreshing thread %s", self.q, thread_id)
-        self.beginResetModel()
-        try:
-            r = subprocess.run(
-                    ['notmuch', 'search', '--format=json', f'{self.q} AND thread:{thread_id}'],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                    )
-            contents = json.loads(r.stdout)
-
-            self.d[row:row+1] = contents
-            self.threads = {thread['thread']: i for i,thread in enumerate(self.d)}
-            self.num_threads = len(self.d)
-        except subprocess.CalledProcessError as e:
-            self.error_msg = f"notmuch: {e.stderr}"
-        self.endResetModel()
-        logger.info("Model refreshed for '%s'", self.q)
+        util.async_notmuch(['search', '--format=json', f'{self.q} AND thread:{thread_id}'],
+                                lambda out: self.update_single_thread(row, out),
+                                self.async_error_cb)
 
     def refresh_num_threads(self):
         """Only refresh the number of threads in the search, not the underlying data"""
         logger.info("Search '%s': Refreshing cached thread count", self.q)
-        try:
-            r = subprocess.run(
-                    ['notmuch', 'count', '--output=threads', self.q],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                    )
-            self.num_threads = int(r.stdout)
-        except subprocess.CalledProcessError as e:
-            # Just log the error and move on
-            logger.warning("Error refreshing thread count: %s", e.stderr)
+        def done(stdout):
+            self.num_threads = int(stdout)
+            logger.info("Search '%s': New count: %s", self.q, self.num_threads)
+        util.async_notmuch(['count', '--output=threads', self.q],
+                                done,
+                                self.async_error_cb)
 
     def thread_json(self, index: QModelIndex) -> Optional[dict]:
         """Return a JSON object associated with the thread at the given model index"""
@@ -232,6 +250,7 @@ class SearchPanel(panel.Panel):
         self.model = SearchModel(q)
         self.tree.setModel(self.model)
         self.model.modelReset.connect(self.on_data_refresh)
+        self.model.rowsRemoved.connect(self.on_data_refresh)
         self.layout().addWidget(self.error_view)
         self.layout().addWidget(self.tree)
         self.tree.doubleClicked.connect(self.open_current_thread)
@@ -286,11 +305,12 @@ class SearchPanel(panel.Panel):
     def refresh(self) -> None:
         """Refresh the search listing and restore the selection, if possible."""
         current_id, current_row = self.snapshot_index()
-        self.model.refresh()
-        self.restore_tree_geometry()
-        self.restore_index(current_id, current_row)
+        def on_done() -> None:
+            self.restore_tree_geometry()
+            self.restore_index(current_id, current_row)
+            super(SearchPanel, self).refresh()  # sets dirty=False, emits has_refreshed
 
-        super().refresh()
+        self.model.refresh_async(callback=on_done)
 
     def update_thread(self, thread_id: str, msg_id: str|None= None) -> None:
         logger.info("Search '%s': updating thread '%s'", self.q, thread_id)
@@ -300,7 +320,8 @@ class SearchPanel(panel.Panel):
             if self.hasFocus():
                 self.refresh()
             else:
-                self.dirty = True
+                self._dirty_content = True
+                self.model.refresh_num_threads()
         else:
             current = self.tree.currentIndex()
             self.model.refresh_thread(thread_id)
@@ -422,9 +443,9 @@ class SearchPanel(panel.Panel):
         if mode == 'tag':
             thread_id = self.model.thread_id(self.tree.currentIndex())
             if thread_id:
-                subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'thread:' + thread_id])
+                util.async_notmuch(['tag'] + tag_expr.split() + ['--', 'thread:' + thread_id])
                 self.app.update_single_thread(thread_id)
         elif mode == 'tag marked':
-            subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['-marked','--', f'tag:marked AND ({self.q})'])
+            util.async_notmuch(['tag'] + tag_expr.split() + ['-marked','--', f'tag:marked AND ({self.q})'])
             self.app.refresh_panels()
 

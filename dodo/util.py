@@ -17,10 +17,11 @@
 # along with Dodo. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import Iterator, List, Tuple, Dict, Optional
+from typing import Callable, Iterable, Iterator, List, Tuple, Dict, Optional
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QProcess, QCoreApplication
 from PyQt6.QtGui import QKeyEvent
+import logging
 import re
 import os
 import sys
@@ -38,6 +39,8 @@ from bleach.linkifier import Linker
 
 from . import settings
 from . import pgp_util
+
+logger = logging.getLogger(__name__)
 
 def clean_html2html(s: str) -> str:
     """Sanitize the given HTML string
@@ -622,3 +625,123 @@ def key_string(e: QKeyEvent) -> str:
 
     # print(cmd)
     return cmd
+
+def async_notmuch(args: Iterable[str], on_success: Callable[[bytes]]|None = None, on_error: Callable[[bytes, bytes, int]]|None = None, write: bool|None = None):
+    """Asynchronously run a notmuch command, then call the on_success callback with its stdout as its sole argument.
+    On error, calls on_error if provided with the following arguments: stdout, stderr, error_code.
+
+    Note that both stdout and stderr are provided as byte arrays. Decoding is your job.
+
+    If a command with the exact same arguments is already running, the callbacks will be coalesced with the current run.
+
+    MUST BE CALLED FROM MAIN THREAD!
+    """
+    block = write if write is not None else on_success is None
+    assert(QCoreApplication.instance().thread().isCurrentThread())
+    args = tuple(args)
+    # Since we're all on the main thread, this should not be racy.
+    if args in async_notmuch._pending:
+        async_notmuch._pending[args][1].append((on_success, on_error))
+        logger.info("Queueing callback for ' %s '", args)
+        return
+    process = QProcess()
+    process.setProcessChannelMode(QProcess.ProcessChannelMode.SeparateChannels)
+
+    # kwargs are just there to work around oddities in variable capture
+    def on_finished(exit_code: int, _exit_status, args=args, block=block):
+        # If we ever get dispatched to another thread, we're screwed.
+        assert(QCoreApplication.instance().thread().isCurrentThread())
+        logger.info("Finished : '%s'", args)
+        if block:
+            logger.info("Releasing block")
+            async_notmuch._write_block = False
+        (process, callbacks) = async_notmuch._pending.pop(args)
+        stdout = bytes(process.readAllStandardOutput())
+        stderr = bytes(process.readAllStandardError())
+        if stderr:
+            logger.error("Notmuch error output (%s): %s", args, sys.stderr)
+            print(stderr, file=sys.stderr)
+        if exit_code == 0:
+            logger.info("Success callbacks for '%s'", args)
+            for cb, _ in callbacks:
+                if cb:
+                    cb(stdout)
+        else:
+            logger.info("Error callbacks for '%s'", args)
+            for _, cb in callbacks:
+                if cb:
+                    cb(stdout, stderr, exit_code)
+        _flush_notmuch_queue()
+
+
+    process.finished.connect(on_finished)
+    logger.info("Creating notmuch process '%s'", args)
+    process.setProgram("notmuch")
+    process.setArguments(args)
+    async_notmuch._queue.append((args, block))
+    async_notmuch._pending[args] = (process, [(on_success, on_error)])
+    _flush_notmuch_queue()
+
+async_notmuch._queue = []
+async_notmuch._pending = {}
+async_notmuch._write_block = False
+
+def _flush_notmuch_queue():
+    queue = async_notmuch._queue
+    logger.info("Flushing notmuch process queue (%s) (%s pending)", queue, len(async_notmuch._pending))
+    while queue:
+        args, blocking = queue[0]
+        if async_notmuch._write_block:
+            logger.info("Write block taken")
+            return
+        if blocking and len(async_notmuch._pending) > len(queue):
+            logger.info("Waiting for readers")
+            return
+        if blocking:
+            logger.info("Taking block")
+            async_notmuch._write_block = True
+        queue.pop(0)
+        process, _ = async_notmuch._pending[args]
+        process.start()
+
+def async_notmuch_combined(commands: list[list[str]], callback: Callable[[list[bytes]]], error: Callable[[bytes, bytes, int]]):
+    """Run a sequence of notmuch commands. The callback is given the outputs of
+    the commands, while the error handler is invoked at the first failure.
+    If a command fails, all subsequent commands are dropped, with one exception:
+    if any of the command happens to be coalesced (see async_notmuch), then it
+    will still run, but the callback will not be called.
+    """
+    payload: dict[int, bytes] = {}
+    # filter the queue on error to remove the pending commands if possible
+    def error_filter(elt, payload=payload):
+        args, _ = elt
+        # Irrelevant queue items stay.
+        if args not in commands:
+            return True
+        (process, callbacks) = async_notmuch._pending[args]
+        # If somehow it's already running (shouldn't be possible though?)
+        # then leave it be.
+        if process.state() != QProcess.ProcessState.NotRunning:
+            return True
+        # Finally, only discard queue items that haven't been coalesced.
+        if len(callbacks) == 1:
+            # Don't forget to also clean up the pending array!
+            del async_notmuch._pending[args]
+            return False
+        return True
+    def err(stdout: bytes, stderr: bytes, code: int, payload=payload):
+        # Filter out remaining calls if possible.
+        async_notmuch._queue[:] = filter(error_filter, async_notmuch._queue)
+        # Signal that we've errored out for coalesced callbacks
+        payload[-1] = stderr
+        # Actually call the provided error handler.
+        error(stdout, stderr, code)
+    for idx,cmd in enumerate(commands):
+        def done(stdout, payload=payload, index=idx):
+            if -1 in payload:
+                return
+            payload[index] = stdout
+            if len(payload) == len(commands):
+                outputs = [payload[i] for i in range(len(commands))]
+                callback(outputs)
+        async_notmuch(cmd, done, err)

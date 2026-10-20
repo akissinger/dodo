@@ -329,16 +329,17 @@ class ThreadModel(QAbstractItemModel):
         """Refresh the model by calling "notmuch show"."""
 
         logger.info("Full thread refresh")
-        try:
-            matches = self._fetch_matching_ids()
-            data = self._fetch_full_thread()
-        except subprocess.CalledProcessError:
-            logger.exception("Refresh failed: %s", self.thread_id)
-            return
+        util.async_notmuch_combined(
+                [
+                    ['show', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', f'thread:{self.thread_id}'],
+                    ['search', '--exclude=false', '--format=json', '--output=messages', f'thread:{self.thread_id} AND {self.query}']
+                ],
+                lambda out: self._update_full_thread(out[0], out[1]),
+                lambda out, err, code: logger.exception("Full thread refresh failed: %s", err))
 
-        if not data:
-            raise EmptyThreadError()
-
+    def _update_full_thread(self, thread_raw: bytes, matches_raw: bytes):
+        matches = json.loads(matches_raw.decode())
+        data = json.loads(thread_raw.decode())
         assert len(data) == 1, data
         data = data[0]
         roots = self.compute_roots(data)
@@ -348,33 +349,34 @@ class ThreadModel(QAbstractItemModel):
         self.matches = matches
         self.endResetModel()
 
+    def _update_single_message(self, message_raw: bytes, matches_raw: bytes, idx: QModelIndex):
+        matches = json.loads(matches_raw.decode())
+        message = next((m for m in flatten(json.loads(message_raw.decode())) if m is not None), None)
+        if message is None:
+            logger.info("Message deleted, calling full refresh")
+            self.refresh()
+            return
+        logger.info("refreshed tags: %s", str(message['tags']))
+        # We need to refresh the matches in case the message dropped out of the set
+        # Update the old message in-place to not invalidate existing indices
+        old_msg = self.message_at(idx)
+        old_msg.clear()
+        old_msg.update(message)
+        self.matches = matches
+        self.dataChanged.emit(idx, idx)
+
     def refresh_message(self, msg_id: str):
         idx = self.find(msg_id)
         assert idx.isValid(), msg_id
         logger.info("Single message refresh: %s", msg_id)
 
-        try:
-            r = subprocess.run(['notmuch', 'show', '--entire-thread=false', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', f'id:{msg_id}'],
-                    stdout=subprocess.PIPE, encoding='utf8', check=True)
-            matches = self._fetch_matching_ids()
-        except subprocess.CalledProcessError:
-            logger.exception("Single refresh failed: %s", msg_id)
-            return
-
-        msg = next((m for m in flatten(json.loads(r.stdout)) if m is not None), None)
-        if msg is None:  # Pretty unlikely to happen, but *possible*
-            logger.info("Message deleted, calling full refresh", msg_id)
-            self.refresh()
-            return
-
-        logger.info("refreshed tags: %s", str(msg['tags']))
-        # We need to refresh the matches in case the message dropped out of the set
-        # Update the old message in-place to not invalidate existing indices
-        old_msg = self.message_at(idx)
-        old_msg.clear()
-        old_msg.update(msg)
-        self.matches = matches
-        self.dataChanged.emit(idx, idx)
+        util.async_notmuch_combined(
+                [
+                    ['show', '--entire-thread=false', '--exclude=false', '--format=json', '--verify', '--include-html', '--decrypt=true', f'id:{msg_id}'],
+                    ['search', '--exclude=false', '--format=json', '--output=messages', f'thread:{self.thread_id} AND {self.query}']
+                ],
+                lambda out: self._update_single_message(out[0], out[1], idx=idx),
+                lambda out, err, code: logger.exception("Single refresh failed: %s", err))
 
     def tag_message(self, idx: QModelIndex, tag_expr: str) -> None:
         """Apply the given tag expression to the current message
@@ -388,8 +390,7 @@ class ThreadModel(QAbstractItemModel):
         msg_id = m['id']
         if not ('+' in tag_expr or '-' in tag_expr):
             tag_expr = '+' + tag_expr
-        r = subprocess.run(['notmuch', 'tag'] + tag_expr.split() + ['--', 'id:' + msg_id],
-                stdout=subprocess.PIPE)
+        util.async_notmuch(['tag'] + tag_expr.split() + ['--', 'id:' + msg_id])
         self.messageChanged.emit(idx)
 
     def toggle_message_tag(self, idx: QModelIndex, tag: str) -> None:
