@@ -439,7 +439,12 @@ class SendmailThread(QThread):
             if sendmail.stdin:
                 sendmail.stdin.write(eml.as_string())
                 sendmail.stdin.close()
-            sendmail.wait(30)
+            try:
+                sendmail.wait(timeout=30)
+            except TimeoutExpired:
+                sendmail.terminate()
+                self.panel.set_status("timed out", color="fg_bad")
+                return
             if sendmail.returncode == 0:
                 # save to sent folder
                 if isinstance(settings.sent_dir, dict):
@@ -465,8 +470,6 @@ class SendmailThread(QThread):
                 self.panel.set_status("sent", color="fg_good")
             else:
                 self.panel.set_status("error", color="fg_bad")
-        except TimeoutExpired:
-            self.panel.set_status("timed out", color="fg_bad")
         except pgp_util.GpgError as e:
             self.panel.set_status(f"GPG error: {e}", color="fg_bad")
         except Exception as e:
