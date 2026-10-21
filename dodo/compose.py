@@ -163,6 +163,15 @@ class ComposePanel(panel.Panel):
     def title(self) -> str:
         return 'compose'
 
+    def before_close(self) -> bool:
+        if self.editor_thread is not None:
+            self.app.message(
+                "Editor still open",
+                "Refusing to close compose panel while the external editor is still open.",
+            )
+            return False
+        return super().before_close()
+
     def refresh(self) -> None:
         """Refresh the message text
 
@@ -211,10 +220,6 @@ class ComposePanel(panel.Panel):
 
             def done() -> None:
                 if self.editor_thread:
-                    if not self.is_open:
-                        self.app.message('Compose panel closed',
-                                         'Compose panel closed while editing, email text saved in:\n    - {}'.format(
-                              self.editor_thread.file))
                     self.editor_thread.deleteLater()
                     self.editor_thread = None
                 self.refresh()
@@ -360,10 +365,10 @@ class EditorThread(QThread):
         with open(file, 'r') as f1:
             self.panel.raw_message_string = f1.read()
 
-        # only remove the temp file if the panel is still open, otherwise
-        # email contents will be lost
-        if self.panel.is_open:
-            os.remove(file)
+        # before_close refuses to close the panel while this thread is running.
+        # If it's closed, removing the file would result in data loss.
+        assert self.panel.is_open
+        os.remove(file)
 
 class SendmailThread(QThread):
     """A QThread used for editing mail with the external editor
