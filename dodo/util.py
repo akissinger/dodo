@@ -236,7 +236,11 @@ def body_text(m: dict) -> str:
     global html2text
     tc = find_content(m, 'text/plain')
     if len(tc) != 0:
-        return pgp_util.maybe_decrypt_inline(tc[0])
+        try:
+            return pgp_util.maybe_decrypt_inline(tc[0])
+        except pgp_util.GpgError as e:
+            print(f"gpg inline decrypt failed: {e}")
+            return ''
     else:
         hc = find_content(m, 'text/html')
         if len(hc) != 0:
