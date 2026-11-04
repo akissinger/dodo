@@ -148,7 +148,6 @@ class MessageHandler(QWebEngineUrlSchemeHandler):
                         break
                 else:
                     text = util.body_text(self.message_json)
-                    text = pgp_util.maybe_decrypt_inline(text)
                     text = util.simple_escape(text)
                     text = util.colorize_text(text)
                     text = util.linkify(text)

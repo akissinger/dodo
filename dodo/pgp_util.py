@@ -160,6 +160,10 @@ def encrypt(msg: email.message.EmailMessage) -> email.message.EmailMessage:
     return encrypted_mail
 
 
+def is_inline_pgp(filename: str, contents: bytes) -> bool:
+    return filename.endswith(".pgp") and contents.startswith(INLINE_BEGIN.encode())
+
+
 def maybe_decrypt_inline(contents: str) -> str:
     stripped = contents.strip("\n")
     if not (stripped.startswith(INLINE_BEGIN) and stripped.endswith(INLINE_END)):
