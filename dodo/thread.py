@@ -709,7 +709,7 @@ class ThreadPanel(panel.Panel):
                   <td><span style="color: {settings.theme["fg_tags"]}; font-family: {settings.tag_font}; font-size: {settings.tag_font_size}">{tags}</span></td>
                 </tr>"""
             attachments = [
-                f"[{part['filename']}]"
+                f"[{util.attachment_filename(part)}]"
                 for part in util.message_parts(m)
                 if util.is_attachment(part)
             ]

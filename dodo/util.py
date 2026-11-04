@@ -194,6 +194,9 @@ def message_parts(m: dict) -> Iterator[dict]:
     else:
         yield m
 
+CALENDAR_CONTENT_TYPE = "text/calendar"
+CALENDAR_DEFAULT_FILENAME = "invite.ics"
+
 def is_attachment(part: dict) -> bool:
     """Check whether a message part should be shown an attachment.
 
@@ -202,9 +205,16 @@ def is_attachment(part: dict) -> bool:
 
     Some clients also send attachments without a Content-Disposition header.
     We consider any unknown binary part an attachment.
+
+    Calendar parts (text/calendar) are always considered attachments, even
+    without a filename or Content-Disposition: Outlook/Exchange sends meeting
+    invitations as a text/calendar alternative next to text/plain and
+    text/html. See :func:`attachment_filename` for how these are named.
     """
     content_disposition = part.get("content-disposition")
-    content_type = part.get("content-type")
+    content_type = part.get("content-type", "").casefold()
+    if is_calendar_part(part):
+        return True
     return (
         "filename" in part
         and content_type != "application/pgp-signature"
@@ -216,6 +226,24 @@ def is_attachment(part: dict) -> bool:
             )
         )
     )
+
+def is_calendar_part(part: dict) -> bool:
+    """Check whether a message part is a text/calendar part."""
+    return part.get("content-type", "").casefold() == CALENDAR_CONTENT_TYPE
+
+def attachment_filename(part: dict) -> str:
+    """Return the filename to use for an attachment part.
+
+    Uses the part's own filename if it has one. Calendar parts are the only
+    attachments allowed to lack a filename (see :func:`is_attachment`); they
+    get a default name so they can be written out and opened.
+    """
+    filename = part.get("filename")
+    if filename:
+        return filename
+    if is_calendar_part(part):
+        return CALENDAR_DEFAULT_FILENAME
+    raise ValueError(f"Attachment part {part.get('id')} has no filename")
 
 def find_content(m: dict, content_type: str) -> List[str]:
     """Return a flat list consisting of the 'content' field of each message
@@ -341,7 +369,7 @@ def write_attachments(m: dict) -> Tuple[str, List[str]]:
                 stdout=subprocess.PIPE,
                 check=True,
             )
-            filename = part["filename"]
+            filename = attachment_filename(part)
             data = proc.stdout
 
             if not data:
